@@ -3,6 +3,7 @@
 permalink: /:categories/:year/:month/:day/:title 
 
 safe: true
+source: git@github.com:tkengo/tkengo.github.com.git
 url: http://tkengo.github.com/
 lsi: false
 
