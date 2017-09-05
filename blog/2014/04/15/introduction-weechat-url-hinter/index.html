@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>Weechat内でマウスを操作せずにURLを開けるプラグイン欲しくありませんか？ &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-04-15</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/04/15/introduction-weechat-url-hinter/">Weechat内でマウスを操作せずにURLを開けるプラグイン欲しくありませんか？</a></h1>
+    </header>
+    <article>
+      
+
+<p>CUI で動作する IRC クライアントの 1 つに <a href="http://www.weechat.org/">weechat</a> があります。ペパボでは業務に IRC を利用しており、会話中によく URL が貼られたり BOT の通知で URL が貼られたりして、それなりの頻度でチャンネルの中に URL が出現します。Mac であれば Command を押しながら URL をダブルクリックするとブラウザで開けるのですが、その際に一度キーボードから手を離す必要があって面倒臭かったので <a href="https://github.com/tkengo/hometype">Hometype</a>(<a href="/blog/2014/03/03/introduce-hometype/">紹介記事</a>) のヒントモードをヒントに weechat のプラグインを作ってみました。</p>
+
+<h1 id="前提">前提</h1>
+
+<ul>
+<li>Mac OS X でのみ有効なプラグインです。</li>
+<li>ruby で書かれているので ruby を有効にしてコンパイルされている必要があります。brew でインストールするのであれば <code>--with-ruby</code> オプション付きでコンパイルされている必要があります。</li>
+</ul>
+
+<h1 id="インストール">インストール</h1>
+
+<p>weechat の公式スクリプトとしての登録はされてないので、リポジトリから直接ファイルをダウンロードしてきてください。</p>
+
+<pre><code class="language-console">$ curl -o ~/.weechat/ruby/autoload/url_hinter.rb https://raw.githubusercontent.com/tkengo/weechat-url-hinter/master/weechat-url-hinter.rb
+</code></pre>
+
+<p>ダウンロードが終わったら weechat を再起動してください。</p>
+
+<h1 id="使い方">使い方</h1>
+
+<p>URL が表示されているバッファ上で</p>
+
+<pre><code>/url_hinter
+</code></pre>
+
+<p>とコマンドを打ってみてください。通常はこのようなバッファーですが</p>
+
+<p><img src="/assets/img/2014-04-15-introduction-weechat-url-hinter/buffer.png" alt="" /></p>
+
+<p>コマンドを実行すると</p>
+
+<p><img src="/assets/img/2014-04-15-introduction-weechat-url-hinter/highlight.png" alt="" /></p>
+
+<p>のように URL だけハイライトされて、先頭に 1 文字のキーが表示されていることがわかります。(1 文字で収まらない数の URL が画面上にある場合は 2 文字になります)</p>
+
+<p>ハイライトされた URL の先頭に表示されているキーを押下することで、対応する URL をブラウザで開くことができます。この状態でたとえば <code>k</code> キーを押下すると <a href="https://github.com/tkengo/weechat-url-hinter">https://github.com/tkengo/weechat-url-hinter</a> が開きますし <code>f</code> キーを押下すると <a href="https://github.com/tkengo/hometype">https://github.com/tkengo/hometype</a> が開きます。</p>
+
+<h1 id="オプション">オプション</h1>
+
+<p>基本的な使い方は以上ですが、このプラグインは 2 つのオプションを持っています。</p>
+
+<h2 id="最初の-url-を開く">最初の URL を開く</h2>
+
+<pre><code>/url_hinter first
+</code></pre>
+
+<p>という風に <code>first</code> オプションをつけてコマンドを実行すると、現在のバッファ上で一番新しい行の URL が自動的に開かれます。上のスクリーンショットで言うと <code>j</code> に対応する <a href="http://tkengo.github.io/">http://tkengo.github.io/</a> が開かれます。</p>
+
+<h2 id="複数の-url-を一気に開く">複数の URL を一気に開く</h2>
+
+<pre><code>/url_hinter continuous
+</code></pre>
+
+<p>バッファ上の複数の URL を一気に開きたい場合は <code>continuous</code> オプションをつけてコマンドを実行します。通常であれば 1 度 URL を開くとその時点で URL ハイライトが解除されますが、このオプションを付けた場合はそうなりません。</p>
+
+<ol>
+<li><code>/url_hinter continuous</code> を実行</li>
+<li>開きたい URL のキーを連続で押下していく</li>
+<li>最後にエンターキーを押下する</li>
+</ol>
+
+<p>とすることで、選択した URL が一気にブラウザで開かれます。</p>
+
+<p><code>continuous</code> オプション付きで起動すると、押下されたキーは <code>*</code> アスタリスクになります。</p>
+
+<p><img src="/assets/img/2014-04-15-introduction-weechat-url-hinter/continuous.png" alt="" /></p>
+
+<h1 id="キーバインド">キーバインド</h1>
+
+<p>これで使い方の説明は終わりですが、プラグインを起動する度に毎回</p>
+
+<pre><code>/url_hinter
+</code></pre>
+
+<p>とコマンドを打ち込むのは面倒ですので、キーバインドの設定をします。どのキーに割り当てるかは使う人次第ですが、自分は以下のようにバッファに入力して</p>
+
+<pre><code>/key bind meta-u /url_hinter
+/key bind meta-i /url_hinter first
+</code></pre>
+
+<p>のように割り当てて <code>Alt</code> + <code>u</code> または <code>Alt</code> + <code>i</code> でプラグインを起動するようにしています。設定を保存する場合は</p>
+
+<pre><code>/save
+</code></pre>
+
+<p>を忘れずに。</p>
+
+<p>ちなみに Mac のターミナル上で <code>Alt</code> キーを使う場合、ターミナルの設定で <strong>メタキーとして option キーを使用</strong> という設定にチェックを入れておく必要があります。Terminal.app でも iTerm でも同じような設定があるので <code>Alt</code> キーが動かない場合はその設定を行うとうまくいくようになります。この辺を参考に。</p>
+
+<ul>
+<li><a href="http://nanapi.jp/3227/">Mac OS X のターミナルで meta キーを使う方法</a></li>
+<li><a href="http://d.hatena.ne.jp/kitokitoki/20111129/p1">[Mac] ターミナル.app でも iTerm2.app でも M-f で移動したい</a></li>
+</ul>
+
+<h1 id="終わりに">終わりに</h1>
+
+<p>プラグインは github に置いてあります。public にしてて誰でも見れますので、是非プラグイン開発の参考にしたりバグがあったらプルリクエスト送ったりしてください。</p>
+
+<p><a href="https://github.com/tkengo/weechat-url-hinter">https://github.com/tkengo/weechat-url-hinter</a></p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/weechat">weechat</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/04/15/introduction-weechat-url-hinter/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/04/15/introduction-weechat-url-hinter/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/04/15/introduction-weechat-url-hinter/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

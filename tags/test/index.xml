@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Test on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/test/</link>
+    <description>Recent content in Test on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Sun, 02 Jun 2013 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/test/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>ZendFramework で HTTP 通信部分をスタブ化してテストする</title>
+      <link>http://tkengo.github.io/blog/2013/06/02/zend-framework-http-stub/</link>
+      <pubDate>Sun, 02 Jun 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/06/02/zend-framework-http-stub/</guid>
+      <description>テストしてますか？
+こないだ業務で ZendFramework を使ったアプリケーションで HTTP 通信の部分をスタブアウトしてテストしたかったので、実際にやってみました。そんなに難しくなかったので、是非やってみると幸せになれるかも！
+前提  ZendFramework バージョン1系 Zend_Http_Client を使って HTTP 通信をしている  ZendFramework のバージョン2がリリースされてからもうしばらく経ちますが、業務ではバージョン1を使ってる所は結構あるんじゃないでしょうか。
+それから ZendFramework を使って HTTP 通信をしようとする場合 Zend_Http_Client というクラスがあります。名前からもわかりますが HTTP 通信のためのクライアントで、通信部分の面倒を見てくれるクラスです。今回のアプリケーションは HTTP 通信部分に Zend_Http_Client を使っていたので、それ前提で話を進めます。
+目標 最初にスタブアウトとか言いましたが、テストの世界ではスタブとかモックとかいった単語が良く出てきますよね。今回はスタブなのですが、言葉の定義や、それがどういうものなのかは、詳しいサイトがいっぱいあると思うのでそっちに任せるとして、今回やりたかったことは
+ 外部サービスのAPIと通信するクラスがある そのクラスのテストを書く ただしネットワークに繋がっていなかったり、外部サービスが落ちてる時もテストが成功するようにしたい  ということです。HTTP 通信の部分をスタブにして実際の通信を走らせないようにします。
+外部サービスAPIクラス たとえば Zend_Http_Client を使って HTTP 通信をする以下の様なコードがあったとします。
+&amp;lt;?php class ServiceApiClient { public function methodA() { ... $response = $this-&amp;gt;request($paramsA); return $response[&#39;result&#39;] == &#39;OK&#39;; } public function methodB() { ... $response = $this-&amp;gt;request($paramsB); if (isset($response[&#39;id&#39;])) { return $response[&#39;id&#39;]; } else { return 0; } } public function request($params) { $client = new Zend_Http_Client(&#39;http://.</description>
+    </item>
+    
+  </channel>
+</rss>

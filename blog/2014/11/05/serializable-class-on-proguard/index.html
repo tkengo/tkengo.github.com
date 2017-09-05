@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>Serializable なクラスを Proguard で難読化する時の話 &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-11-05</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/11/05/serializable-class-on-proguard/">Serializable なクラスを Proguard で難読化する時の話</a></h1>
+    </header>
+    <article>
+      
+
+<p>Android のアプリを開発する際にソースコードに難読化を施すために Proguard を使っていて <code>Serializable</code> なクラスが難読化対象になっている場合に、思いもよらないバグが発生してしまうことがあります。先日そのバグに遭遇してしまい、原因究明にほぼ丸1日かかってしまいました。</p>
+
+<h1 id="発生事象">発生事象</h1>
+
+<ol>
+<li>新機能を追加したアプリをバージョンを1つあげて Google Play ストアに登録した。</li>
+<li>アプリをアップデートしてから起動する。</li>
+<li>設定画面を開くと設定情報が消えてる。</li>
+</ol>
+
+<p>こんな感じでした。アップデートに含まれる改修では、設定画面はまったくいじってなかったのでなんで突然こんなことが起きるのか謎。ちなみに設定ファイルは</p>
+
+<ul>
+<li>設定情報は <code>Serializable</code> を implements したクラスをシリアライズしてファイルシステムに書き出してある</li>
+<li>そのクラスは Eclipse の機能を使って <code>serialVersionUID</code> を自動生成している</li>
+<li>読み込みは <code>ObjectInputStream</code> を使ってファイルを読み込んで元のクラスにキャストして使っている</li>
+</ul>
+
+<p>という風にファイルに保存して管理していました。</p>
+
+<h1 id="原因">原因</h1>
+
+<p>結論としては Proguard で難読化された結果、マッピング先のクラスが変わっており <code>serialVersionUID</code> が正しく取得できておらず <code>InvalidClassException</code> が発生していたのが要因でした。</p>
+
+<p>以下では手順を追って説明していきます。</p>
+
+<h2 id="設定クラスの定義">設定クラスの定義</h2>
+
+<p>たとえば <code>Configuration</code> クラスがファイルの保存・読み込みを行うクラスとして、以下のように実装されています。(当然この他にも各値のゲッターの実装もあるとは思いますが、簡略化のためにここでは省略します)</p>
+
+<pre><code class="language-java">public class Configuration implements Serializable {
+    private static final long serialVersionUID = -2203743867770177617L;
+
+    private String mName;
+    private int mAge;
+    private int mSex;
+
+    public LocalTargetProfile(String name, int age, int sex) {
+        mName = name;
+        mAge = age;
+        mSex = sex;
+    }
+}
+</code></pre>
+
+<p>そして <code>Application</code> クラスを継承した <code>MainApplication</code> クラスの中で、この <code>Configuration</code> クラスの読み書きを行うメソッドが以下のように実装されています。(簡略化のために例外処理やファイナライズ処理は省略します)</p>
+
+<pre><code class="language-java">public class MainApplication extends Application {
+    public void saveConfiguration(Configuration configuration) {
+        FileOutputStream   fileStream   = openFileOutput(fileName, MODE_PRIVATE);
+        ObjectOutputStream objectStream = new ObjectOutputStream(fileStream);
+
+        objectStream.writeObject(configuration);
+    }
+
+    public Configuration loadConfiguration() {
+        FileInputStream   fileStream   = openFileInput(CONFIGURATION_FILE_NAME);
+        ObjectInputStream objectStream = new ObjectInputStream(fileStream);
+
+        Object object = objectStream.readObject();
+        return (Configuration) object;
+    }
+}
+</code></pre>
+
+<p>設定画面では、設定の保存時に <code>saveConfiguration</code> を、設定の読み込み時に <code>loadConfiguration</code> をそれぞれ呼び出しています。</p>
+
+<h2 id="proguard-を使った難読化">Proguard を使った難読化</h2>
+
+<p>Proguard を使ってソースコードに難読化を施すと</p>
+
+<table>
+<thead>
+<tr>
+<th>元のクラス</th>
+<th>難読化後のクラス</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>com.example.hoge.Configuration</td>
+<td>com.example.hoge.a</td>
+</tr>
+
+<tr>
+<td>com.example.hoge.MainApplication</td>
+<td>com.example.hoge.b</td>
+</tr>
+
+<tr>
+<td>com.example.hoge.OtherClasses</td>
+<td>com.example.hoge.c</td>
+</tr>
+</tbody>
+</table>
+
+<p>このように、一見なんのクラスなのかわからないようにクラス名が変換されます。また、クラス名だけでなくフィールドやメソッドの名前も変換されます。ただし、ここでは <code>serialVersionUID</code> については名前が変わらないように Proguard に以下のような設定をしてあります。(名前が変わるとシリアライズ及びデシリアライズの際に認識されなくなる)</p>
+
+<pre><code class="language-plain">-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+}
+</code></pre>
+
+<p>ようするに難読化されるとたぶんこんな感じになります(メソッドの中身の変数とかもたぶん難読化されるとは思うけど、面倒くさいので未確認)。保存や読み込み時に <code>Configuration</code> クラスじゃなくて <code>a</code> クラスの受け渡しをしてるのがわかります。</p>
+
+<pre><code class="language-java">public class a implements Serializable {
+    private static final long serialVersionUID = -2203743867770177617L;
+
+    private String a;
+    private int b;
+    private int c;
+
+    public a(String name, int age, int sex) {
+        a = name;
+        b = age;
+        c = sex;
+    }
+}
+</code></pre>
+
+<pre><code class="language-java">public class b extends Application {
+    public void a(a configuration) {
+        FileOutputStream   fileStream   = openFileOutput(fileName, MODE_PRIVATE);
+        ObjectOutputStream objectStream = new ObjectOutputStream(fileStream);
+
+        objectStream.writeObject(configuration);
+    }
+
+    public a a() {
+        FileInputStream   fileStream   = openFileInput(CONFIGURATION_FILE_NAME);
+        ObjectInputStream objectStream = new ObjectInputStream(fileStream);
+
+        Object object = objectStream.readObject();
+        return (a) object;
+    }
+}
+</code></pre>
+
+<h2 id="新しいクラスの追加">新しいクラスの追加</h2>
+
+<p>ここでたとえば <code>AndroidDebugger</code> というクラスを追加したとします。</p>
+
+<pre><code class="language-java">public class AndroidDebugger {
+    // 実装は省略...
+}
+</code></pre>
+
+<p>ここでもう一度 Proguard を使ってビルドすると</p>
+
+<table>
+<thead>
+<tr>
+<th>元のクラス</th>
+<th>難読化後のクラス</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>com.example.hoge.AndroidDebugger</td>
+<td>com.example.hoge.a</td>
+</tr>
+
+<tr>
+<td>com.example.hoge.Configuration</td>
+<td>com.example.hoge.b</td>
+</tr>
+
+<tr>
+<td>com.example.hoge.MainApplication</td>
+<td>com.example.hoge.c</td>
+</tr>
+
+<tr>
+<td>com.example.hoge.OtherClasses</td>
+<td>com.example.hoge.d</td>
+</tr>
+</tbody>
+</table>
+
+<p>このようなクラス名のマッピングとなりました。</p>
+
+<h2 id="マッピングの変更">マッピングの変更</h2>
+
+<p>最初にビルドした時は <code>Configuration</code> クラスは <code>a</code> クラスにマッピングされていました。これを <strong>バージョン1</strong> とします。そして次にビルドすると <code>Configuration</code> クラスは <code>b</code> クラスにマッピングされていました。これを <strong>バージョン2</strong> とします。そして、たとえば次のような手順を踏んでいたらどうなるでしょうか。</p>
+
+<h3 id="バージョンアップの手順">バージョンアップの手順</h3>
+
+<ol>
+<li>バージョン1がインストールされている状態で設定画面から設定ファイルを保存した</li>
+<li>その後バージョン2にアップデートした</li>
+<li>バージョン2で設定画面を開いて設定ファイルを読み込む</li>
+</ol>
+
+<h3 id="その結果">その結果&hellip;</h3>
+
+<p>なんとなく想像はつくと思いますが</p>
+
+<ul>
+<li>バージョン1では、書き込み時に、 <code>a</code> クラス (つまり <code>Configuration</code> クラス) をファイルに保存します。</li>
+<li>そしてその時の <code>serialVersionUID</code> は <strong>-2203743867770177617L</strong> です。</li>
+<li>バージョン2では、読み込み時に、 <code>a</code> クラスを読み込みますが、バージョン2では <code>a</code> クラスは <code>AndroidDebugger</code> クラスです。</li>
+<li>そして <code>AndroidDebugger</code> クラスには <code>serialVersionUID</code> は定義されていません。つまりデフォルト値の <strong>0</strong> になります。</li>
+</ul>
+
+<p>このようにして書き込み時の <code>serialVersionUID</code> と読み込み時の <code>serialVersionUID</code> の不一致のせいで <code>InvalidClassException</code> が発生して設定ファイルを読み込めなくなったため、まるで設定ファイルが消えてしまったかのような挙動になっていました。</p>
+
+<h1 id="対応方法">対応方法</h1>
+
+<p>今回の事象は Proguard の難読化処理により、マッピング先のクラス名が変わってしまったことが要因なので、特定のクラスに対してはマッピングが変わらないように設定を追加することで解決します。</p>
+
+<h2 id="マッピングの維持">マッピングの維持</h2>
+
+<p>Proguard は <code>-applymapping</code> というオプションを持っており、これを指定することでこちらの意図通りにマッピングを維持することができます。</p>
+
+<p>Proguard で難読化した際に <code>mapping.txt</code> という成果物ができますが、この中にクラスのマッピング情報が書き込まれています。ただのテキストデータなのでエディタで開いて、この中から <code>Configuration</code> クラスのマッピング情報を取り出して、たとえば <code>applymapping.txt</code> としてルートディレクトリに保存します。</p>
+
+<pre><code class="language-plain">com.example.hoge.Configuration -&gt; com.example.hoge.a
+    long serialVersionUID -&gt; serialVersionUID
+    String mName -&gt; a
+    int mAge -&gt; b
+    int mSex -&gt; c
+    ...
+</code></pre>
+
+<p>そしてこれを Proguard から読み込むように <code>proguard-project.txt</code> に以下を追記します。</p>
+
+<pre><code class="language-plain">-applymapping applymapping.txt
+</code></pre>
+
+<p>これで再度ビルドすると <code>Configuration</code> クラスは常に <code>a</code> クラスにマッピングされるようになります。</p>
+
+<h2 id="その後の対応">その後の対応</h2>
+
+<p>これでめでたく解決したと思いきや、まだ問題は残っていました。この不具合を修正した <strong>バージョン3</strong> をリリースしたとしましょう。この時点での <code>Configuration</code> クラスのマッピングは以下のようになっています。</p>
+
+<table>
+<thead>
+<tr>
+<th>バージョン</th>
+<th>Configurationクラスのマッピング先</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>バージョン1</td>
+<td>com.example.hoge.a</td>
+</tr>
+
+<tr>
+<td>バージョン2</td>
+<td>com.example.hoge.b</td>
+</tr>
+
+<tr>
+<td>バージョン3</td>
+<td>com.example.hoge.a</td>
+</tr>
+</tbody>
+</table>
+
+<p>はい。</p>
+
+<p>バージョン1からバージョン3へアップデートする場合は問題ありませんが、バージョン2からバージョン3へアップデートする場合はまた同じ問題が発生してしまいます。もちろんバージョン2になってまだ一度も設定ファイルを書き込んだことがなければ問題ないのですが、ユーザーがバージョン2の間に設定の保存操作をしてない保証なんてどこにもありません。この問題についてはかなり無理矢理ですが以下の様に対応しました。</p>
+
+<h3 id="b-クラスを作る">b クラスを作る</h3>
+
+<p>バージョン2では <code>b</code> クラスが <code>Configuration</code> クラスになっているため、設定を保存されたら <code>b</code> クラスとしてファイルに書きだされることになります。そしてそれを読み出す時に <code>b</code> クラスが他のクラスにマッピングされていてはいけません。<code>b</code> クラスが必要なことはもうわかってるので、難読化前にあらかじめ自分で <code>b</code> クラスを作っておきます。</p>
+
+<p><code>b</code> クラスの内容は <code>serialVersionUID</code> も含めて難読化後の <code>a</code> クラスと全く同じです。<code>mapping.txt</code> を参照して難読化後のフィールド名やメソッド名を確認しながら作りました。こんな感じ。</p>
+
+<pre><code class="language-java">public class b implements Serializable {
+    private static final long serialVersionUID = -2203743867770177617L;
+
+    private String a;
+    private int b;
+    private int c;
+
+    public b(String name, int age, int sex) {
+        a = name;
+        b = age;
+        c = sex;
+    }
+}
+</code></pre>
+
+<h3 id="設定ファイル読み込む部分を修正する">設定ファイル読み込む部分を修正する</h3>
+
+<p>設定ファイルを読み込んだ時に <code>b</code> クラスかどうかをチェックして <code>b</code> クラスであれば <code>Configuration</code> クラスに変換するようにしました。これでアプリケーション内では設定ファイルが <code>Configuration</code> クラスなのか <code>b</code> クラスなのかを意識せずに、全て <code>Configuration</code> クラスとして扱うことができます。</p>
+
+<pre><code class="language-diff">  public Configuration loadConfiguration() {
+      FileInputStream   fileStream   = openFileInput(CONFIGURATION_FILE_NAME);
+      ObjectInputStream objectStream = new ObjectInputStream(fileStream);
+
+      Object object = objectStream.readObject();
++     if (object instanceof b) {
++         object = new Configuration(
++             ((b) object).getName(),
++             ((b) object).getAge(),
++             ((b) object).getSex()
++         );
++     }
+      return (Configuration) object;
+  }
+</code></pre>
+
+<h3 id="b-クラスを難読化対象から外す">b クラスを難読化対象から外す</h3>
+
+<p>最後に念の為に <code>b</code> クラスを難読化の対象とならないようにしておきます。</p>
+
+<pre><code class="language-plain">-keep class com.example.hoge.b { *; }
+</code></pre>
+
+<h1 id="おわりに">おわりに</h1>
+
+<p>最後の対応方法はかなり無理やりでこれが正しかったのかどうかはわかりませんが、とりあえずちゃんと動いてます。こんなニッチな問題、あんまり遭遇する人いないかもしれないけど、まあこういうの公開しとくとどっかで誰かが助かるかもしれない(それは未来の自分かもしれないね)</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/android">Android</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/11/05/serializable-class-on-proguard/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/11/05/serializable-class-on-proguard/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/11/05/serializable-class-on-proguard/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

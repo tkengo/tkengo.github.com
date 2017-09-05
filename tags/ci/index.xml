@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ci on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/ci/</link>
+    <description>Recent content in Ci on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Tue, 22 Jul 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/ci/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Chrome Extension の CI が出来るようになるまで(準備編)</title>
+      <link>http://tkengo.github.io/blog/2014/07/22/ci-for-chrome-extensions2/</link>
+      <pubDate>Tue, 22 Jul 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/07/22/ci-for-chrome-extensions2/</guid>
+      <description>個人的に趣味で Chrome Extension の開発をしていますが、最近いろいろとノウハウも溜まってきたので Chrome Extension の CI について少しまとめてみるシリーズです。
+前回の記事はこちら。
+Chrome Extension の CI が出来るようになるまで(導入編)
+目次  はじめに Chrome Extension のテストを書く  何をテストするのか テストフレームワーク Jasmine のインストール Jasmine でテストを書いてみる JavaScript APIs をモックする HTML Fixture を読み込む  Chrome Extension のテストを実行する  テストランナー Karma Karma のインストール Karma でテストを実行する ファイルの変更を監視する コードカバレッジを出力する HTML Fixture を読み込む  Chrome Extension を CI する  CI サービス Wercker Wercker にリポジトリを登録する wercker.yml Step の作り方 バッヂ   Chrome Extension のテストを実行する Chrome Extension でテストを書くことにも慣れてくると、次はそのテストの実行をなんとか簡略化したくなってきます。前回も説明したように SpecRunner.</description>
+    </item>
+    
+    <item>
+      <title>Chrome Extension の CI が出来るようになるまで(導入編)</title>
+      <link>http://tkengo.github.io/blog/2014/06/22/ci-for-chrome-extensions1/</link>
+      <pubDate>Sun, 22 Jun 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/06/22/ci-for-chrome-extensions1/</guid>
+      <description>個人的に趣味で Chrome Extension の開発をしていますが、最近いろいろとノウハウも溜まってきたので Chrome Extension の CI について少しまとめてみようと思います。
+目次  はじめに Chrome Extension のテストを書く  何をテストするのか テストフレームワーク Jasmine のインストール Jasmine でテストを書いてみる JavaScript APIs をモックする HTML Fixture を読み込む  Chrome Extension のテストを実行する  テストランナー Karma Karma のインストール Karma でテストを実行する ファイルの変更を監視する コードカバレッジを出力する HTML Fixture を読み込む  Chrome Extension を CI する  CI サービス Wercker Wercker にリポジトリを登録する wercker.yml Step の作り方 バッヂ   はじめに Google Chrome を vim のようにキーボードで操作できるようにする Hometype という Chrome Extension を作っていますが、この記事は Hometype でやってきたことベースに話を展開していきます。</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>リモートリポジトリの master は破壊するべからず。git push できないようにしてみよう &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-03-10</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/03/10/reject-git-push-to-remote/">リモートリポジトリの master は破壊するべからず。git push できないようにしてみよう</a></h1>
+    </header>
+    <article>
+      
+
+<p>会社で github で管理しているリポジトリがあるのですが、なるべくなら master に直接 push するのは避けたいものです(最近のフローとしては pull request から master にマージされることが多いですよね)。</p>
+
+<p>最初は github 上に git のフックを仕掛けて master に push しようとする要求があればはじくようにしたいと思ってたのですが github ではそういったことは出来ないようなので、サーバー側ではなくローカル側にフックを仕掛けて master に push できないようにしてみました。</p>
+
+<p>デザイナなど黒い画面が苦手な人でも最低限のコマンドで実現出来るように、インストール用のスクリプトを書いて <a href="https://gist.github.com/tkengo/9320008">gist に公開</a> してみました。</p>
+
+<h1 id="フックのインストール">フックのインストール</h1>
+
+<p>ターミナルから以下のコマンドを実行すればOKです。</p>
+
+<pre><code class="language-console">$ curl -s https://gist.githubusercontent.com/tkengo/9320008/raw/f19ce447307ce0f562d5b3ca834d09d22662b7f2/gistfile1.sh | sh
+OK, all set.
+All you need to do is that executing &quot;git init&quot; in your existing git project directory.
+</code></pre>
+
+<p><code>OK, all set</code> と表示されれば正常に完了しています。これだけ。フックは <code>~/.git_template/hooks/pre-push</code> にインストールされます。</p>
+
+<p>新しいリポジトリの場合は自動的にフックが使われるし、既存のリポジトリの場合はリポジトリのディレクトリに移動してそこで <code>git init</code> するだけです。Source Tree 使ってる人は</p>
+
+<ul>
+<li>リポジトリを選んで、ツールバーにある <strong>端末</strong> ボタンを押す</li>
+<li>ターミナルが開いたらそこで <code>git init</code> を入力してエンター</li>
+</ul>
+
+<p><img src="/assets/img/2014-03-10-reject-git-push-to-remote/source_tree.png" alt="" /></p>
+
+<p>で、いけそうですね。</p>
+
+<hr />
+
+<p>※以下はちょっとした説明です。読まなくても上記だけやっておけばフックは使えるようになってるので、時間ある人向け。</p>
+
+<h1 id="使い方">使い方</h1>
+
+<h2 id="新しく-clone-したリポジトリ">新しく clone したリポジトリ</h2>
+
+<p>フックをインストールした後に <code>git clone</code> するリポジトリに対しては特に意識する必要はありません。インストールされたフックスクリプトが自動的にプロジェクトの <code>.git</code> ディレクトリ内にコピーされて機能しはじめます。</p>
+
+<pre><code class="language-console">$ git clone git@github.com:tkengo/chromekey.git
+$ cd chromekey
+$ git push origin master
+You cant push the master branch to the remote
+error: failed to push some refs to 'git@github.com:tkengo/chromekey.git'
+
+$ git checkout -b test-branch origin/master
+$ git push origin test-branch
+Total 0 (delta 0), reused 0 (delta 0)
+To git@github.com:tkengo/chromekey.git
+ * [new branch]      test-branch -&gt; test-branch
+</code></pre>
+
+<p>このように master に対して push しようとした時だけ失敗します。</p>
+
+<h2 id="既存のリポジトリ">既存のリポジトリ</h2>
+
+<p>新規リポジトリは自動的にフックスクリプトがコピーされますが、既存のリポジトリに対してはプロジェクト毎の <code>.git</code> ディレクトリにフックスクリプトをコピーする必要があります。これには <code>git init</code> が使えます。git のフックはシステムグローバルに設定はできないんですね。</p>
+
+<pre><code class="language-console">$ cd /path/to/existing-repository
+$ git init
+Reinitialized existing Git repository in /path/to/existing-repository
+</code></pre>
+
+<p>これで master へ push しようとした時は失敗するようになります。</p>
+
+<h1 id="特定のリポジトリは-master-へ-push-しても良い">特定のリポジトリは master へ push しても良い</h1>
+
+<p>master へ直接 push してもよいリポジトリがあればプロジェクトのフックを削除します。</p>
+
+<pre><code class="language-console">$ cd /path/to/existing-repository
+$ rm -f .git/hooks/pre-push
+</code></pre>
+
+<p>これで master へ push できるようになります。</p>
+
+<h1 id="フックのアンインストール">フックのアンインストール</h1>
+
+<p>フックをコピーする設定を削除します。以下のコマンドを実行してください。</p>
+
+<pre><code>$ git config --global --unset init.templatedir
+</code></pre>
+
+<p>これで新しく <code>git clone</code> したプロジェクトも master へ push できるようになります。</p>
+
+<p>※各プロジェクトに配置されたフックはそのままなので既存のリポジトリのフックは個別に削除してください。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/git">git</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/03/10/reject-git-push-to-remote/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/03/10/reject-git-push-to-remote/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/03/10/reject-git-push-to-remote/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

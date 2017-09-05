@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>やる夫で学ぶ機械学習 - パーセプトロン - &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2016-06-03</p>
+      <h1><a href="http://tkengo.github.io/blog/2016/06/03/yaruo-machine-learning4/">やる夫で学ぶ機械学習 - パーセプトロン -</a></h1>
+    </header>
+    <article>
+      
+
+<p>やる夫で学ぶ機械学習シリーズの第 4 回です。分類問題を解くための基礎、パーセプトロンを図形的な側面から覗いてみます。</p>
+
+<p>第 3 回はこちら。<a href="/blog/2016/06/02/yaruo-machine-learning3/">やる夫で学ぶ機械学習 - 多項式回帰と重回帰 -</a></p>
+
+<p>目次はこちら。<a href="/blog/2016/06/06/yaruo-machine-learning0/">やる夫で学ぶ機械学習シリーズ</a></p>
+
+<h1 id="問題設定">問題設定</h1>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+今日は分類問題について詳しく見ていく。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+分類問題かお。やる夫は、女の子が巨乳か貧乳かを分類して、想像を膨らませたいお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そんなものは深夜に一人でニヤニヤしながらやるか、いつも引きこもってないで外に出て本物の女の子を見ることだな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+冗談きついお、やらない夫。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+分類の場合も、回帰の時と同じように具体例を示して、それを元に話を進めていったほうがわかりやすいな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+それが良いお。具体例は、やる夫の将来の嫁さんくらい大事だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+また意味のわからないたとえをありがとう。今回は分類の話なので、そうだな、色を分類することを考えてみよう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+おっぱいじゃなくて、色を分類、するのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+おっぱいは忘れろ。たとえば、適当に与えられた色が、暖色系なのか寒色系なのかに分類する、という問題はどうだ？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+二値分類の問題かお。分類は確か教師あり学習だったから、つまりラベル付きの学習用データが要るってことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな、具体的には、色の情報と、その色が暖色なのか寒色なのか、というラベルを学習用データとして用意してやる必要がある。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+なるほど。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ところで、色と言えば RGB の三色を考えることができるが、最初は簡単な問題の方がいいから、緑のことは考えずに、赤と青だけに注目していこう。緑の要素は 0 に固定しようか。その方が図にもプロットできてわかりやすいしな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+簡単になるなら歓迎だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+たとえば、この色は暖色系、寒色系、どっちに見える？</p>
+
+<div style="text-align:center;font-family:mplus-1p-regular;">
+<span style="width:100px;height:20px;background-color:#d80055;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #d80055
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+んー、暖色系だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では、これはどうだ？</p>
+
+<div style="text-align:center;font-family:mplus-1p-regular;">
+<span style="width:100px;height:20px;background-color:#2c00c8;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #2c00c8
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+寒色系だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ということは、今 2 つの学習用データができた。緑の要素を 0 に固定しているから、#RRGGBB の GG の部分が 00 になっていることに注目だ。</p>
+
+<table>
+<thead>
+<tr>
+<th>色</th>
+<th>クラス</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><span style="width:100px;height:20px;background-color:#d80055;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #d80055</td>
+<td>暖色</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#2c00c8;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #2c00c8</td>
+<td>寒色</td>
+</tr>
+</tbody>
+</table>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うん、分類問題の場合の学習用データのイメージつかめたお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+横軸を赤、縦軸を青、とすると、今の学習用データはこんな風にプロットできる。大丈夫か？</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron1.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+楽勝だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+さすがに、学習用データが 2 つしかないと足りないので、もう少し増やしておこう。</p>
+
+<table>
+<thead>
+<tr>
+<th>色</th>
+<th>クラス</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><span style="width:100px;height:20px;background-color:#d80055;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #d80055</td>
+<td>暖色</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#c80027;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #c80027</td>
+<td>暖色</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#9c0019;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #9c0019</td>
+<td>暖色</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#2c00c8;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #2c00c8</td>
+<td>寒色</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#120078;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #120078</td>
+<td>寒色</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#40009f;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #40009f</td>
+<td>寒色</td>
+</tr>
+</tbody>
+</table>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+プロットしてみたお。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron2.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+よし、OK だ。この図を見て、このデータ点を分類するために 1 本だけ線を引くとしたら、やる夫はどんな風に線を引く？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ん、そんなの、誰でもこんな風に線を引くと思うお。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron3.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+よし。今回の目的はその線を見つけること、それが二値分類だ。</p>
+
+<h1 id="内積">内積</h1>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+線をみつけるって、つまり回帰の時と同じように一次関数の傾きと切片を求めるのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+いや、今回はベクトルを見つけるのが目的だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ベクトルを見つける&hellip;。やらない夫、意味がわからんお&hellip;。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+さっきの線は、重みベクトルを法線とする直線なんだ。重みベクトルを $\boldsymbol{w}$ とすると、直線の方程式はこのように表せる。</p>
+
+<p>$$
+\boldsymbol{w}\cdot\boldsymbol{x} = 0
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うーん、重みベクトルって一体なんなんだお&hellip;、その方程式の意味もよくわからんお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+重みベクトルは俺たちが知りたい未知のパラメータだ。回帰の時に $\boldsymbol{\theta}$ という未知のパラメータを求めるために色々と頑張ったが、それと同じものだな。$w$ という文字は weight(重み) の頭文字だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$\boldsymbol{w}\cdot\boldsymbol{x}$ って、ベクトルの内積のことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そう、内積のことだ。実ベクトル空間の内積は、各要素の積を足し上げたものなので、こんな風にも書ける。$n$ は次元数だ。</p>
+
+<p>$$
+\boldsymbol{w}\cdot\boldsymbol{x} = \sum_{i=1}^n w_i x_i = 0
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ふむ。今回は赤と青の二次元を考えているので、$n = 2$ ってことでいいのかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そういうことだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うーん、内積は覚えてるけど、でも、さっきの方程式&hellip;、なんなんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+わからない時はいつでも、具体的な値を代入して計算してみよう。イメージがわくかもしれないぞ。やる夫が言ったように、今回の問題は $\mathbb{R}^2$ の実ベクトル空間上で考えているので、そうだな、重みベクトルを $\boldsymbol{w} = (1, 1)$ とした時、$\boldsymbol{x}$ はどうなる？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+とりあえず、代入してみるお。</p>
+
+<p>\begin{eqnarray}
+\boldsymbol{w}\cdot\boldsymbol{x} &amp; = &amp; w_1 x_1 + w_2 x_2 \<br />
+&amp; = &amp; 1\cdot x_1 + 1\cdot x_2 \<br />
+&amp; = &amp; x_1 + x_2 = 0
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ん、これって要するに $x_2 = -x_1$ だから、$\boldsymbol{x} = (1, -1)$ とか $\boldsymbol{x} = (2, -2)$ とか、解は無限にありそうだけど&hellip;、あー、つまり、傾き -1 のグラフってことかお？</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron4.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+よく閃いたな。その図に、重みベクトル $\boldsymbol{w} = (1, 1)$ を書き加えてみると、もっとわかりやすいかもしれないな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+えっと、$(1, 1)$ だから&hellip;</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron5.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あっ、重みベクトル $\boldsymbol{w}$ が、さっきやる夫が書いた直線と、直角になってるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+つまり重みベクトル $\boldsymbol{w}$ が、やる夫が書いた直線に対する法線になっているというわけだ。最初に俺が言ったように、$\boldsymbol{w}\cdot\boldsymbol{x} = 0$ という式は、重みベクトル $\boldsymbol{w}$ を法線とする直線の方程式になっている。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+そういうことかお。そういえば、内積の計算って $\cos$ が含まれてなかったかお？ベクトル同士の成す角 $\theta$ を使って..</p>
+
+<p>$$
+\boldsymbol{w}\cdot\boldsymbol{x} = |\boldsymbol{w}|\cdot|\boldsymbol{x}|\cdot\cos\theta
+$$</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+それでも問題ない。さっき、やる夫はベクトル方程式から代数的に解いたが、幾何的にはベクトル同士が直角になっている時に内積が 0 になる。$\theta = 90^{\circ}, 270^{\circ}$ の時には $\cos\theta = 0$ になるからな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あーなるほど。そういう直角になってるベクトルがたくさんあって、それ全体が直線になってるのかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+いろんな側面から覗いてみると、より理解も深まる。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+じゃ、話は戻るけど、さっきの色分類の問題に関するグラフで言うと、こんな風にやる夫が引いた直線に対する法線を見つける、ってことかお。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron6.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そういうことだ。まあ正確にはもちろん最初に直線があるわけではなく、最初に法線、つまり重みベクトルを見つけると、そのベクトルに対して直角な直線がわかり、その直線によってデータが分類される、というわけだな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+把握したお。</p>
+
+<h1 id="パーセプトロン">パーセプトロン</h1>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+で、具体的にはどうやって、その重みベクトルとやらを求めるのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+回帰でやった時のように、重みベクトルをパラメータとして、パラメータを更新していくんだ。これから見ていくのは、パーセプトロンと呼ばれるモデルだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+なんか突然かっこいい単語が出てきたお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+パーセプトロンは脳の機能を参考にモデル化したものだと言われることが多いな。ローゼンブラットという人物が考案したモデルなんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+今度は RPG の主人公キャラの名前かお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+パーセプトロンは複数の入力を受け取り、その入力に対する重みとの線形結合が一定の閾値を超えていた場合に活性化し、そうでない場合は非活性となるような単純な関数だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+線形結合とか活性化とか非活性とか、一体やらない夫は何を言ってるんだお。中二病なのかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+いや、そういうわけではないが&hellip;。そうだな、つまらない形式的な話はよしておこう。形式的な話より直感的な話をしていこうか。やる夫もそっちの方が好きだろう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+それでいいんだお。ところで、パラメータの更新っていうと、また微分とか出てくるのかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+あの時は目的関数があって、それを最小化したいがために微分したんだった。だが、今回は目的関数は不要なので、微分もしない。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+なるほど。分類も回帰と同じ流れかと思ったけど、そうでもないのかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+分類問題でも、もちろん目的関数を使うこともあって、その場合には目的関数を最小化する手順は同じようにある。ただ、パーセプトロンのように目的関数が必要ないような場合もある。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ふーん。じゃ、今回のパラメータの更新式は、どんなものになるんだお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その前に、パラメータ更新に必要になるものを、いくつか準備をしておこう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うっ、前準備って、面倒くさくてあんまり好きじゃないお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+このまま先に進んでも、どうせやる夫はわからないだろうからな。まあ、そんなにたくさん準備がいるわけじゃないから安心しろ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やらない夫、いま、しれっとやる夫のこと馬鹿にしたお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+まず、最初に用意した学習用データの、暖色と寒色。このままだと扱いにくいから、暖色を 1、寒色を -1 として、$y$ で表すことにする。そして、横軸を赤、縦軸を青、としていたが、それぞれ $x_1$ と $x_2$ としよう。</p>
+
+<table>
+<thead>
+<tr>
+<th>色</th>
+<th>クラス</th>
+<th>$x_1$</th>
+<th>$x_2$</th>
+<th>$y$</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><span style="width:100px;height:20px;background-color:#d80055;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #d80055</td>
+<td>暖色</td>
+<td>216</td>
+<td>85</td>
+<td>1</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#c80027;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #c80027</td>
+<td>暖色</td>
+<td>200</td>
+<td>39</td>
+<td>1</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#9c0019;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #9c0019</td>
+<td>暖色</td>
+<td>156</td>
+<td>25</td>
+<td>1</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#2c00c8;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #2c00c8</td>
+<td>寒色</td>
+<td>44</td>
+<td>200</td>
+<td>-1</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#120078;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #120078</td>
+<td>寒色</td>
+<td>18</td>
+<td>120</td>
+<td>-1</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#40009f;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #40009f</td>
+<td>寒色</td>
+<td>64</td>
+<td>159</td>
+<td>-1</td>
+</tr>
+</tbody>
+</table>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そして、ベクトル $\boldsymbol{x}$ を与えると、暖色か寒色を判定する関数、つまり 1 または -1 を返す関数 $f_{\boldsymbol{w}}$ をこのように定義する。このような関数を「識別関数」と呼ぶ。</p>
+
+<p>\begin{eqnarray}
+f_{\boldsymbol{w}}(\boldsymbol{x}) =
+  \begin{cases}
+     1 &amp; (\boldsymbol{w}\cdot\boldsymbol{x} \geq 0) \\[5pt]
+    -1 &amp; (\boldsymbol{w}\cdot\boldsymbol{x} \lt 0)
+  \end{cases}
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ん、要するに内積の符号によって返す値が違うってことかお。こんなんで、暖色か寒色が判定できるのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+内積の図形的なイメージを思い出すんだ。例えば、重みベクトル $\boldsymbol{w}$ に対して、内積が負になるベクトルってどんなベクトルだ？$\cos$ が含まれた方の式で考えてみるんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ん、$\cos$ を使った内積は $|\boldsymbol{w}|\cdot|\boldsymbol{x}|\cdot\cos\theta$ だから&hellip;、ベクトルの大きさは必ず正になるから、符号は $\cos\theta$ の値で決まることになるお&hellip;、これが負になるってことは、$90^{\circ} \lt \theta \lt 270^{\circ}$ の場合、ってことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+正解だ。そういうベクトル $\boldsymbol{x}$ は、図形的にはどんな位置にあると思う？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+重みベクトル $\boldsymbol{w}$ との成す角が $90^{\circ} \lt \theta \lt 270^{\circ}$ の範囲内にあるベクトルってことだから&hellip;、あー、なるほど、直線を挟んで重みベクトルとは反対側の部分、ってことかお。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron7.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その通り。と、いうことは、内積が正のベクトルは、重みベクトルと同じ側の部分ってことだな。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron8.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+なるほど！内積が正か負かで、直線を挟んで分割できてるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+内積は、ベクトル同士がどれだけ似ているかという指標にも使われる。符号が正だとある程度似ていて、0 で直角になり、そして負になると、だんだん元のベクトルから離れていく。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+内積にはそういう意味もあったのかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+さて、準備はこれで終わりだ。話を戻すと、パラメータの更新式はこのように定義する。$i$ は学習用データのインデックスだ。このパラメータ更新を全ての学習用データについて行っていく。</p>
+
+<p>\begin{eqnarray}
+\boldsymbol{w} :=
+  \begin{cases}
+    \boldsymbol{w} + y^{(i)}\boldsymbol{x}^{(i)} &amp; (f_{\boldsymbol{w}}(\boldsymbol{x}^{(i)}) \neq y^{(i)}) \\[5pt]
+    \boldsymbol{w}                               &amp; (f_{\boldsymbol{w}}(\boldsymbol{x}^{(i)}) = y^{(i)})
+  \end{cases}
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+んー、なんかまた、ごちゃごちゃした式だお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+意味がわからない数式を見た時は、いったん落ち着くんだ。難しそうな式がごちゃごちゃしているのは確かだが、その式の文字を 1 つずつ読み解いていき、ボトムアップで全体像を把握していけばいい。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+んっと、じゃ、まずは $f_{\boldsymbol{w}}(\boldsymbol{x}^{(i)}) \neq y^{(i)}$ の方から見ていくお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+それがいい。その条件は、どういうことを表していると思う？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$i$ 番目の学習用データを識別関数に通して分類した結果と、同じく $i$ 番目の学習用データのラベル $y$ が異なっている、ってことだお。あ、ということは、識別関数による分類に失敗した、ってことなのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+やるじゃないか、やる夫の言う通りだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+もう一つの $f_{\boldsymbol{w}}(\boldsymbol{x}^{(i)}) = y^{(i)}$ の方は、逆に分類に成功した、って意味だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そういうことだ。つまり、先のパラメータ更新式は、識別関数による分類が失敗した時だけ新しいパラメータに更新されるという意味だ。分類に成功した場合は、パラメータの重みベクトルは正しいはずだと捉えて更新をしない。そこ、大丈夫か？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+わかるお。分類が成功した時、つまり $f_{\boldsymbol{w}}(\boldsymbol{x}^{(i)}) = y^{(i)}$ の時は $\boldsymbol{w}$ がそのまま代入されて、元と何も変わってないから、そういうことだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では今度は、識別関数による分類が失敗した時の更新式を見てみようか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$\boldsymbol{w} + y^{(i)}\boldsymbol{x}^{(i)}$ の方かお。うーん&hellip;、さっきから考えてるけど、未だにまったく意味がわからんお&hellip;。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+式だけ眺めてても難しいかもしれないな。こちらも図形的に考えてみるといい。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+グラフに書いてみるってことかお。ん、でも、そんな式どうやって図に書けばいいのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+具体例を考えるんだよ。まずは、以下の図にあるような適当な重みベクトルがあったとして、その状態でラベルが $y = 1$、つまり暖色系の学習用データを与えた場合にどうなるかを考えてみよう。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron9.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+上の図の場合、重みベクトル $\boldsymbol{w}$ と学習用データ $\boldsymbol{x}^{(1)}$ との成す角は $90^{\circ}$ 以上だから内積が負になって、識別関数 $f_{\boldsymbol{w}}$ は -1 を返すはずだお。そして、与えられた学習用データのラベルは $y = 1$ だから、識別関数による分類に失敗しているお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+パラメータ更新式の $f_{\boldsymbol{w}}(\boldsymbol{x}^{(1)}) \neq y^{(1)}$ という状況だな。つまり、パラメータが更新されるというわけだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+なるほど。いま、$y^{(1)} = 1$ だから、更新式は $\boldsymbol{w} + \boldsymbol{x}^{(1)}$ になるわけだお。んー、普通のベクトルの足し算だから、さっきの図に書き足してみるお&hellip;</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron10.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+重みベクトル $\boldsymbol{w}$ が更新されて、最初に引いてた直線が回転したお！</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+新しい重みベクトルの元で識別関数に通すと、今度はちゃんと分類に成功することもわかるだろう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+さっきは、$\boldsymbol{x}^{(1)}$ が直線を挟んで重みベクトルと反対側にあったけど、新しい重みベクトルで見た場合、$\boldsymbol{x}^{(1)}$ は重みベクトルと同じ側にあるから確かに良さそうだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+学習用データのラベルが $y = -1$ の場合は、今度はパラメータ更新がベクトルの引き算になるわけだな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+足し算と引き算の違いはあるけど、同じように新しい重みベクトルに更新されて、その分だけ直線が回転するってことかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+この繰り返しによってパラメータを更新していくのがパーセプトロンの学習だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+とてもよくわかりましたお。顔画像を準備して、巨乳なら 1、そうじゃないなら -1 ってラベルをつけていけば、未知の女の子をパーセプトロンで分類できそうだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+お前、まだそれ諦めてなかったのかよ&hellip;そんなものはおそらくパーセプトロンでは分類できないだろうな。</p>
+
+<h1 id="線形分離可能">線形分離可能</h1>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+またやる夫のことバカにしてるのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+パーセプトロンによる学習はとてもシンプルでわかりやすいが、その分デメリットも大きい。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+えっ&hellip;。やらない夫は、いつも最後に残念な想いをさせるから、そういうのやめて欲しいお。終わり良ければ全て良しだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+最初に嫌な話をしても、それはそれでその後のモチベーションが下がるだろ。それに、デメリットを知っておくことは大事だぞ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+そのデメリットによってやる夫の夢は打ち砕かれるのかお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+パーセプトロンの最たるデメリットは線形分離可能な問題しか解けないということだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+線形分離可能？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+たとえば、こんな学習用データがあったとしよう。赤い点が 1 で、青いバツが -1 とするんだ。これを分類するために 1 本だけ直線を引くとしたら、やる夫はどんな風に線を引く？</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron11.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+いや、こんなのどうやっても直線 1 本じゃ分類できないお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだ、この例のように直線 1 本では分類できないようなものは線形分離可能ではない。つまり、パーセプトロンでは分類できない。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やる夫が作ろうとしている分類器も線形分離可能ではない、って言いたいのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+画像を扱う場合、入力がかなりの高次元になるため可視化はできないが、顔の特徴を掴んで分類しようとするタスクはそんなに単純じゃない。確実に線形分離不可能だろうな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+パーセプトロンなんて使い物にならんお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+確かに、パーセプトロンは現場で使われることはほとんど無い。実際に解きたい問題が線形分離可能であることはほぼありえないからな。ほとんどが線形分離不可能な問題だ。でも安心しろ。ちゃんと実用的な分類器を構築するためのアルゴリズムもあるんだぞ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+一旦落としておいて、その後に希望を見せるそのやり方、クセになるお。解決策があるって素晴らしいお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+偉大な先人たちのおかげだな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ところで、やらない夫は大きいのと小さいのはどっちが好きなんだお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+お前、ほんと好きだな、それ&hellip;</p>
+
+<hr />
+
+<p><a href="/blog/2016/06/04/yaruo-machine-learning5/">やる夫で学ぶ機械学習 - ロジスティック回帰 -</a> へ続く。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92">機械学習</a>
+      
+        <a class="tag-link" href="tags/%E3%82%84%E3%82%8B%E5%A4%AB%E3%81%A7%E5%AD%A6%E3%81%B6">やる夫で学ぶ</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2016/06/03/yaruo-machine-learning4/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2016/06/03/yaruo-machine-learning4/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2016/06/03/yaruo-machine-learning4/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

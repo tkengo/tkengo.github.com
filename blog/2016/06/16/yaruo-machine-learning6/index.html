@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>やる夫で学ぶ機械学習 - 対数尤度関数 - &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2016-06-16</p>
+      <h1><a href="http://tkengo.github.io/blog/2016/06/16/yaruo-machine-learning6/">やる夫で学ぶ機械学習 - 対数尤度関数 -</a></h1>
+    </header>
+    <article>
+      
+
+<p>やる夫で学ぶ機械学習シリーズの第 6 回です。ロジスティック回帰の目的関数である尤度関数をもう少し詳しくみて、線形分離不可能な問題にどのように適用していくのかを見ていきます。</p>
+
+<p>第 5 回はこちら。<a href="/blog/2016/06/04/yaruo-machine-learning5/">やる夫で学ぶ機械学習 - ロジスティック回帰 -</a></p>
+
+<p>目次はこちら。<a href="/blog/2016/06/06/yaruo-machine-learning0/">やる夫で学ぶ機械学習シリーズ</a></p>
+
+<h1 id="対数尤度関数">対数尤度関数</h1>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+尤度関数を微分してパラメータ $\boldsymbol{\theta}$ の更新式を求めてみようか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+もう脳みそパンパンですお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その前に、尤度関数はそのままだと扱いにくいから、少し変形しよう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+扱いにくい？どういうことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+まず同時確率という点だ。確率なので 1 以下の数の掛け算の連続になることはわかるな？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+確かに、確率の値としては 0 より大きくて 1 より小さいものだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+1 より小さい数を何度も掛け算すると、どんどん値が小さくなっていくだろう。コンピュータで計算する場合はそれは致命的な問題だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あー、オーバーフローの逆かお。アンダーフロー。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+次に掛け算という点だ。掛け算は足し算に比べて計算が面倒だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+小数点の計算とかあんまりやりたくないお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そこで一般的には尤度関数の対数をとったもの、対数尤度関数を使う。</p>
+
+<p>$$
+\log L(\boldsymbol{\theta}) = \log \prod_{i=1}^n P(y^{(i)}=1|\boldsymbol{x})^{y^{(i)}} P(y^{(i)}=0|\boldsymbol{x})^{1-y^{(i)}}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+目的関数に対して勝手に対数をとったりして、答え変わらないのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+問題ない。対数関数は単調増加な関数だからだ。対数関数のグラフの形を覚えているか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+確かこんな感じのグラフだお。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/logistic-regression5.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+それで正解だ。グラフがずっと右上がりになってることがわかるだろう。つまり単調増加な関数ってのは $x_1 &lt; x_2$ ならば $f(x_1) &lt; f(x_2)$ となるような関数 $f(x)$ だということだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+なるほど、確かに $\log(x)$ はそういう風になっているお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+$\log$ は単調増加関数だから、今考えいてる対数尤度関数についても $L(\boldsymbol{\theta_1}) &lt; L(\boldsymbol{\theta_2})$ であれば $\log L(\boldsymbol{\theta_1}) &lt; \log L(\boldsymbol{\theta_2})$ ということが言えるだろう。要するに $L(\boldsymbol{\theta})$ を最大化することと $\log L(\boldsymbol{\theta})$ を最大化することは同じことなんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ふーん、よく考えられてるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では、対数尤度関数を少し変形して $f_{\boldsymbol{\theta}}$ を使って表してみよう。</p>
+
+<p>$$
+\begin{eqnarray}
+\log L(\boldsymbol{\theta}) &amp; = &amp; \log \prod_{i=1}^n P(y^{(i)}=1|\boldsymbol{x})^{y^{(i)}} P(y^{(i)}=0|\boldsymbol{x})^{1-y^{(i)}} \<br />
+&amp; = &amp; \sum_{i=1}^n \left( \log P(y^{(i)}=1|\boldsymbol{x})^{y^{(i)}} + \log P(y^{(i)}=0|\boldsymbol{x})^{1-y^{(i)}} \right) \<br />
+&amp; = &amp; \sum_{i=1}^n \left( y^{(i)} \log P(y^{(i)}=1|\boldsymbol{x}) + (1-y^{(i)}) \log P(y^{(i)}=0|\boldsymbol{x}) \right) \<br />
+&amp; = &amp; \sum_{i=1}^n \left( y^{(i)} \log f_{\boldsymbol{\theta}}(\boldsymbol{x}) + (1-y^{(i)}) \log (1-f_{\boldsymbol{\theta}}(\boldsymbol{x}) \right)
+\end{eqnarray}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うっ、ちょっと式変形を追うのが大変だお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+実際には 2 行目は $\log(ab) = \log a + \log b$ という性質を、3 行目は $\log a^b = b \log a$ という性質を使っているだけだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$\log$ の性質は覚えてるけど、最後の行はなんでそうなるんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+確率の定義からだ。ここでは確率変数の取る値としては $y=1$ か $y=0$ かしかないから、$P(y^{(i)}=1|\boldsymbol{x}) = f_{\boldsymbol{\theta}}(\boldsymbol{x})$ ならば $P(y^{(i)}=0|\boldsymbol{x}) = 1 - f_{\boldsymbol{\theta}}(\boldsymbol{x})$ となる。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あー、そうか。全部の確率を足すと 1 になるんだったお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ここまでで俺たちは目的関数として対数尤度関数 $\log L(\boldsymbol{\theta})$ を定義した。次はどうする？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$\log L(\boldsymbol{\theta})$ を $\boldsymbol{\theta}$ の各要素 $\theta_j$ で微分&hellip;かお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ではこれを微分していこう。</p>
+
+<p>$$
+\frac{\partial}{\partial \theta_j} \sum_{i=1}^n \left( y^{(i)} \log f_{\boldsymbol{\theta}}(\boldsymbol{x}) + (1-y^{(i)}) \log (1-f_{\boldsymbol{\theta}}(\boldsymbol{x}) \right)
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ちょっと何言ってるかよくわからん式だお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+回帰の時にやったように、合成関数の微分を使うんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+えーと、要するに&hellip;こうかお？</p>
+
+<p>$$
+\frac{\partial \log L(\boldsymbol{\theta})}{\partial f_{\boldsymbol{\theta}}} \cdot \frac{\partial f_{\boldsymbol{\theta}}}{\partial \theta_j}
+$$</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+それでいい。ひとつずつ微分していくんだ。まず第一項はどうなるだろう？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+第一項は $\log L(\boldsymbol{\theta})$ を $f_{\boldsymbol{\theta}}$ で微分するんだから&hellip;えーっと、$\log(x)$ の微分は $\frac{1}{x}$ でよかったかお？</p>
+
+<p>$$
+\begin{eqnarray}
+\frac{\partial \log L(\boldsymbol{\theta})}{\partial f_{\boldsymbol{\theta}}} &amp; = &amp; \frac{\partial}{\partial f_{\boldsymbol{\theta}}}\sum_{i=1}^n \left( y^{(i)} \log f_{\boldsymbol{\theta}}(\boldsymbol{x}) + (1-y^{(i)}) \log (1-f_{\boldsymbol{\theta}}(\boldsymbol{x}) \right) \<br />
+&amp; = &amp; \sum_{i=1}^n \left( \frac{y^{(i)}}{f_{\boldsymbol{\theta}}(\boldsymbol{x})} - \frac{1-y^{(i)}}{1-f_{\boldsymbol{\theta}}(\boldsymbol{x})} \right) \<br />
+\end{eqnarray}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+一気に第二項もやってしまうお。これも合成関数の微分を使うお。$z = 1 + \exp(-\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x})$ と置いて $f_{\boldsymbol{\theta}}(\boldsymbol{x}) = z^{-1}$ とすると</p>
+
+<p>$$
+\begin{eqnarray}
+\frac{\partial f_{\boldsymbol{\theta}}}{\partial \theta_j} &amp; = &amp; \frac{\partial f_{\boldsymbol{\theta}}}{\partial z} \cdot \frac{\partial z}{\partial \theta_j} \<br />
+&amp; = &amp; -\frac{1}{z^2} \cdot -x_j \exp(-\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x}) \<br />
+&amp; = &amp; \frac{x_j \exp(-\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x})}{(1 + \exp(-\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x}))^2}
+\end{eqnarray}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+できたお！これが微分結果だお。</p>
+
+<p>$$
+\frac{\partial \log L(\boldsymbol{\theta})}{\partial \theta_j} = \sum_{i=1}^n \left( \frac{y^{(i)}}{f_{\boldsymbol{\theta}}(\boldsymbol{x})} - \frac{1-y^{(i)}}{1-f_{\boldsymbol{\theta}}(\boldsymbol{x})} \right) \frac{x_j \exp(-\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x})}{(1 + \exp(-\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x}))^2}
+$$</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだ、と言いたいところだが、ただ計算すればいいってもんじゃないだろ&hellip;やる夫はこれを見てどう思う？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+どう思うも何も、これでパラメータの更新式ができるお&hellip;まあ、二度と見たくもないような複雑な式ですお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そう、実はまだ複雑なんだ。もう少し式変形を進めて綺麗な形にできるんだが&hellip;</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やる夫の計算力が足りないってことかお！</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+いや、ここまでできただけでも十分だ。一緒に考えよう。まず、後ろの方の $\exp$ が含まれている式の方を見てみようか。やる夫は全部まとめているが、そこをあえてこんな風に分けてみよう。</p>
+
+<p>$$
+\frac{x_j \exp(\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x})}{(1 + \exp(-\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x}))^2} = \frac{1}{1 + \exp(-\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x})} \cdot \frac{\exp(-\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x})}{1 + \exp(-\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x})} \cdot x_j
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+えっ、わざわざ分解するのかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうするとこういう風に $f_{\boldsymbol{\theta}}(\boldsymbol{x})$ を使って書けるだろう。</p>
+
+<p>$$
+\frac{1}{1 + \exp(-\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x})} \cdot \frac{\exp(-\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x})}{1 + \exp(-\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x})} \cdot x_j = f_{\boldsymbol{\theta}}(\boldsymbol{x}) \cdot (1 - f_{\boldsymbol{\theta}}(\boldsymbol{x})) \cdot x_j
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あーなるほど。確かにやらない夫の言う通りに変形できそうだお。でも、第二項が $1 - f_{\boldsymbol{\theta}}(\boldsymbol{x})$ になるのはわかるけど、そんなの気付けないお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+式を変形する作業は慣れの問題も大きいだろうから、できなかったといってヘコむことはない。ちなみにシグモイド関数、ここでは $\sigma(x)$ と置こう、これの微分が $\sigma(x)(1-\sigma(x))$ になるのは有名だな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+確かに $f_{\boldsymbol{\theta}}$ はシグモイド関数で、それを微分した形はそうなってるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では、この式を微分結果に代入してみよう。約分した後に展開して整理すると最終的にはこんな形になる。</p>
+
+<p>$$
+\begin{eqnarray}
+\frac{\partial \log L(\boldsymbol{\theta})}{\partial \theta_j} &amp; = &amp; \sum_{i=1}^n \left( \frac{y^{(i)}}{f_{\boldsymbol{\theta}}(\boldsymbol{x})} - \frac{1-y^{(i)}}{1-f_{\boldsymbol{\theta}}(\boldsymbol{x})} \right) f_{\boldsymbol{\theta}}(\boldsymbol{x}) (1 - f_{\boldsymbol{\theta}}(\boldsymbol{x})) x_j \<br />
+&amp; = &amp; \sum_{i=1}^n \left( y^{(i)}(1 - f_{\boldsymbol{\theta}}(\boldsymbol{x})) - (1-y^{(i)})f_{\boldsymbol{\theta}}(\boldsymbol{x}) \right) x_j \<br />
+&amp; = &amp; \sum_{i=1}^n \left(y^{(i)} - f_{\boldsymbol{\theta}}(\boldsymbol{x}) \right) x_j
+\end{eqnarray}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+めちゃくちゃ単純な式になったお&hellip;やらない夫すごすぎるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+あとはいつものように、この式からパラメータ更新式を導出するんだ。ただし、回帰の時は最小化すればよかったが、今回は最大化なので注意が必要だ。そこが違うので、ただ代入すればいいというわけじゃない。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あ、確かにそうだお&hellip;もうすぐ終わりそうなのに、ここにきてまた壁がでてきたお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そう難しく考えるな。最大化問題を最小化問題に置き換える簡単な方法がある。符号を反転させればいいだけだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+まじかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+単純だろう。$f(x)$ を最大化させる問題と、その符号を反転させた $-f(x)$ を最小化させる問題はまったく同じ問題だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+希望が見えてきたお。要するにこれまでは $\log L(\boldsymbol{\theta})$ を最大化することを考えてきたけど、これからは $-\log L(\boldsymbol{\theta})$ を最小化することを考えればいいってことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その通りだ。符号が反転したんだから、微分結果の符号も反転する。$L^{-}(\boldsymbol{\theta}) = -\log L(\boldsymbol{\theta})$ と置くと、こうなるな。</p>
+
+<p>$$
+\frac{\partial L^{-}(\boldsymbol{\theta})}{\partial \theta_j} = \sum_{i=1}^n \left(f_{\boldsymbol{\theta}}(\boldsymbol{x}) - y^{(i)} \right) x_j
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+てことは、パラメータ更新式は、こうかお？</p>
+
+<p>$$
+\theta_j := \theta_j - \eta \sum_{i=1}^n \left(f_{\boldsymbol{\theta}}(\boldsymbol{x}) - y^{(i)} \right) x_j
+$$</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+よし、できたな。</p>
+
+<h1 id="線形分離不可能問題">線形分離不可能問題</h1>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では、いよいよ線形分離不可能な問題にも挑戦していこうか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+待ってましたお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+これが線形分離不可能だということはもういいな？</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/perceptron11.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+わかってるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+線形分離不可能な問題は、すなわち直線では分離できないということだ。であれば、曲線で分離すればいいという発想に自然といきつく。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/log-likelihood1.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+お、もしかして多項式回帰の時にやったように、次数を増やしてみるってことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+勘がいいな。よし、これは 2 次元の話なので、素性としては $x_1$ と $x_2$ の 2 つがある。そこに 3 つ目の素性として $x_1^2$ を加える事を考えて見るんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+こういうことかお？</p>
+
+<p>$$
+\boldsymbol{\theta} = \left[
+  \begin{array}{c}
+    \theta_0 \<br />
+    \theta_1 \<br />
+    \theta_2 \<br />
+    \theta_3
+  \end{array}
+\right] \ \ \
+\boldsymbol{x} = \left[
+  \begin{array}{c}
+    1 \<br />
+    x_1 \<br />
+    x_2 \<br />
+    x_1^2
+  \end{array}
+\right]
+$$</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。つまり $\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x}$ はこうだ。大丈夫か？</p>
+
+<p>$$
+\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x} = \theta_0 + \theta_1 x_1 + \theta_2 x_2 + \theta_3 x_1^2
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+わかるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+また適当に $\boldsymbol{\theta}$ を決めてみよう。そうだな、たとえば $\boldsymbol{\theta}$ がこうなった時、それぞれ $y=1$ と $y=0$ と分類される領域はどこになる？</p>
+
+<p>$$
+\boldsymbol{\theta} = \left[
+  \begin{array}{c}
+    \theta_0 \<br />
+    \theta_1 \<br />
+    \theta_2 \<br />
+    \theta_3
+  \end{array}
+\right] = \left[
+  \begin{array}{c}
+    0 \<br />
+    0 \<br />
+    1 \<br />
+    -1
+  \end{array}
+\right]
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+えーっと、要するに $\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x} \ge 0$ を考えればいいんだから&hellip;前と同じように変形してみるお。</p>
+
+<p>$$
+\begin{eqnarray}
+\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x} = x_2 - x_1^2 &amp; \ge &amp; 0 \<br />
+x_2 &amp; \ge &amp; x_1^2
+\end{eqnarray}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+こんな感じかお？</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/log-likelihood2.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その通りだ。以前は決定境界が直線だったが、今は曲線になっているのが見て取れるだろう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+見た感じ、この決定境界だとまったく分類できてないように見えるけど、それはいつものようにやらない夫神が適当に $\boldsymbol{\theta}$ を決めたから、ってことでいいかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+もう慣れてきたようだな。やる夫の言う通りだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+じゃ、これをさっき求めたパラメータ更新式を使って、$\boldsymbol{\theta}$ を学習していけばいいってことかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+これで線形分離不可能な問題も解けるようになったな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+楽勝だお！</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+あとは、好きなように次数を増やせば複雑な形の決定境界にすることができる。たとえばさっきは素性として $x_1^2$ を増やしたが $x_2^2$ も増やすと、円状の決定境界ができる。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ロジスティック回帰のパラメータ更新って、最初に回帰で考えた時と同じように全データで学習してるけど、ここにも確率的勾配降下法って使えるのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+もちろん使えるぞ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ロジスティック回帰って万能だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+やる夫はいつも結論を出すのが早すぎだな。どんな問題に対しても万能なアルゴリズムなんて存在しないんだから適材適所で使っていかなければならない。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+今のやる夫はまだパーセプトロンとロジスティック回帰しか知らないんだから、ロジスティック回帰の方がやる夫にとっては有能な分類アルゴリズムだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+それもそうだな。分類器はいろいろなアルゴリズムがあるから、勉強していくと楽しいぞ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+自習なんて面倒くさいお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+本当に面倒くさがりなんだな、お前&hellip;</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+天性だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+自慢するところかよ。しかしこれまでだいぶ理論を説明してきたが、理論だけじゃなくて実際になにか作ってみることも大事だ。理解度が飛躍的に上がるぞ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+じゃ、やっぱり前に言ってたアレ、作るお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その熱意には負けるよ。</p>
+
+<hr />
+
+<p>やる夫で学ぶ機械学習 - 過学習 - へ続く。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92">機械学習</a>
+      
+        <a class="tag-link" href="tags/%E3%82%84%E3%82%8B%E5%A4%AB%E3%81%A7%E5%AD%A6%E3%81%B6">やる夫で学ぶ</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2016/06/16/yaruo-machine-learning6/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2016/06/16/yaruo-machine-learning6/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2016/06/16/yaruo-machine-learning6/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

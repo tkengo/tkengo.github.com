@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>Hello World in OpenGL! &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-02-01</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/02/01/opengl-es-2-2d-knowledge-6/">Hello World in OpenGL!</a></h1>
+    </header>
+    <article>
+      
+
+<p><a href="/blog/2014/12/20/opengl-es-2-2d-knowledge-0">OpenGL 基礎シリーズ</a> の第 6 回です。</p>
+
+<h1 id="hello-world-in-opengl">Hello World in OpenGL!</h1>
+
+<p>いよいよこのシリーズもこれで最後。実際に動作するソースコードを紹介しながらこれまで得た知識と照らしあわせていきたい。記事の最初にも書いたとおりサンプルコードは Android になるけど、Android 固有の部分を除いて OpenGL の部分に関しては他のプラットフォームでも似たような API は提供されているので (若干仕様が異なる API もあるけど) これまでに蓄えられてきた基礎知識が活きていれば Android 以外でも「こんな風に書けばいいのかな」という想像が簡単にできると思う。</p>
+
+<p>ということで早速コードを紹介しつつ解説を。</p>
+
+<h3 id="mainactivity-java">MainActivity.java</h3>
+
+<pre><code class="language-java">public class MainActivity extends Activity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        GameSurfaceView view = new GameSurfaceView(this);
+        setContentView(view);
+    }
+}
+</code></pre>
+
+<p>まずはアクティビティ。<code>GameSurfaceView</code> という独自のビューを生成してアクティビティに配置している。</p>
+
+<h3 id="gamesurfaceview-java">GameSurfaceView.java</h3>
+
+<pre><code class="language-java">public class GameSurfaceView extends GLSurfaceView {
+    private static final int OPENGL_ES_VERSION = 2;
+
+    public GameSurfaceView(Context context) {
+        super(context);
+
+        setEGLContextClientVersion(OPENGL_ES_VERSION);
+        setRenderer(new GameRenderer());
+        setRenderMode(RENDERMODE_CONTINUOUSLY);
+    }
+}
+</code></pre>
+
+<p>次に <code>GameSurfaceView</code>。Android で OpenGL を使った描画をするためには <code>GLSurfaceView</code> というビューを継承したカスタムビューを作る。そのカスタムビューの中で独自のレンダラーをセットすることで、そのレンダラーの中で実装された関数が呼び出され、OpenGL とのやり取りができるようになる。</p>
+
+<h3 id="bufferutil-java">BufferUtil.java</h3>
+
+<pre><code class="language-java">public class BufferUtil {
+    public static FloatBuffer convert(float[] data) {
+        ByteBuffer bb = ByteBuffer.allocateDirect(data.length * 4);
+        bb.order(ByteOrder.nativeOrder());
+
+        FloatBuffer floatBuffer = bb.asFloatBuffer();
+        floatBuffer.put(data);
+        floatBuffer.position(0);
+
+        return floatBuffer;
+    }
+
+    public static ShortBuffer convert(short[] data) {
+        ByteBuffer bb = ByteBuffer.allocateDirect(data.length * 2);
+        bb.order(ByteOrder.nativeOrder());
+
+        ShortBuffer shortBuffer = bb.asShortBuffer();
+        shortBuffer.put(data);
+        shortBuffer.position(0);
+
+        return shortBuffer;
+    }
+}
+</code></pre>
+
+<p>これは Java のプリミティブ型を GPU に転送するためにバッファ型に変換するためのユーティリティクラスで、頂点座標や頂点インデックスを GPU に転送する際に利用することになる。</p>
+
+<p>さて、これまで 3 つのクラス <code>MainActivity</code> と <code>GameSurfaceView</code> と <code>BufferUtil</code> を見てきたけど、これらは Android 固有の部分なので OpenGL とはあまり関係はない。次の <code>GameRenderer</code> クラスが本丸だ。</p>
+
+<h3 id="gamerenderer-java">GameRenderer.java</h3>
+
+<pre><code class="language-java">public class GameRenderer implements GLSurfaceView.Renderer {
+    public static final String sVertexShaderSource =
+        &quot;uniform mat4 vpMatrix;&quot; +
+        &quot;uniform mat4 wMatrix;&quot; +
+        &quot;attribute vec3 position;&quot; +
+        &quot;void main() {&quot; +
+        &quot;  gl_Position = vpMatrix * wMatrix * vec4(position, 1.0);&quot; +
+        &quot;}&quot;;
+
+    public static final String sFragmentShaderSource =
+        &quot;precision mediump float;&quot; +
+        &quot;void main() {&quot; +
+        &quot;  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);&quot; +
+        &quot;}&quot;;
+
+    private int mProgramId;
+    private float[] mViewAndProjectionMatrix = new float[16];
+    private long mFrameCount = 0;
+
+    @Override
+    public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
+        GLES20.glClearColor(0f, 0f, 0f, 1f);
+
+        int vertexShader = GLES20.glCreateShader(GLES20.GL_VERTEX_SHADER);
+        GLES20.glShaderSource(vertexShader, sVertexShaderSource);
+        GLES20.glCompileShader(vertexShader);
+
+        int fragmentShader = GLES20.glCreateShader(GLES20.GL_FRAGMENT_SHADER);
+        GLES20.glShaderSource(fragmentShader, sFragmentShaderSource);
+        GLES20.glCompileShader(fragmentShader);
+
+        mProgramId = GLES20.glCreateProgram();
+        GLES20.glAttachShader(mProgramId, vertexShader);
+        GLES20.glAttachShader(mProgramId, fragmentShader);
+        GLES20.glLinkProgram(mProgramId);
+        GLES20.glUseProgram(mProgramId);
+    }
+
+    @Override
+    public void onSurfaceChanged(GL10 gl10, int width, int height) {
+        GLES20.glViewport(0, 0, width, height);
+
+        float[] projectionMatrix = new float[16];
+        float[] viewMatrix       = new float[16];
+        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f);
+        Matrix.orthoM(projectionMatrix, 0, -width / 2f, width / 2f, -height / 2, height / 2, 0f, 2f);
+        Matrix.multiplyMM(mViewAndProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
+    }
+
+    @Override
+    public void onDrawFrame(GL10 gl10) {
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+
+        float length = 100f;
+        float left   = -length / 2f;
+        float right  =  length / 2f;
+        float top    = -length / 2f;
+        float bottom =  length / 2f;
+
+        float[] vertices = new float[] {
+            left,  top,    0f,
+            left,  bottom, 0f,
+            right, bottom, 0f,
+
+            right, bottom, 0f,
+            right, top,    0f,
+            left,  top,    0f
+        };
+
+        short[] indices = new short[] {
+            0, 1, 2,
+            3, 4, 5
+        };
+
+        FloatBuffer vertexBuffer = BufferUtil.convert(vertices);
+        ShortBuffer indexBuffer  = BufferUtil.convert(indices);
+
+        float[] worldMatrix = new float[16];
+        Matrix.setIdentityM(worldMatrix, 0);
+        Matrix.rotateM(worldMatrix, 0, (float)mFrameCount / 2f, 0, 0, 1);
+
+        int attLoc1 = GLES20.glGetAttribLocation(mProgramId, &quot;position&quot;);
+        int uniLoc1 = GLES20.glGetUniformLocation(mProgramId, &quot;vpMatrix&quot;);
+        int uniLoc2 = GLES20.glGetUniformLocation(mProgramId, &quot;wMatrix&quot;);
+        GLES20.glEnableVertexAttribArray(attLoc1);
+
+        GLES20.glVertexAttribPointer(attLoc1, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer);
+        GLES20.glUniformMatrix4fv(uniLoc1, 1, false, mViewAndProjectionMatrix, 0);
+        GLES20.glUniformMatrix4fv(uniLoc2, 1, false, worldMatrix, 0);
+
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, indexBuffer.capacity(), GLES20.GL_UNSIGNED_SHORT, indexBuffer);
+
+        GLES20.glDisableVertexAttribArray(attLoc1);
+
+        mFrameCount++;
+    }
+}
+</code></pre>
+
+<p>突然でかいソースコードがきたのでひよったかもしれないけど、1 つずつ見ていくことにする。まずこのクラスは <code>GLSurfaceView.Renderer</code> というインターフェースを実装している。このインターフェースには</p>
+
+<ul>
+<li><code>onSurfaceCreated</code> OpenGL 用にビューが生成された時に実行される</li>
+<li><code>onSurfaceChanged</code> ビューのサイズが変更された時に実行される</li>
+<li><code>onDrawFrame</code> 毎フレーム実行される</li>
+</ul>
+
+<p>の 3 つのコールバックメソッドがあるのでこれらをすべて実装していく。順番的に <code>onSurfaceCreated</code> &gt; <code>onSurfaceChanged</code> &gt; <code>onDrawFrame</code> &gt; <code>onDrawFrame</code> &gt; <code>onDrawFrame</code> &hellip; という風に呼ばれていく。まあこの辺もまだ Android 固有だ。OpenGL が関係してくるのは実装したそれぞれのメソッドの中身なので、次のセクションから集中していこう。</p>
+
+<h2 id="onsurfacecreated">onSurfaceCreated</h2>
+
+<p>アプリが起動して OpenGL の準備ができて最初に実行される部分になるので、ここで色々な初期化処理を実行しておく。</p>
+
+<h3 id="画面クリア時の色の設定">画面クリア時の色の設定</h3>
+
+<pre><code class="language-java">GLES20.glClearColor(0f, 0f, 0f, 1f);
+</code></pre>
+
+<p>まず最初に実行されてるのがコレ。ゲームとか作る場合は毎フレーム、画面を一旦クリアにしてからその上に描画していく形になるんだけど、画面クリア処理をする時にクリアされる色を設定している。引数には <code>(R, G, B, A)</code> の順序で範囲は 0 〜 1を指定。この場合は真っ黒を設定している。</p>
+
+<h3 id="シェーダのコンパイル">シェーダのコンパイル</h3>
+
+<pre><code class="language-java">int vertexShader = GLES20.glCreateShader(GLES20.GL_VERTEX_SHADER);
+GLES20.glShaderSource(vertexShader, sVertexShaderSource);
+GLES20.glCompileShader(vertexShader);
+
+int fragmentShader = GLES20.glCreateShader(GLES20.GL_FRAGMENT_SHADER);
+GLES20.glShaderSource(fragmentShader, sFragmentShaderSource);
+GLES20.glCompileShader(fragmentShader);
+</code></pre>
+
+<p>で、次はシェーダをコンパイルしている。今まで説明してきたバーテックスシェーダとフラグメントシェーダは GLSL という言語で開発するという話を最初にしたと思うけど、その GLSL で書いたコードはアプリの実行時に GPU にコンパイルさせて実行可能な状態にさせとかなきゃいけない。<code>sVertexShaderSource</code> と <code>sFragmentShaderSource</code> に文字列としてシェーダのソースコードが入ってるのでそれをコンパイルしてやる。シェーダの中身の説明はもう少し先でやるので、ここではとりあえずシェーダはコンパイルが必要だよ、ってことを理解しておこう。</p>
+
+<h3 id="シェーダのリンク">シェーダのリンク</h3>
+
+<pre><code class="language-java">mProgramId = GLES20.glCreateProgram();
+GLES20.glAttachShader(mProgramId, vertexShader);
+GLES20.glAttachShader(mProgramId, fragmentShader);
+GLES20.glLinkProgram(mProgramId);
+GLES20.glUseProgram(mProgramId);
+</code></pre>
+
+<p>シェーダがコンパイル出来たら次にそれをプログラムにリンクさせる。このプログラムの ID は後で使うことになるのでメンバ変数に保持しておく。これで初期化処理は終わり。この辺のシェーダのコンパイルとかプログラムのリンクとかの処理は Android に限らず OpenGL を使うのであればどのプラットフォームでも同じでテンプレート的な処理なので、最初にやっておかないといけない。なのでここはそういうもんだと暗記していいかもね。</p>
+
+<h2 id="onsurfacechanged">onSurfaceChanged</h2>
+
+<p>このコールバックには画面の幅と高さが渡ってくるので、それに関連した初期化処理をやっておくようにする。</p>
+
+<h3 id="ビューポート設定">ビューポート設定</h3>
+
+<pre><code class="language-java">GLES20.glViewport(0, 0, width, height);
+</code></pre>
+
+<p>これは <a href="/blog/2015/01/17/opengl-es-2-2d-knowledge-4">ビューポート変換</a> をする時の幅と高さを設定する。ここでは x, y 座標に <code>0</code> を、幅と高さには <code>width</code> と <code>height</code> をそのまま渡しているので、Android の画面全体をビューポートとして設定していることになる。</p>
+
+<h3 id="ビュー座標変換行列と射影変換行列の生成">ビュー座標変換行列と射影変換行列の生成</h3>
+
+<pre><code class="language-java">float[] projectionMatrix = new float[16];
+float[] viewMatrix       = new float[16];
+Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f);
+Matrix.orthoM(projectionMatrix, 0, -width / 2f, width / 2f, -height / 2, height / 2, 0f, 2f);
+Matrix.multiplyMM(mViewAndProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
+</code></pre>
+
+<p>次にバーテックスシェーダの座標変換の記事で扱った <a href="/blog/2015/01/10/opengl-es-2-2d-knowledge-3#view-transformation-matrix">ビュー座標変換</a> と <a href="/blog/2015/01/10/opengl-es-2-2d-knowledge-3#projection-transformation-matrix">射影変換</a> をするための変換行列を生成して、その 2 つを掛け合わせてまとめている。</p>
+
+<p>カメラの位置は <code>(0, 0, 1)</code>、カメラの注視点は <code>(0, 0, 0)</code>、そしてカメラの上方向は <code>(0, 1, 0)</code> になっているので、原点より少し手前の位置から原点を見ているカメラを配置していることになる。そして射影変換については、原点を中心として幅が <code>width</code>、高さが <code>height</code> の長方形があって、その奥行は <code>2</code> の立方体をクリッピング空間としている。</p>
+
+<p><img src="/assets/img/2015-02-01-opengl-es-2-2d-knowledge-6/view-and-projection.png" alt="カメラの位置とクリッピング空間" /></p>
+
+<h2 id="バーテックスシェーダとフラグメントシェーダ">バーテックスシェーダとフラグメントシェーダ</h2>
+
+<p><code>onSurfaceCreated</code> と <code>onSurfaceChanged</code> で初期化処理は終わったので、次は実際に OpenGL を使って描画をしているところに移っていくけど、その前にシェーダ部分を見てみる。</p>
+
+<h3 id="バーテックスシェーダ">バーテックスシェーダ</h3>
+
+<pre><code class="language-java">public static final String sVertexShaderSource =
+    &quot;uniform mat4 vpMatrix;&quot; +
+    &quot;uniform mat4 wMatrix;&quot; +
+    &quot;attribute vec3 position;&quot; +
+    &quot;void main() {&quot; +
+    &quot;  gl_Position = vpMatrix * wMatrix * vec4(position, 1.0);&quot; +
+    &quot;}&quot;;
+</code></pre>
+
+<p>(すごく見難いというのはおいとこう&hellip;) 最初の 3 行に変数の定義があってその後に main 関数がある。シェーダが実行される時はこの main 関数が呼び出されるので、基本的にはこの中に処理を書いていく。変数は <code>種別 型 変数名</code> という風に定義することになっていて、この例では 3 つの変数が定義されている。</p>
+
+<ul>
+<li><code>vpMatrix</code> ビュー座標変換行列と射影変換行列を掛けあわせた 4x4 の行列</li>
+<li><code>wMatrix</code> 4x4 のワールド座標変換行列</li>
+<li><code>position</code> x, y, z 成分を持つ頂点座標</li>
+</ul>
+
+<p>後々でてくるけど、これらの変数はアプリケーション中のメモリから OpenGL の API を介して GPU に転送される。そして main 関数の中では <code>vpMatrix</code> と <code>wMatrix</code> を、頂点座標である <code>position</code> にかけている。つまり座標系の変換をしている。この時 x, y, z 成分しかない <code>position</code> に w 成分 <code>1</code> を加えていて、これは前に少し出てきた同次座標のこと。この辺の話は <a href="/blog/2015/01/10/opengl-es-2-2d-knowledge-3">バーテックスシェーダの座標変換</a> で詳しく見ていった部分だ。テキストだと随分文量が多かったけど、コードにしてみるとこんなもん。<code>gl_Position</code> というのは組み込みの変数で、この変数に座標変換した最終的な座標を代入すると、その座標が次の処理に渡されていく。</p>
+
+<h3 id="フラグメントシェーダ">フラグメントシェーダ</h3>
+
+<pre><code class="language-java">public static final String sFragmentShaderSource =
+    &quot;precision mediump float;&quot; +
+    &quot;void main() {&quot; +
+    &quot;  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);&quot; +
+    &quot;}&quot;;
+</code></pre>
+
+<p>次にフラグメントシェーダ。これもバーテックスシェーダと同じように main 関数がある。今回のフラグメントシェーダでは変数は特に使わないので定義されていない。また <code>precision mediump float;</code> の部分はおまじない的なものなので無視してよい。このフラグメントシェーダでは一律赤色 <code>vec4(1.0, 0.0, 0.0, 1.0)</code> を出力するようにしている。色は rgba の成分を 0 〜 1 の範囲で指定する。<code>gl_FragColor</code> というのはバーテックスシェーダで出てきたのと同じで組み込みの変数になっていて、この変数に色を代入するとその色をフラグメントの色として、次の処理に渡されていく。</p>
+
+<p><em>※ <code>uniform</code> と <code>attribute</code> の違いや変数の型、それから <code>precision</code> については処理の本質にあまり関係ないのでここでは割愛するけど、GLSL を解説しているサイトを検索してみるといくつか見つかるのでそこで勉強してみるのもよい。</em></p>
+
+<h2 id="ondrawframe">onDrawFrame</h2>
+
+<p>初期化が終わってシェーダの中身も見ていったので、いよいよ OpenGL を使って描画をしている中核となる部分を見ていく。この <code>onDrawFrame</code> は最大 60 FPS の頻度で、つまり 1 秒間に 60 回程度実行されるもので、画面を表示している限りは何度も何度も実行される。</p>
+
+<h3 id="画面クリア">画面クリア</h3>
+
+<pre><code class="language-java">GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+</code></pre>
+
+<p>まず画面を初期化している。この初期化する時の色は最初に <code>GLES20.glClearColor</code> で設定した色、すなわちここでは黒が使われる。要するにここでは毎フレームの一番最初に画面を真っ黒に初期化している。</p>
+
+<h3 id="頂点座標と頂点インデックスの定義">頂点座標と頂点インデックスの定義</h3>
+
+<pre><code class="language-java">float length = 100f;
+float left   = -length / 2f;
+float right  =  length / 2f;
+float top    = -length / 2f;
+float bottom =  length / 2f;
+
+float[] vertices = new float[] {
+    left,  top,    0f,
+    left,  bottom, 0f,
+    right, bottom, 0f,
+
+    right, bottom, 0f,
+    right, top,    0f,
+    left,  top,    0f
+};
+
+short[] indices = new short[] {
+    0, 1, 2,
+    3, 4, 5
+};
+
+FloatBuffer vertexBuffer = BufferUtil.convert(vertices);
+ShortBuffer indexBuffer  = BufferUtil.convert(indices);
+</code></pre>
+
+<p>次に頂点座標と頂点インデックスの定義をしている。これは原点を中心とした、幅と高さが <code>100</code> の正方形の頂点情報になっている。この辺は <a href="/blog/2015/01/03/opengl-es-2-2d-knowledge-2">頂点情報とプリミティブ</a> での話だね。(最後の 2 行は頂点座標と頂点インデックスを GPU に送るためのバッファ型があるので自作関数を使って変換している。Android は Java のプリミティブの型のままでは GPU にデータ転送できないのでこういった変換処理が必要となる。ここも Android 特有の処理)</p>
+
+<p><img src="/assets/img/2015-02-01-opengl-es-2-2d-knowledge-6/vertices-and-indices.png" alt="頂点座標と頂点インデックス" /></p>
+
+<h3 id="ワールド座標変換行列の生成">ワールド座標変換行列の生成</h3>
+
+<pre><code class="language-java">float[] worldMatrix = new float[16];
+Matrix.setIdentityM(worldMatrix, 0);
+Matrix.rotateM(worldMatrix, 0, (float)mFrameCount / 2f, 0, 0, 1);
+</code></pre>
+
+<p>ただ四角形を描画するだけでは面白く無いので描画した図形が回転するアニメーションをさせるために、回転の座標変換行列を生成している。別途現在のフレーム数を保持しておきそれを z 軸を中心とした回転角として行列を生成することで、フレームが進むごとに少しずつ回転していくアニメーションを再現できる。</p>
+
+<h3 id="シェーダ内変数へデータ転送">シェーダ内変数へデータ転送</h3>
+
+<pre><code class="language-java">int attLoc1 = GLES20.glGetAttribLocation(mProgramId, &quot;position&quot;);
+int uniLoc1 = GLES20.glGetUniformLocation(mProgramId, &quot;vpMatrix&quot;);
+int uniLoc2 = GLES20.glGetUniformLocation(mProgramId, &quot;wMatrix&quot;);
+GLES20.glEnableVertexAttribArray(attLoc1);
+
+GLES20.glVertexAttribPointer(attLoc1, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer);
+GLES20.glUniformMatrix4fv(uniLoc1, 1, false, mViewAndProjectionMatrix, 0);
+GLES20.glUniformMatrix4fv(uniLoc2, 1, false, worldMatrix, 0);
+</code></pre>
+
+<p>バーテックスシェーダには 3 つの変数が定義されていた。それらの変数にはアプリケーション内からデータを転送してあげる必要があるんだけど、シェーダ内の変数にデータを送信するためにはどの変数に対してデータを送信するかという識別子のようなものが必要になるので、まず最初の 3 行でシェーダ内変数の識別子を取得している。<code>attribute</code> な変数は <code>glGetAttribLocation</code> で、<code>uniform</code> な変数は <code>glGetUniformLocation</code> でそれぞれ取得できる。さらに <code>attribute</code> な変数ではそれを有効化してあげる必要もあるため、次の行で <code>glEnableVertexAttribArray</code> を呼び出してデータを送信可能な状態にしている。</p>
+
+<p>最後の 3 行ではアプリケーション内のメモリから GPU へデータを転送するための処理。これで全ての準備は整った。</p>
+
+<h3 id="描画">描画</h3>
+
+<pre><code class="language-java">GLES20.glDrawElements(GLES20.GL_TRIANGLES, indexBuffer.capacity(), GLES20.GL_UNSIGNED_SHORT, indexBuffer);
+</code></pre>
+
+<p>後は描画する API をコールするだけ。<code>GL_TRIANGLES</code> は <a href="/blog/2015/01/03/opengl-es-2-2d-knowledge-2#drawing-mode">描画モードの指定</a> で説明した部分の定数。つまりは、上で定義した <code>vertexBuffer</code> を頂点座標、<code>indexBuffer</code> を頂点インデックスとして、三角形を描画していく。このソースコードをコンパイルして出来上がった apk を Android 端末にインストールすると、画面中央でぐるぐる回る赤い四角形が描画される。</p>
+
+<p><img src="/assets/img/2015-02-01-opengl-es-2-2d-knowledge-6/hello-world-in-opengl1.png" alt="三角形がぐるぐる" /></p>
+
+<h1 id="おまけ">おまけ</h1>
+
+<p>おまけです。</p>
+
+<h2 id="テクスチャ">テクスチャ</h2>
+
+<p>サンプルのコードではテクスチャの表示をしてなかったけど、頂点座標と同じように <code>float</code> 型で頂点に対応する UV 座標を定義すれば良い。それを頂点座標と同じように GPU に転送して後、バーテックスシェーダからフラグメントシェーダへ渡すようにして、フラグメントシェーダでは渡された UV 座標 (補間されている) を使ってテクスチャから取得した色を <code>gl_FragColor</code> に設定する。</p>
+
+<p>別途サンプルを用意するとちょっと記事が長くなりすぎるので、ここでは割愛。この辺のサンプルが欲しければネット上にたくさん転がっている。</p>
+
+<h2 id="座標変換行列を使わない">座標変換行列を使わない？</h2>
+
+<p>サンプルソースコードでは回転行列とビュー座標変換行列、それから射影変換行列を生成してバーテックスシェーダ内で座標変換を行っている。でもよく考えてみよう、回転とかは考えずに単純に画面に四角形を描画するだけであれば、実は座標変換行列はなくても描画できる。<a href="/blog/2015/01/10/opengl-es-2-2d-knowledge-3">バーテックスシェーダの座標変換</a> のところで見たように、頂点座標は最終的には x, y, z 座標がそれぞれ -1 〜 1 の範囲に収まるクリッピング座標系に変換されている必要がある。逆に言うと、最初に定義する頂点座標が直接 -1 〜 1 の範囲内にあるクリッピング座標系で定義されていれば座標変換は不要ということになる。普通はそんなわかりにくいことやらないとは思うけど、座標変換の理屈を理解していれば必ずしも座標変換行列を用意しないと描画ができないかというと、そうでもないってことがわかる。</p>
+
+<p>こんな頂点座標を定義して</p>
+
+<pre><code class="language-java">float length = 1f;
+float left   = -length / 2f;
+float right  =  length / 2f;
+float top    = -length / 2f;
+float bottom =  length / 2f;
+
+float[] vertices = new float[] {
+    left,  top,    0f,
+    left,  bottom, 0f,
+    right, bottom, 0f,
+
+    right, bottom, 0f,
+    right, top,    0f,
+    left,  top,    0f
+};
+</code></pre>
+
+<p>バーテックスシェーダではそのまま <code>position</code> を渡してあげると</p>
+
+<pre><code class="language-java">public static final String sVertexShaderSource =
+    &quot;attribute vec3 position;&quot; +
+    &quot;void main() {&quot; +
+    &quot;  gl_Position = vec4(position, 1.0);&quot; +
+    &quot;}&quot;;
+</code></pre>
+
+<p>画面の横幅、縦幅に比例した赤い四角形が表示される。</p>
+
+<p><img src="/assets/img/2015-02-01-opengl-es-2-2d-knowledge-6/hello-world-in-opengl2.png" alt="座標変換なしの四角形" /></p>
+
+<h1 id="next-stage">Next Stage</h1>
+
+<p>たかが正方形のポリゴン 1 つ表示するだけなのにこれだけの量のソースコードを書かないといけないのは正直つかれるし、こんなんだから気軽に Hello World できないし敷居が高いと言われる。でも <a href="/blog/2014/12/20/opengl-es-2-2d-knowledge-0">このシリーズ</a> を最初から読んできた人にとっては細かく分割して説明したソースコード 1 つ 1 つのやってることの意味はたぶんわかったんじゃないかなーと思う。そしてもし、これらのソースコードがやってることがわかったと言うなら、あとはどれだけでも応用は利く。一番はじめにも書いたように物事は突き詰めていけば単純だ。最初は何もわからなくても 1 つずつしっかりと理解していけば理解できないことはない。</p>
+
+<p>そして何より大事なのが「知りたい」という欲求や、そこから湧き出てくる物事に対する興味。OpenGL についていろいろ書いてきたこのブログだけど、こんなのは基礎の基礎に過ぎない。他にもこのシリーズには出てきてないたくさんの概念、たとえばデプステスト、アルファブレンディング、ステンシルテスト、頂点バッファ、フレームバッファ、などなど、蓋を開けてみれば本当にたくさんのことがある。こういった概念達を知ることで、もっと素晴らしい表現ができるようになるし、もっともっと OpenGL が楽しいと思えるかもしれない。</p>
+
+<p>単語だけ聞くと相変わらずどれも難しいように聞こえるけど、下地となる基礎がしっかりとしていればおのずと理解ができてくる。基礎が理解できたのであれば、天高くそびえ立つ難攻不落だった OpenGL はもはや存在しない。そこにあるのは、OpenGL といういわば高嶺の花に魅了されたあなたがこれから先あたらしいものを創りだしていくのに必要な、プログラミングをするための両手だけだ。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/opengl">OpenGL</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/02/01/opengl-es-2-2d-knowledge-6/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/02/01/opengl-es-2-2d-knowledge-6/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/02/01/opengl-es-2-2d-knowledge-6/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

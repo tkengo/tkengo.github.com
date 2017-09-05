@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>理解してるつもりの SSL/TLS でも、もっと理解したら面白かった話 &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-12-01</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/12/01/https-details/">理解してるつもりの SSL/TLS でも、もっと理解したら面白かった話</a></h1>
+    </header>
+    <article>
+      
+
+<p>Web サービスを構築する際に SSL/TLS を導入することはもはや当然となってきました。共通鍵暗号/公開鍵暗号の使われ方や証明書のやりとりなど、基本的な部分について解説されている記事はインターネット上に豊富にあるため理解している方も多いのではないでしょうか。しかし、ことセキュリティに関しては常にその重要性が叫ばれており、もっと突っ込んだ部分を理解したいという欲求がこの記事を書くきっかけになりました。</p>
+
+<p>そのため、この記事では SSL/TLS の導入部分ではなく、以下のような内容に焦点をあてて書かれています。</p>
+
+<ul>
+<li>具体的な暗号化アルゴリズムの実態</li>
+<li>証明書やデジタル署名、メッセージ認証の使われ方</li>
+<li>SSL/TLS のプロトコルレベルでのフロー</li>
+</ul>
+
+<p>とはいえ、本などでしっかり体系的に勉強したわけではなく、長い時間をかけて、インターネットに散らばっている知識から自分が得たものを、自分の頭の中の整理のために自分なりにまとめた記事になりますので、間違いがあれば突っ込んでくれると喜びます。なお、簡略化のため以下より SSL/TLS は単に TLS と表記します。</p>
+
+<h1 id="暗号化">暗号化</h1>
+
+<h2 id="暗号スイート">暗号スイート</h2>
+
+<p>突然ですが暗号スイート (Cipher Suites) という言葉を知っているでしょうか。TLS は暗号通信のためのプロトコルですが、暗号通信と一言で言ってもその通信フローではいくつもの暗号技術やハッシュ関数が各所で組み合わされながら使われています。通信のあの部分にはこの暗号技術を使い、また別の部分にはこの暗号技術を使う、という組み合わせがプロトコルに予め定義されており、それらを <strong>暗号スイート</strong> といいます。</p>
+
+<p>例えば TLS ではアプリケーション層のデータは共通鍵方式で暗号化され、その共通鍵を公開鍵方式で暗号化してサーバーに送信するという手順がありますよね。(<em>※実際には共通鍵そのものを暗号化するわけではありません。詳細は後述。</em>) ここで、共通鍵暗号と公開鍵暗号のアルゴリズムは 1 つではありません。これらのアルゴリズムは複数存在し、それぞれのアルゴリズムによって特徴や暗号の強度が違います。それらをクライアントとサーバーの間で提示し合って、どの組み合わせを使うのかを決めます。つまりクライアントはどの暗号化アルゴリズムの組み合わせを使うのかを自由に選択することができます。ただし、もちろんその組み合わせにサーバーが対応していないとダメです。(<em>※ここでは通信の暗号化と鍵交換を例に出しましたが、それ以外にもいくつかアルゴリズムを切り替えることができる箇所があります。</em>)</p>
+
+<table>
+<thead>
+<tr>
+<th>架空のクライアント</th>
+<th>通信の暗号化に使うアルゴリズム</th>
+<th>鍵交換に使うアルゴリズム</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>クライアントA</td>
+<td>3DES</td>
+<td>RSA</td>
+</tr>
+
+<tr>
+<td>クライアントB</td>
+<td>AES (128bit)</td>
+<td>RSA</td>
+</tr>
+
+<tr>
+<td>クライアントC</td>
+<td>AES (256bit)</td>
+<td>DH</td>
+</tr>
+</tbody>
+</table>
+
+<p>apache や nginx の設定をしたことがあれば以下の様な行を見たことがある人も多いのではないでしょうか。(<em>※ 下記は nginx の設定。apache の場合は <code>SSLCipherSuite</code> です。</em>)</p>
+
+<pre><code class="language-nginx">ssl_ciphers AES128-SHA:AES256-SHA:RC4-SHA:DES-CBC3-SHA:RC4-MD5;
+</code></pre>
+
+<p>これが暗号スイートを指定している箇所です。そしてこの部分、わけのわからない文字列の羅列なのですごく取っつきにくくて何を指定したらいいかわからないので、コピペしてしまう人も多いんじゃないでしょうか。かくいう私も数年前に趣味で TLS 対応の Web サービスを作った時はコピペで済ませていました。この暗号スイートは、以下のような OpenSSL のコマンドを使って対応している一覧を見ることができます。</p>
+
+<pre><code class="language-bash">$ openssl ciphers -v
+AES128-SHA               SSLv3   Kx=RSA      Au=RSA  Enc=AES(128)      Mac=SHA1
+AES128-GCM-SHA256        TLSv1.2 Kx=RSA      Au=RSA  Enc=AESGCM(128)   Mac=AEAD
+AES128-SHA256            TLSv1.2 Kx=RSA      Au=RSA  Enc=AES(128)      Mac=SHA256
+AES256-GCM-SHA384        TLSv1.2 Kx=RSA      Au=RSA  Enc=AESGCM(256)   Mac=AEAD
+AES256-SHA               SSLv3   Kx=RSA      Au=RSA  Enc=AES(256)      Mac=SHA1
+AES256-SHA256            TLSv1.2 Kx=RSA      Au=RSA  Enc=AES(256)      Mac=SHA256
+CAMELLIA128-SHA          SSLv3   Kx=RSA      Au=RSA  Enc=Camellia(128) Mac=SHA1
+CAMELLIA256-SHA          SSLv3   Kx=RSA      Au=RSA  Enc=Camellia(256) Mac=SHA1
+DES-CBC-SHA              SSLv3   Kx=RSA      Au=RSA  Enc=DES(56)       Mac=SHA1
+DES-CBC3-SHA             SSLv3   Kx=RSA      Au=RSA  Enc=3DES(168)     Mac=SHA1
+DH-DSS-AES128-GCM-SHA256 TLSv1.2 Kx=DH/DSS   Au=DH   Enc=AESGCM(128)   Mac=AEAD
+DH-DSS-AES128-SHA        SSLv3   Kx=DH/DSS   Au=DH   Enc=AES(128)      Mac=SHA1
+DH-DSS-AES128-SHA256     TLSv1.2 Kx=DH/DSS   Au=DH   Enc=AES(128)      Mac=SHA256
+DH-DSS-AES256-GCM-SHA384 TLSv1.2 Kx=DH/DSS   Au=DH   Enc=AESGCM(256)   Mac=AEAD
+DH-DSS-AES256-SHA        SSLv3   Kx=DH/DSS   Au=DH   Enc=AES(256)      Mac=SHA1
+DH-DSS-AES256-SHA256     TLSv1.2 Kx=DH/DSS   Au=DH   Enc=AES(256)      Mac=SHA256
+...
+# 多いので一部省略。あと見やすいように列を揃えています
+</code></pre>
+
+<p>1 行目を例に上げて具体的に見てみると 6 列あるうちの左から順に</p>
+
+<ol>
+<li>暗号スイートの名前 <code>AES128-SHA</code></li>
+<li>プロトコルのバージョン <code>SSLv3</code></li>
+<li>鍵交換に使われる暗号化アルゴリズム <code>Kx=RSA</code>。Kx は <strong>K</strong>ey E<strong>x</strong>change の略。</li>
+<li>認証に使われる暗号化アルゴリズム <code>Au=RSA</code>。Au は <strong>Au</strong>thentication の略。</li>
+<li>アプリケーション層の暗号化に使われる暗号化アルゴリズム <code>Enc=AES(128)</code>。Enc は <strong>Enc</strong>ryption の略。</li>
+<li>メッセージの検証に使われるハッシュアルゴリズム <code>Mac=SHA1</code>。Mac は <strong>M</strong>essage <strong>A</strong>uthentication <strong>C</strong>ode の略。</li>
+</ol>
+
+<p>となっており <code>Kx</code> / <code>Au</code> / <code>Enc</code> / <code>Mac</code> がアルゴリズムの組み合わせになっています。TLS ではこれだけの暗号技術やハッシュ関数が使われているわけです。RFC の付録 C (<a href="https://tools.ietf.org/html/rfc5246#appendix-C">https://tools.ietf.org/html/rfc5246#appendix-C</a>) にも暗号スイートの一覧が定義されています。</p>
+
+<h2 id="暗号化アルゴリズム">暗号化アルゴリズム</h2>
+
+<p>暗号スイートについて一気に説明してきましたので、もう少し深く突っ込んで暗号化アルゴリズムとはどういうものなのかを見ていきます。暗号化アルゴリズムの中身まで気にする人はなかなかいないと思いますが、知っているととても面白いですし、自分が設定した TLS に自信が持てるようになります (たぶん笑)。特に OpenSSL の暗号化アルゴリズムの実装を読めるようになると最高に楽しいです。とはいえ暗号化アルゴリズムってたくさん種類がありますし、しかもそれぞれ略語が定義されていたりしてめちゃくちゃ取っつきにくいので、まずは主なアルゴリズムの簡単な説明とその歴史も交えてまとめてみます。</p>
+
+<table>
+<thead>
+<tr>
+<th>名前</th>
+<th>説明</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>DES</td>
+<td><strong>D</strong>ata <strong>E</strong>ncryption <strong>S</strong>tandard の略。1970年代にアメリカ標準として採用された共通鍵暗号です。64bit の長さの鍵 (そのうちの 8bit はパリティなので鍵長は実質 56bit) を使って 64 bit ずつ平文を暗号化するブロック暗号です。国際的に広く普及し、使われていました。しかし、現在では技術進歩によりその安全性が低下してきているため新規で使われることはありません。</td>
+</tr>
+
+<tr>
+<td>3DES</td>
+<td>鍵を 3 つ (もしくは 2 つ) 用意して、平文に対して DES で暗号化 ➜ DES で復号化 ➜ DES で暗号化、という手順で暗号化します。DES の鍵長が実質 56bit と短いため、その鍵空間を拡張させるために生まれた手法ですが、DES を繰り返し施すため処理速度は遅くなります。察しはついてると思いますが DES を 3 回施すので 3DES と呼ばれます。</td>
+</tr>
+
+<tr>
+<td>AES</td>
+<td><strong>A</strong>dvanced <strong>E</strong>ncryption <strong>S</strong>tandard の略。世界では長い間 DES が使われてきましたが、時代は進み、コンピューターの性能が上がってきたことで DES の安全性が低下してきました。そこで 1997 年から DES の後継となる次世代のアルゴリズムが公募されることになりました。世界中から様々なアルゴリズムが応募されましたが 2000 年に入り、その中の 1 つ <strong>Rijndael</strong> (ラインダール) というアルゴリズムが AES として採択されることになりました。DES と同じく共通鍵方式でブロック暗号ですが、鍵長が 128bit / 192bit / 256bit から選択でき、また平文は 128bit ずつ暗号化されます。</td>
+</tr>
+
+<tr>
+<td>DH</td>
+<td>このアルゴリズムの開発者 2 人の頭文字 <strong>D</strong>iffie-<strong>H</strong>ellman を取って DH と呼ばれます。この 2 人は公開鍵暗号の概念を初めて公開した人たちで、DH 暗号はその具体的な方法の 1 つとして提案されたものです。つまり公開鍵暗号の一種で、離散対数問題という問題を解くのが困難であるという事実を安全性の根拠としています。2 種類の公開値と (これらを DH パラメータと呼んだりします)、その公開値を元に送信者/受信者がそれぞれ生成した秘密値から同じ共通鍵を生成して、以後それを共通鍵暗号の鍵として利用します。<br/>一時的で短命な公開値をサーバー側で動的に生成してそれを利用することもあり、その場合は DHE (<strong>E</strong>phemeral の <strong>E</strong>) と略記されます。また、オリジナルの DH について楕円曲線暗号を使うようにした ECDH (<strong>E</strong>lliptic <strong>C</strong>urve) という亜種もあります。さらに ECDH においても一時的で短命な公開値を使う場合は ECDHE (同じく <strong>E</strong>phemeral の <strong>E</strong>) と略記されます。</td>
+</tr>
+
+<tr>
+<td>RSA</td>
+<td>このアルゴリズムの開発者 3 人の頭文字 <strong>R</strong>ivest-<strong>S</strong>hamir-<strong>A</strong>dleman を取って RSA と呼ばれます。おそらく最も有名な公開鍵暗号で、巨大な合成数の素因数分解が困難であるという事実を安全性の根拠としています。公開鍵で暗号化して、秘密鍵で復号化するというやつですね。</td>
+</tr>
+</tbody>
+</table>
+
+<p>この他に Camellia や ElGamal、RC4 といった暗号化アルゴリズムも存在しますが、私が詳しくないため割愛します。ここに列挙した暗号化アルゴリズムは先程の暗号スイートの <code>Kx</code> や <code>Enc</code> の部分で使われることになります。</p>
+
+<h2 id="暗号モード">暗号モード</h2>
+
+<p>一通り暗号化アルゴリズムを理解したところで DES と AES についてもう少し掘り下げたいと思います。これらはブロック暗号といって、ある一定のビット数をまとめて暗号化する方式 - <em>DES は 64bit 毎、AES は 128bit 毎</em> - でした。ただ、HTTP のリクエストやレスポンスなどはもちろん 64bit や 128bit に收まるわけがないので、暗号化したい平文を指定されたビット長のブロックに分割して、それぞれのブロックに対して暗号化を施すという処理を繰り返してやる必要があります。</p>
+
+<p><img src="/assets/img/2015-12-01-https-details/ECB_encryption.svg" alt="ECBモード" /></p>
+
+<p>ブロック暗号では、平文が長い場合はこのように平文を分割しながら暗号化していきますが、このサイクルを繰り返す方法がいくつかあり、それを <strong>暗号モード</strong> といいます。上図で示した暗号モードには ECB (<strong>E</strong>lectronic <strong>C</strong>ode<strong>B</strong>lock) という名前がついています。分割して暗号化するサイクルなんて上図以外にあるのかとも思いますが、えらい人が考えれば色々でてくるようです。事実、ECB では例えば 1 つ目の平文ブロックと 2 つ目の平文ブロックが同じ値だった場合、それらを暗号化した 1 つ目の暗号文ブロックと 2 つ目の暗号文ブロックも同じ暗号文になり、暗号文にパターンが存在することになってしまいます。それだと安全ではなくなってしまうため、それを解決するために次のような他の暗号モードが考え出されました。</p>
+
+<p><em>※暗号モードの説明で利用する画像は全て、パブリックドメインの元で提供されている Wikipedia のものを利用しています。オリジナル記事はこちら (<a href="https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation">https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation</a>)</em></p>
+
+<h3 id="cbc-モード">CBC モード</h3>
+
+<p><strong>C</strong>ipher <strong>B</strong>lock <strong>C</strong>haining の略です。1 つ前の暗号文ブロックと、現在の平文ブロックの XOR (図中の &oplus; は XOR の意) を取ったものを暗号化しているのがわかります。左側にある Initialization Vector は、日本語では初期化ベクトルと呼ばれ、最初の平文ブロックを暗号化する際は 1 つ前の暗号文ブロックがないため、初期化ベクトルとの XOR を取ることになっています。この初期化ベクトルの値の選び方によっては、そこが脆弱性となり攻撃の対象となる場合があるため慎重に選ぶ必要があります。</p>
+
+<p><img src="/assets/img/2015-12-01-https-details/CBC_encryption.svg" alt="CBCモード" /></p>
+
+<h3 id="cfb-モード">CFB モード</h3>
+
+<p><strong>C</strong>ipher <strong>F</strong>eed<strong>B</strong>ack の略。1 つ前の暗号文ブロックを暗号化したものと、現在の平文ブロックの XOR を取ったものが暗号文ブロックになっているのがわかります。CBC と同様の理由で最初のブロックには初期化ベクトルが使われます。</p>
+
+<p><img src="/assets/img/2015-12-01-https-details/CFB_encryption.svg" alt="CFBモード" /></p>
+
+<h3 id="ofb-モード">OFB モード</h3>
+
+<p><strong>O</strong>utput <strong>F</strong>eed<strong>B</strong>ack の略。CFB とほぼ同じで、CFB と比べて XOR する前の部分から矢印が出ているところに注目です。そこが唯一の違いになります。</p>
+
+<p><img src="/assets/img/2015-12-01-https-details/OFB_encryption.svg" alt="OFBモード" /></p>
+
+<h3 id="ctr-モード">CTR モード</h3>
+
+<p><strong>C</strong>oun<strong>TR</strong> の略。ノンス (Nonce) と呼ばれる値と、平文ブロック毎にインクリメントされるカウンタ値 (Counter) を合わせたものを暗号化して、それと平文ブロックの XOR を取ったものを暗号文ブロックとしています。ノンスはランダムで生成されたり、その他の情報を元に生成されたりします。この図を見て分かる通り、各々のブロックの暗号化処理が独立しているため並列処理が可能で高速に処理することができます。</p>
+
+<p><img src="/assets/img/2015-12-01-https-details/CTR_encryption.svg" alt="CTRモード" /></p>
+
+<hr />
+
+<p>他にも CCM や GCM というモードがありますが少し性質が違うため、それらについては後ほど軽く紹介することにして、ここでは基本的な 5 つに絞っての説明としたいと思います。ここで説明した暗号モードは暗号スイートの名前の一部に含まれていることがあります。たとえば <code>DES-CBC-SHA</code> の CBC や、<code>AES128-GCM-SHA256</code> の GCM は暗号モードのことです。</p>
+
+<h1 id="認証">認証</h1>
+
+<h2 id="証明書">証明書</h2>
+
+<p>ところで TLS の役目は通信を暗号化することだけではなく、サーバーの認証というお仕事もあります。これは、クライアントがこれから接続するサーバーが本当に信頼できるサーバーなのか、という信頼性をチェックするための作業で、認証には証明書が使われます。</p>
+
+<p>証明書と言うと Web サービスを https 対応するにあたって、認証局から発行してもらったものを秘密鍵と共にサーバーに配置するという作業が必要ですし、(もしくは本番環境でなければ、いわゆるオレオレ証明書と呼ばれる自己署名証明書などを作る場合もありますね) 他には証明書にはサーバーの公開鍵が含まれていてそれを取り出して共通鍵を暗号化する、という話はよくネットで見るので、証明書という単語を知っている人は多いと思います。</p>
+
+<p>さて、サーバーに配置された証明書は、TLS プロトコルで接続する際にサーバーからクライアントへ渡されます。証明書を受け取ったクライアントは、その証明書が本当に信頼できるものかどうかを検証して正当性を確認することになります。また、前述のように証明書には共通鍵の交換に使われる公開鍵暗号の公開鍵も含まれていますので、それも一緒に取り出して後ほど利用されます。言葉でダラダラと説明してもイメージがつきにくいので証明書がどんなものなのか実際に見てみましょう。</p>
+
+<p>これは <a href="https://github.com">github.com</a> の証明書を Google Chrome から確認したキャプチャです。</p>
+
+<p><img src="/assets/img/2015-12-01-https-details/certificates.png" alt="証明書" /></p>
+
+<p>ちょっと縦長いですが、証明書にはいろいろな情報が含まれているのがわかります。証明書には <strong>X.509</strong> という規格があって、よっぽどのことがない限りはそれにそって作られたものが渡されます。X.509 については日本語の Wikipedia のページがあるのでそちらを参考にしてもらうと良いと思います。(<a href="https://ja.wikipedia.org/wiki/X.509#.E8.A8.BC.E6.98.8E.E6.9B.B8.E3.81.AE.E6.A7.8B.E9.80.A0">https://ja.wikipedia.org/wiki/X.509#.E8.A8.BC.E6.98.8E.E6.9B.B8.E3.81.AE.E6.A7.8B.E9.80.A0</a>)</p>
+
+<h2 id="デジタル署名">デジタル署名</h2>
+
+<p>証明書の検証にはデジタル署名が使われます。ある文書にデジタル署名が施されていた場合、デジタル署名をした人物や組織が誰なのかを確認することで、その文書は確かにその人物または組織に署名されているとみなすことができます。意外かもしれませんがデジタル署名の実現には実は暗号技術が使われていて、具体的には公開鍵暗号です。公開鍵暗号というと RSA などを思い浮かべて、デジタル署名とは似ても似つかないようなものですが、実際には以下のようにして署名及び検証が行われます。</p>
+
+<ul>
+<li><strong>署名する場合:</strong> 秘密鍵を使って文書を暗号化して、暗号文を署名として公開する。</li>
+<li><strong>検証する場合:</strong> 公開鍵を使って署名を復号化して、元の文書と比較する。一致していれば検証成功。</li>
+</ul>
+
+<p>(<em>※暗号化/復号化という表現が適切かどうかわかりませんが、署名技術としての RSA と、暗号技術としての RSA と対比させるためにこの表現を使います。暗号化する場合と比べてみると使う鍵が逆になっただけで、手順としてはまったく同じです。</em>)</p>
+
+<p>公開鍵暗号の基本は暗号化と復号化に、それぞれが密接に関係する別々の鍵を使うというところにありました。RSA 署名の場合、秘密鍵は署名する人しか持っていません。そしてその秘密鍵で暗号化された署名を復号化できるのは、その秘密鍵とペアとなる公開鍵のみです。これはつまり署名する人が公開している公開鍵で署名を正しく復号化できれば、それはその人自身が署名したものだと言うことができます。</p>
+
+<p>実際のデジタル署名では、証明書ごとに署名のアルゴリズムが違うため、どのアルゴリズムで署名されたかという情報が証明書の中に記載されています。暗号スイートで言うと <code>Au</code> の部分ですね。以下は先程の <a href="https://github.com">github.com</a> の証明書です。</p>
+
+<p><img src="/assets/img/2015-12-01-https-details/signature_algorithm.png" alt="証明書" /></p>
+
+<p>これを見る限り、この証明書は RSA と SHA-256 で署名されていることがわかります。これは最初に証明書全体を SHA-256 のハッシュ関数に通して、得られたハッシュ値が RSA で署名されていることを意味します。</p>
+
+<h2 id="証明書チェーン">証明書チェーン</h2>
+
+<p>ということで、実際の証明書には、証明書本体に加えてデジタル署名で作られた署名が付与されています。これで、証明書に署名をした人の公開鍵を使って、その証明書の認証ができるようになりました。ところで証明書にデジタル署名を施すのは認証局ですが、一般的に証明書は階層的に認証局から署名されるような形になっています。</p>
+
+<p>これはさっき例に出した <a href="https://github.com">github.com</a> の証明書です。</p>
+
+<p><img src="/assets/img/2015-12-01-https-details/certificates_chaining.png" alt="証明書チェーン" /></p>
+
+<p>階層が 3 つあることがわかります。</p>
+
+<ul>
+<li>github.com の証明書は DigiCert SHA2 Extended Validation Server CA によって署名されている</li>
+<li>DigiCert SHA2 Extended Validation Server CA の証明書は DigiCert High Assuarance EV Root CA によって署名されている</li>
+<li>DigiCert High Assuarance EV Root CA はルート認証局なので自己署名されている</li>
+</ul>
+
+<p>このように各々の証明書をその上位機関が階層的にデジタル署名を施していくことを <strong>証明書チェーン</strong> と言います。信頼の連鎖です。</p>
+
+<p>github.com の証明書は DigiCert CA (長いので略します) からデジタル署名を付与されていて、まさに本当に github 社の証明書である、と信用できることがわかります。じゃぁ今度は DigiCert CA について本当に信頼できるかというと、それはさらに証明書チェーンを辿って DigiCert Root CA に信頼されていることがわかります。じゃぁ DigiCert Root CA は&hellip;という感じで信頼の連鎖をたどっていって、最後にたどり着いた認証局がルート認証局と呼ばれる絶対的に信用されている機関です。そのためルート認証局の証明書に関しては他の機関がデジタル署名をするのではなく、ルート認証局自身がそのルート認証局の証明書に署名します。</p>
+
+<p>ということは証明書チェーンの最上位から辿って、順に検証を繰り返していく必要があることがわかります。</p>
+
+<ol>
+<li>DigiCert High Assuarance EV Root CA の公開鍵を取得。以下、公開鍵(1)と表記</li>
+<li>DigiCert SHA2 Extended Validation Server CA の証明書を公開鍵(1)で検証</li>
+<li>DigiCert SHA2 Extended Validation Server CA の公開鍵を取得。以下、公開鍵(2)と表記</li>
+<li>github.com の証明書を公開鍵(2)で検証</li>
+</ol>
+
+<p>一般的にルート認証局の証明書は最初から OS やブラウザにインストールされています。Mac OSX であればキーチェーンアクセスのシステムルートという項目をのぞいてみると、ルート認証局の証明書がたくさんあることがわかります。そして検証に必要な公開鍵は証明書に含まれているので、証明書から取り出します。証明書は特に暗号化などされているわけではないので、X.509 のフォーマットに従って公開鍵が書かれている箇所を特定して取り出すだけです。</p>
+
+<h2 id="鍵交換">鍵交換</h2>
+
+<p>ここまで来ると、通信相手のサーバーが信頼できる相手だということが確認できている状態になります。この状態になってはじめてクライアントとサーバーで暗号化に使う共通鍵の交換を行います。以下は主に使われる鍵交換の手順ですが、実際にどのように認証を行い、そしてどのように鍵の交換を行うのかのまとめです。どれも認証と鍵交換が対になっていることがわかります。(<em>※手順名のところは RFC に記載のある名前をそのまま使っています。</em>)</p>
+
+<table>
+<thead>
+<tr>
+<th>手順名</th>
+<th>説明</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>RSA</td>
+<td>認証局の RSA 公開鍵で証明書を検証した後に、証明書からサーバーの RSA 公開鍵を取り出します。それを使って共通鍵のタネとなるプリマスターシークレットと呼ばれる値を暗号化してサーバーへ送信し、クライアントとサーバーそれぞれでプリマスターシークレットから共通鍵を生成します。<br/><strong>証明書の署名</strong>: RSA<br/><strong>証明書に含まれる公開鍵</strong>: RSA 公開鍵</td>
+</tr>
+
+<tr>
+<td>DHE_RSA</td>
+<td>鍵交換に DHE を使います。DHE を使うので、まずサーバーは動的に DH パラメータを生成して、それをクライアントに送信します。その際、その DH パラメータに対してサーバーの RSA 秘密鍵で署名をしておきます。サーバー証明書にはペアとなる RSA 公開鍵が含まれていますので，クライアントはそれを取り出して、受け取った DH パラメータの署名をその公開鍵を使って検証します。検証が成功すればクライアントとサーバーそれぞれで DH パラメータから共通鍵を生成します。<br/><strong>証明書に含まれる公開鍵</strong>: RSA 公開鍵</td>
+</tr>
+
+<tr>
+<td>DHE_DSS</td>
+<td>DHE_RSA と同じですが、DH パラメータの署名に RSA の代わりに DSS が使われます。<br/><strong>証明書に含まれる公開鍵</strong>: DSA 公開鍵</td>
+</tr>
+
+<tr>
+<td>ECDHE_RSA</td>
+<td>DHE_RSA と同じですが、DH 鍵交換の部分に楕円曲線暗号が使われます。<br/><strong>証明書に含まれる公開鍵</strong>: RSA 公開鍵</td>
+</tr>
+
+<tr>
+<td>ECDHE_ECDSA</td>
+<td>DHE_DSS と同じですが、DH 鍵交換と署名部分に楕円曲線暗号が使われます。<br/><strong>証明書に含まれる公開鍵</strong>: ECDSA 公開鍵</td>
+</tr>
+
+<tr>
+<td>DH_RSA</td>
+<td>DHE_RSA と名前は似ていますが、中身はまったく違うものです。認証局の RSA 公開鍵で証明書を検証した後に、証明書から DH パラメータを取り出します。クライアントとサーバーそれぞれでその DH パラメータから共通鍵を生成します。<br/><strong>証明書の署名</strong>: RSA 暗号<br/><strong>証明書に含まれる公開鍵</strong>: DH パラメータ</td>
+</tr>
+
+<tr>
+<td>DH_DSS</td>
+<td>DH_RSA と同じですが、証明書の署名に RSA の代わりに DSS が使われます。<br/><strong>証明書の署名</strong>: DSA<br/><strong>証明書に含まれる公開鍵</strong>: DH パラメータ</td>
+</tr>
+
+<tr>
+<td>ECDH_RSA</td>
+<td>DH_RSA と同じですが、DH 鍵交換の部分に楕円曲線暗号が使われます。<br/><strong>証明書の署名</strong>: RSA 暗号<br/><strong>証明書に含まれる公開鍵</strong>: ECDH パラメータ</td>
+</tr>
+
+<tr>
+<td>ECDH_ECDSA</td>
+<td>DH_DSS と同じですが、DH 鍵交換と署名部分に楕円曲線暗号が使われます。<br/><strong>証明書の署名</strong>: ECDSA<br/><strong>証明書に含まれる公開鍵</strong>: ECDH パラメータ</td>
+</tr>
+</tbody>
+</table>
+
+<h1 id="メッセージ認証">メッセージ認証</h1>
+
+<p>最後に TLS のもう一つの役目として通信内容の改ざん検知というものがあります。データを書き換えられるのは困るので、データを送信する前にそのデータからハッシュ関数を使って指紋を作ります。他にもフィンガープリントやメッセージダイジェストなどと言われたりします。データの受信者は、受け取ったデータから指紋を取り出し、同じようにデータをハッシュ関数に通して、指紋が一致するかどうかを確認することで完全性を検証することができるようになっています。こういった指紋のことを <strong>メッセージ認証コード</strong> や略して <strong>Mac</strong> (前にも出てきましたが <strong>M</strong>essage <strong>A</strong>uthentication <strong>C</strong>ode の略です) といいます。</p>
+
+<p>なお、ハッシュ関数の話ではハッシュ関数に通すデータや文字列のことを <strong>メッセージ</strong> と呼びます。</p>
+
+<h2 id="一方向ハッシュ関数">一方向ハッシュ関数</h2>
+
+<p>このメッセージ認証を実現するために使われる技術が一方向ハッシュ関数です。暗号スイートの <code>Mac</code> の部分に使われるもので、MD5 や SHA などです。一方向という単語が先頭についているのは、メッセージ→ハッシュ値という変換はできても、ハッシュ値→メッセージという、いわば元に戻すような変換はできないためです。この性質のおかげでメッセージの改ざんをチェックできます。そして一方向ハッシュ関数では、安全性について <strong>衝突体制</strong> という重要な性質を理解しておく必要があります。</p>
+
+<h3 id="強衝突耐性">強衝突耐性</h3>
+
+<p>同じハッシュ値を生成することができる異なる 2 種類のメッセージを見つけることができるかどうかを強衝突耐性と言います。つまり、ある適当なハッシュ関数 <strong>h</strong> があって、<code>h(m1) = h(m2)</code> という風に異なるメッセージから同じハッシュ値が生成されるものがあったとした時に、未知のメッセージ <code>m1</code> と <code>m2</code> を見つけられるかどうかです。現実的な時間内で見つけることができる場合、強衝突耐性は突破されていることになります。</p>
+
+<h3 id="弱衝突耐性">弱衝突耐性</h3>
+
+<p>あるハッシュ値から、それと同じハッシュ値が生成されるメッセージを見つけることができるかどうかを弱衝突耐性と言います。つまり、ある適当なハッシュ関数 <strong>h</strong> があって、<code>h('abcde')</code> というハッシュ値が与えられた時に <code>h('abcde') = h(m1)</code> という風にハッシュ値が同じになる未知のメッセージ <code>m1</code> を見つけられるかどうかです。現実的な時間内で見つけることができる場合、弱衝突耐性は突破されていることになります。</p>
+
+<hr />
+
+<p>ハッシュ関数も暗号化アルゴリズムと同じようにいくつか種類があって、しかもそれぞれで略語が定義されていたりしてすごく区別しにくいので、簡単な説明とその歴史も交えてまとめます。</p>
+
+<table>
+<thead>
+<tr>
+<th>名前</th>
+<th>説明</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>MD5</td>
+<td><strong>M</strong>essage <strong>D</strong>igest の略。RSA 暗号の開発者のうちの 1 人によって開発されましたが、近年の技術の進歩で強衝突耐性が突破されうる状態にあるため、新規には SHA の使用が推奨されます。ハッシュ値の長さは 128bit。32 桁の 16 進数で表されます。</td>
+</tr>
+
+<tr>
+<td>SHA-1</td>
+<td><strong>S</strong>ecure <strong>H</strong>ash <strong>A</strong>lgorithm の略。MD5 を元に設計され、ハッシュ値の長さは 160bit。40 桁の 16 進数で表されます。理論的な脆弱性が指摘されているため SHA-2 へ移行することが推奨されています。近年、証明書の署名に使われるハッシュ関数が SHA-1 から SHA-2 に移行されようとしていることからもわかります。</td>
+</tr>
+
+<tr>
+<td>SHA-2</td>
+<td>SHA-1 をより安全になるように改良したもの。SHA-2 の中には SHA-224、SHA-256、SHA-384、HA-512、SHA-512 / 224、SHA-512 / 256 という 6 種類のバリエーションが存在しておりそれぞれハッシュ値の長さが違います。</td>
+</tr>
+
+<tr>
+<td>SHA-3</td>
+<td>SHA-1 及び SHA-2 は同じ構造をしており、かつ SHA-1 への理論的な脆弱性が指摘されるなどしたため、SHA-2 の後継となるような、かつハッシュ関数の構造が異なる次世代のアルゴリズムが公募されることになりました。(<em>AES 暗号の時と同じ組織が公募しています。</em>) 世界中から様々なアルゴリズムが応募されましたが、その中から <strong>Keccak</strong> (ケチャック？) と呼ばれるアルゴリズムが SHA-3 として採択されました。</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="認証付き暗号">認証付き暗号</h2>
+
+<p>前に暗号モードの話が出てきましたが、そこでは主に暗号化を目的としたモードの説明を行いました (CBC や CTR など)。しかし近年、暗号化と同時に完全性や認証性も実現するための暗号方式 (たとえば GCM) が考案され、それらを総称して AEDA (<strong>A</strong>uthenticated <strong>E</strong>ncryption with <strong>A</strong>socciated <strong>D</strong>ata) と呼ばれます。暗号スイートの <code>Mac</code> の部分に <code>AEAD</code> という表記があるものは、暗号モードとして認証付き暗号の GCM が利用されています。</p>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>これまで長々と TLS の裏側を主に暗号技術、認証、ハッシュ関数、についてそれぞれ用語や略語の説明をしてきました。この記事に書かれている程度の内容が理解できていると、TLS の RFC 文書を読むのがだいぶ楽になると思います。</p>
+
+<p>また TLS 周りで試練になりうるであろう大量の略語や用語についてもある程度は書いたので、実際に Web サービスに https を導入するにあたって nginx や apache の設定を行う際にも、証明書や検証、誰の公開鍵、誰の秘密鍵、どの暗号スイート、などを理解していると安心して自信をもって設定できますし、ググッて調べる場合の理解度も上がってすんなりと頭に入ってくるのではないかなと思います。</p>
+
+<p>最後におまけとしてこの記事の本流からは外れますが TLS の歴史を書いて終わります。</p>
+
+<h2 id="歴史">歴史</h2>
+
+<p>そもそも暗号通信のプロトコルってどうして SSL (Secure Sockets Layer) と TLS (Transport Layer Security) の 2 種類あるんでしょう？</p>
+
+<p>SSL はかつてのブラウザベンダー Netscape Communications 社によって開発され、SSL2.0 として発表されたプロトコルです。しかし脆弱性が発見され、すぐに SSL3.0 が発表されます。その後 IETF という組織によって SSL3.0 を元に SSL の標準化が行われ、その時に名前が TLS に代わりました。最も、この時点では既に SSL という名前は世界中に広く普及しており TLS を SSL と俗称されることも多かったため (昔は僕も同じものだと思っていた)、SSL/TLS という風に併記されるようになりました。</p>
+
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>説明</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>SSL1.0</td>
+<td>最初のバージョンとして設計されていましたが、脆弱性が発見されたため使われることはありませんでした。SSL の発表時に既に 2.0 だったのはこのためです。</td>
+</tr>
+
+<tr>
+<td>SSL2.0</td>
+<td>SSL1.0 の問題を修正して 1994 年に公開されました。その後、いくつかの脆弱性が発見され、安全ではなくなりました。<a href="https://tools.ietf.org/html/rfc6176">RFC6176</a> によると現時点では使用するべきではないとあります。</td>
+</tr>
+
+<tr>
+<td>SSL3.0</td>
+<td>SSL2.0 の問題を修正して 1995 年に公開されました。2014年に POODLE 攻撃と呼ばれる脆弱性が発見され、安全ではなくなりました。<a href="https://tools.ietf.org/html/rfc7568">RFC7568</a> によると現時点では使用するべきではないとあります。</td>
+</tr>
+
+<tr>
+<td>TLS1.0</td>
+<td>SSL3.0 を元に 1999 年に公開されました。<a href="https://tools.ietf.org/html/rfc2246">RFC2246</a></td>
+</tr>
+
+<tr>
+<td>TLS1.1</td>
+<td>TLS1.0 を元にセキュリティを向上させて 2006 年に公開されました。<a href="https://tools.ietf.org/html/rfc4346">RFC4346</a></td>
+</tr>
+
+<tr>
+<td>TLS1.2</td>
+<td>TLS1.1 を元に機能追加を行い 2008 年に公開されました。<a href="https://tools.ietf.org/html/rfc5246">RFC5246</a></td>
+</tr>
+</tbody>
+</table>
+
+<p>TLS に関しては IETF が仕様策定しているので RFC 文書が公開されていますね。こうして見ると SSL については全滅してます。現代では SSL は使うべきではないようです。クライアント側となるいくつかのブラウザ (Chrome や FireFox など) では既に SSL3.0 のサポートを廃止しています。また apache や nginx などのサーバーサイドについては暗号通信用のプロトコルを指定できる設定がありますが、そこには SSL3.0 や SSL2.0 は指定せずに、TLS1.2 や TLS1.1 を指定しましょうということですね。</p>
+
+<h1 id="参考">参考</h1>
+
+<ul>
+<li>TLS (RFC5246) <a href="https://tools.ietf.org/html/rfc5246">https://tools.ietf.org/html/rfc5246</a></li>
+<li>OpenSSL 暗号スイート <a href="https://www.openssl.org/docs/manmaster/apps/ciphers.html">https://www.openssl.org/docs/manmaster/apps/ciphers.html</a> <a href="https://www.openssl.org/docs/manmaster/ssl/SSL_CIPHER_get_name.html">https://www.openssl.org/docs/manmaster/ssl/SSL_CIPHER_get_name.html</a></li>
+<li>暗号モード <a href="https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation">https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation</a></li>
+<li>鍵交換アルゴリズム <a href="http://security.stackexchange.com/questions/8343/what-key-exchange-mechanism-should-be-used-in-tls">http://security.stackexchange.com/questions/8343/what-key-exchange-mechanism-should-be-used-in-tls</a></li>
+</ul>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/https">HTTPS</a>
+      
+        <a class="tag-link" href="tags/ssl">SSL</a>
+      
+        <a class="tag-link" href="tags/tls">TLS</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/12/01/https-details/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/12/01/https-details/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/12/01/https-details/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

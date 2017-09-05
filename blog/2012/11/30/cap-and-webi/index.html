@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>webistranoを使ってたとえばZendFrameworkをデプロイしてみる &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2012-11-30</p>
+      <h1><a href="http://tkengo.github.io/blog/2012/11/30/cap-and-webi/">webistranoを使ってたとえばZendFrameworkをデプロイしてみる</a></h1>
+    </header>
+    <article>
+      
+
+<p>Ruby on Rails のデプロイ自動化でよく使われる <a href="http://capistranorb.com/">capistrano</a> と、そのGUI環境の <a href="https://github.com/peritor/webistrano">webistrano</a> ですが、もちろん Ruby on Rails 以外にも使うことができます。
+今回は ZendFramework のデプロイをしてみようと思います。</p>
+
+<h1 id="ゴール">ゴール</h1>
+
+<p>ここでは、以下のような状況のもと本番環境にデプロイする準備をします。</p>
+
+<ul>
+<li>github 上の master ブランチにあるソースコードをデプロイする。</li>
+<li>リポジトリでは ZendFramework 本体やログディレクトリなどは管理していない。</li>
+</ul>
+
+<h1 id="インストール">インストール</h1>
+
+<p>capistrano は ruby 製です。まずは ruby がないと始まらないので最初に ruby をインストールします。1.8.6 以上が必要です。それから webistrano は DB として mysql を利用しますので、こちらもインストールしておきます。ruby と mysql のインストールは他に詳しい記事がいっぱいあるので割愛。</p>
+
+<p>ruby と mysql が準備できたら capistrano と webistrano をインストールします。といっても webistrano をインストールするときに一緒に capistrano も入るので webistrano をインストールするだけです。</p>
+
+<pre><code class="language-bash">$ cd path/to/webistrano
+
+// git から clone
+$ git clone git@github.com:peritor/webistrano.git webistrano
+
+// 設定ファイルをコピー
+$ cd webistrano/config
+$ cp webistrano_config.rb.sample webistrano_config.rb
+$ cp database.yml.sample database.yml
+</code></pre>
+
+<p>ディレクトリ構成を見てわかるかもしれませんが webistrano は Ruby on Rails 2 で動いています。まず最初にデータベースの設定 <code>database.yml</code> を編集します。</p>
+
+<pre><code class="language-yml">// ユーザー名やパスワード、DB名を環境に合わせて修正
+production:
+  adapter: mysql
+  database: webistrano_production
+  username: root
+  password: 
+  socket: /tmp/mysql.sock
+</code></pre>
+
+<p>ここで指定したデータベース名をあらかじめ作っておきます(この例では <code>webistrano_production</code> という名前のDB)。</p>
+
+<p>他に <code>webistrano_config.rb</code> という設定ファイルもありますがこっちはメール関連の設定で、デプロイ時や例外発生時などに飛ばすメールのFromやSMTPサーバーの設定などを記述します。特にいじらなくても動くことは動くので面倒くさければ飛ばしてもいいと思います。</p>
+
+<p>それから webistrano で DB のマイグレーションをする時に rake コマンドを使うのですが webistrano が必要としている rake のバージョンが多少古いので <code>Gemfile</code> に rake のバージョンを指定してあげます。あと bundler のバージョンも指定されてますが、僕はこれも消しました。</p>
+
+<pre><code class="language-ruby">source &quot;http://rubygems.org&quot;
+
+gem 'bundler'
+gem &quot;rails&quot;, &quot;2.3.11&quot;
+gem &quot;mysql&quot;
+gem &quot;erubis&quot;
+# rake の 0.8.7 を指定してあげる。
+# 指定がなければ最新バージョンが入ってしまい rake db:migrate の時にエラーが起こる
+gem &quot;rake&quot;, &quot;0.8.7&quot;
+gem &quot;syntax&quot;, &quot;1.0.0&quot;
+gem &quot;capistrano&quot;, &quot;2.6.0&quot;
+gem &quot;open4&quot;, &quot;0.9.3&quot;
+gem &quot;exception_notification&quot;, &quot;2.3.3.0&quot;
+
+group :test do
+  gem &quot;mocha&quot;, &quot;0.9.8&quot;
+end
+</code></pre>
+
+<p>あと、僕の環境では git clone してきたソースをそのまま使うとエラーが出るページがあって <code>lib/webistrano/deployer.rb</code> を以下のように書き換えています。</p>
+
+<pre><code class="language-ruby"># 25行目あたり
+# if(@deployment.task &amp;&amp; !@deployment.new_record?)
+if(!@deployment.new_record? &amp;&amp; @deployment.task)
+</code></pre>
+
+<p>そしてインストールの続き。</p>
+
+<pre><code class="language-bash">// 必要な gem をインストール
+$ bundle install --path vendor/bundle
+
+// DB のマイグレーション
+$ RAILS_ENV=production bundle exec rake db:migrate
+
+// webistrano 起動
+$ ruby script/server -d -p 3000 -e production
+</code></pre>
+
+<p>ここまでやると <code>http://localhost:3000/</code> で webistrano が起動しています。アクセスしてこんな画面が出ればインストール成功。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_index.png" alt="" /></p>
+
+<p>デフォルトのユーザーとして <strong>admin</strong> ユーザーがいます。パスワードも <strong>admin</strong> です。</p>
+
+<h1 id="鍵の登録">鍵の登録</h1>
+
+<p>webistrano を実行しているサーバーで git clone して、そのソースファイルをデプロイ先のサーバーへ送信することになるので webistrano を実行しているユーザーの鍵を github に登録します。</p>
+
+<pre><code class="language-bash"># webistrano 実行ユーザーで作業する
+$ ssh-keygen -t rsa # パスフレーズは空で。Enterキー連打で鍵生成
+$ cat ~/.ssh/id_rsa.pub
+</code></pre>
+
+<p><code>id_rsa.pub</code>の内容をgithubに登録します。念のため登録がうまくいってるかどうか確認。</p>
+
+<pre><code class="language-bash">$ ssh git@github.com
+Hi tkengo! Youve successfully authenticated, but Github does not provide shell access.
+</code></pre>
+
+<p>また webistrano からデプロイ先のサーバーへ SSH でログインしていろいろと作業するので、デプロイ先のサーバーへも鍵を登録します。</p>
+
+<pre><code class="language-bash"># webistrano 実行ユーザーで作業する
+$ scp ~/.ssh/id_rsa.pub deployer@zendframework.tkengo.com:/home/deployer
+$ ssh deployer@zendframework.tkengo.com
+
+$ cat ~/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys
+$ chmod 600 ~/.ssh/authorized_keys
+</code></pre>
+
+<p>念のためパスワードなしでログイン出来るかどうか確認。</p>
+
+<pre><code class="language-bash"># webistrano 実行ユーザーで
+$ ssh deployer@zendframework.tkengo.com
+</code></pre>
+
+<h1 id="webistranoの設定">webistranoの設定</h1>
+
+<p>まずはログインします。ログインID、パスワード、共に <strong>admin</strong> でログインできます。これから webistrano で以下の設定をしていきます。</p>
+
+<ul>
+<li><strong>プロジェクト</strong> デプロイするプロジェクト。<!-- a --></li>
+<li><strong>ホスト</strong> デプロイ先のサーバー。デプロイ先のサーバーが複数台あればその分だけ登録しますし、開発環境などにもデプロイしたければその分も登録します。<!-- a --></li>
+<li><strong>レシピ</strong> デプロイ時に webistrano に実行させるコマンドの定義。</li>
+<li><strong>ステージ</strong> デプロイの環境のようなもので、例えば <code>本番環境</code> <code>本番テスト環境</code> <code>開発環境</code> など、環境毎にステージを作ります。<!-- a --></li>
+</ul>
+
+<h2 id="プロジェクトの作成">プロジェクトの作成</h2>
+
+<p>左メニューの <strong>Projects</strong> の <strong>New project</strong> から新しいプロジェクトを作ります。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_new_project.png" alt="" /></p>
+
+<p><strong>Project Type</strong> には <strong>Pure File</strong> を選びます。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_new_project_detail.png" alt="" /></p>
+
+<h2 id="ホストの作成">ホストの作成</h2>
+
+<p>左メニューの <strong>Hosts</strong> の <strong>New host</strong> から新しくデプロイ先のホストを作ります。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_new_host.png" alt="" /></p>
+
+<p>デプロイ先サーバーのIPアドレスまたはホスト名を入力します。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_new_host_detail.png" alt="" /></p>
+
+<h2 id="レシピの作成">レシピの作成</h2>
+
+<p>左メニューの <strong>Recipes</strong> の <strong>New recipe</strong> から新しいレシピを作ります。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_new_recipe.png" alt="" /></p>
+
+<p>capistrano にはデフォルトでいろいろなタスクがありますが、足りない処理があったり余分な処理があったりするので、そういうものを上書きしてあげる必要があります。ここでは Zendframework 用デプロイのレシピと SSH ログイン用のレシピを作成します。</p>
+
+<p>各タスクが何をしているかというのは webistrano をインストールしたフォルダの <code>vendor/bundle/ruby/[バージョン]/gems/capistrano-[バージョン]/lib/capistrano/recipes/deploy.rb</code> というソースに書かれています。</p>
+
+<h3 id="zendframework-用のレシピについて">Zendframework 用のレシピについて</h3>
+
+<pre><code class="language-ruby">namespace :deploy do
+
+  # 不要なタスクを全部空にして何もしないようにします
+  task :start do ; end 
+  task :stop do ; end 
+  task :restart do; end 
+
+  # リポジトリで管理していないファイルやディレクトリなどに
+  # シンボリックリンクを貼るコマンドを実行
+  task :update_config, :roles =&gt; :app do
+    require 'pathname'
+
+    # data/cache と data/logs というディレクトリにシンボリックリンクをはる
+    %w(cache logs).each do |dir|
+      src = &quot;#{shared_path}/system/data/#{dir}&quot;
+      dest = &quot;#{latest_release}/data/#{dir}&quot;
+      run &quot;ln -s #{src} #{dest}&quot;
+    end
+
+    # Zendframework 本体にシンボリックリンクをはる
+    src = &quot;#{shared_path}/system/Zend&quot;
+    dest = &quot;#{latest_release}/application/library/Zend&quot;
+    run &quot;ln -s #{src} #{dest}&quot;
+
+    # リポジトリで管理していないパスワード系のファイルにシンボリックリンクをはる
+    %w(password.php key.php).each do |file|
+      src = &quot;#{shared_path}/system/#{file}&quot;
+      dest = &quot;#{latest_release}/#{file}&quot;
+      run &quot;ln -s #{src} #{dest}&quot;
+    end
+    
+    # 必要に応じて他にもファイルがあればコピーまたはシンボリックリンクをはるコマンドを実行
+  end
+
+  # デプロイの最後に上で定義した update_config を実行する
+  after 'deploy:finalize_update', 'deploy:update_config'
+end
+</code></pre>
+
+<p>webistrano(capistrano) を使ってデプロイすると<a href="http://tkengo.github.com/tech/2012/11/11/PHP_Matsuri/">ここ</a>でも書いていますが、特徴的なディレクトリになります。各ディレクトリの説明はリンク先のエントリを読んでください(^_^;)</p>
+
+<ul>
+<li><code>current/</code></li>
+<li><code>release/</code></li>
+<li><code>shared/</code></li>
+</ul>
+
+<p>リポジトリを clone したものを <code>release</code> 以下に配置したとすると、リポジトリ管理されていないファイルなどは <code>release</code> 以下には含まれません。なので、そういったファイルは <code>shared</code> 以下に配置して webistrano がデプロイ完了した後に <code>shared</code> のファイルやディレクトリをコピーもしくはシンボリックリンクを貼らないといけません。このレシピはそういったコマンドを実行しています。</p>
+
+<p>レシピは ruby で記述します。<code>shared</code> 以下のパスは <strong>shared_path</strong> 、最新の <code>release</code> 以下のパスは <strong>latest_release</strong> という変数で参照できます。</p>
+
+<h3 id="ssh-ログイン用のレシピについて">SSH ログイン用のレシピについて</h3>
+
+<pre><code class="language-ruby"># webistrano 実行ユーザーの鍵を指定します
+ssh_options[:keys] = %w(/home/[webistrano実行ユーザー名]/.ssh/id_rsa)
+</code></pre>
+
+<p>webistrano 実行ユーザーとデプロイ先のユーザーとが一致していない場合うまくいかなかったのですが、このレシピを指定するとうまくいきました。</p>
+
+<h2 id="ステージの作成">ステージの作成</h2>
+
+<p>さっき作ったプロジェクトが左メニューに追加されていて、そこに <strong>New state</strong> というリンクが表示されているので、クリックして新しくステージを作ります。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_new_stage.png" alt="" /></p>
+
+<p><strong>Alert these emails on deploy</strong> はデプロイ時にメールを飛ばす場合にメールアドレスを入力します。不要な場合は空のままで大丈夫です。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_new_stage_detail.png" alt="" /></p>
+
+<h2 id="プロジェクトの設定">プロジェクトの設定</h2>
+
+<p>プロジェクトの設定をしていきます。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_select_project.png" alt="" /></p>
+
+<p>プロジェクトをクリックすると以下のような設定画面が表示されます。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_project_setting.png" alt="" /></p>
+
+<ul>
+<li><strong>application</strong> デプロイするアプリケーション名。わかりやすいものであればなんでも良いです。</li>
+<li><strong>deploy_to</strong> アプリケーションをデプロイするパス。デプロイ先サーバーのパスを入力します。</li>
+<li><strong>deploy_via</strong> デプロイ方法を指定します。ここで指定している <code>:copy</code> は webistrano のサーバーに git clone して、それを tar で固めて SFTP でデプロイ先のサーバーに送信します。他にも <code>:remote_cache</code> や <code>:checkout</code> などがあります。</li>
+<li><strong>user</strong> デプロイ先サーバーへ SSH でログインする時のユーザー名を指定します。</li>
+<li><strong>password</strong> SSH のパスワードを指定します。</li>
+<li><strong>scm</strong> 今回は github からのデプロイなので <code>git</code> を指定します。</li>
+<li><strong>repository</strong> リポジトリです。github のリポジトリを指定します。</li>
+</ul>
+
+<h2 id="ステージの設定">ステージの設定</h2>
+
+<p>ステージの設定をしていきます。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_select_stage.png" alt="" /></p>
+
+<p>ステージをクリックすると以下のような設定画面が表示されます。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_stage_setting.png" alt="" /></p>
+
+<p>ステージは親のプロジェクトの設定を引き継ぎます。ステージ特有の設定を持たせたい場合は <strong>Stage specific configuration</strong> にある <strong>New configuration</strong> から新しく設定を作ります。</p>
+
+<p>それから先に作った Zendframework 用のレシピと SSH ログイン用のレシピを <strong>Used recipes</strong> の <strong>Manage stage recipes</strong> から選択しておきます。これで、このステージで Zendframework 用のレシピが使われるようになります。</p>
+
+<p>あとは、デプロイ先のホストも登録しておきます。<strong>Deployed hosts</strong> の <strong>Add host</strong> からデプロイする先のホストを追加します。<strong>Role</strong> はとりあえず <strong>app</strong> で <strong>Host</strong> にデプロイ先のホストを入れます。ホストはステージ毎に設定できるので、先にも言いましたが例えば <code>本番環境</code> と <code>開発環境</code> をステージ毎に分けれます。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_add_host.png" alt="" /></p>
+
+<h1 id="デプロイ">デプロイ</h1>
+
+<p>ようやく設定が完了しました。あとはデプロイリンクをぽちっとクリックするだけです。</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_deploy_link.png" alt="" /></p>
+
+<p><strong>Start deployment</strong> をクリック！あとはログが流れるのを観察して成功を待つだけ！</p>
+
+<p><img src="/assets/img/2012-11-30-cap-and-webi/webistrano_deployment.png" alt="" /></p>
+
+<h1 id="終わりに">終わりに</h1>
+
+<p>とりあえず Zendframework をデプロイすることを目標に進めてきましたが、なにも Zendframework じゃなくても CakePHP なんかでも、同じ様に CakePHP 用のレシピを作ればデプロイできますし、素の PHP だってできます。PHP 以外の言語ももちろん。</p>
+
+<p>それから、デプロイ以外にも rollback という機能もあって、直前にデプロイしたものに戻すこともできます。他にもいっぱいタスクがありますが、ちょっとここじゃ紹介しきれないのでまた機会があれば。一応、タスクの一覧は <code>cap -T</code> とコマンドラインからたたけば見ることができます。</p>
+
+<p>webistrano 使うとデプロイがすごい楽です。使ってみませんか？</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/php">PHP</a>
+      
+        <a class="tag-link" href="tags/capistrano">capistrano</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2012/11/30/cap-and-webi/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2012/11/30/cap-and-webi/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2012/11/30/cap-and-webi/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

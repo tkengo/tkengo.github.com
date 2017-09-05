@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ruby on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/ruby/</link>
+    <description>Recent content in Ruby on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Tue, 28 Jan 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/ruby/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>レガシープロジェクトで ruby の capybara を使って仕様化テストをやってみる</title>
+      <link>http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/</link>
+      <pubDate>Tue, 28 Jan 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/</guid>
+      <description>レガシーでテストのないプロジェクトのメンテナンスはつらいものです。テストを書こうにもそもそもテストできるような設計になっておらず、ビューとロジックが分離されていない古い PHP なんかは、なかなかテストを書き始め辛いところもあります。そこで実際にブラウザを起動して自動テストを進めることが出来る capybara を使って仕様化テストをやってみようという試みです。実際に会社では PHP で出来たレガシーなシステムに対して capybara でテストを作ってまわしています。
+capybara というと ruby で開発されている有名なウェブアプリケーションテストフレームワークですが ruby でできているからといって ruby のプロジェクトにしか使えないわけではありません。capybara にはテストを実行する際に利用するドライバを指定できて、それには selenium や poltergeist も対応しています。これらのドライバを使ってブラウザを起動して (polgergeist の場合はヘッドレスなので実際にブラウザは起動せずにオンメモリで) 本当にウェブアプリケーションにアクセスしてテストを実行することができます。
+この記事では Rails 以外のたとえば PHP や JSP などで出来てるウェブアプリケーションに対して selenium ドライバを使って capybara をやってみたいと思います。
+※仕様化テストとは 現在の仕様を元にテストが通るようにテストを書いていきます。これを書いておくことによって、ある箇所のソースコードの変更によって全然別の箇所で影響があって意図しない動作をして不具合になってしまった、なんてことを未然に防ぐことができます。レガシーなプロジェクトのメンテナンスでも心に余裕がもてます。
+ruby をインストールする 普段から ruby を使ってる人は既に ruby はインストールされていると思うので、その場合はこのステップは飛ばしましょう。
+ruby 以外のプロジェクトで使うにしても capybara 自身が ruby がないと動かないので何はともあれ ruby のインストールから始めます。ruby のインストールは rbenv を使うと楽でね。元々 ruby のバージョン切り替えのためのツールなのですが、別に ruby を複数バージョンいれないとしてもこのツール自体シンプルで使いやすいし、今後 ruby のバージョンが上がってもバージョンアップが簡単なのでとりあえず入れておくといいと思います。
+この辺を見れば簡単に ruby のインストールまでできます。
+ rbenvリポジトリのREADME(英語) rbenvを使って3分でRubyをインストールする方法まとめ  ruby がインストールできたら、あとで使うので bundler という gem をインストールしておきます。</description>
+    </item>
+    
+    <item>
+      <title>spring と direnv を使って Rails と rspec を高速起動。快適開発はじめる</title>
+      <link>http://tkengo.github.io/blog/2014/01/24/rails-spring-and-direnv/</link>
+      <pubDate>Fri, 24 Jan 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/01/24/rails-spring-and-direnv/</guid>
+      <description>spring は最近流行ってるので、既に知ってる方もいると思いますが Rails のプリローダーです。
+Rails を使ってる人だったら bundle exec rails console とか bundle exec rails generate model user とか bundle exec rake routes とか、便利コマンドにお世話になることも多いと思います。
+でも Rails ってとても巨大なフレームワークなので、コマンド一つ起動するにも Rails の資産が全部ロードされて結構な時間がかかります。なので Rails をあらかじめバックグラウンドで起動しておくことによって、コマンドの起動時間を大幅に短縮してくれるのが spring です。
+前は Gemfile には書かずにシステムに gem コマンドでインストールして spring rake routes とかやってて、コマンドの前に spring と書かないといけないのダルかったのですが、公式のドキュメントを読んでいると最近はまた便利になってるみたいです。
+github の README では Rails 4 と Rail 3.2 が対象となっていますが、この記事は Rails 4 前提で書いています。
+spring のインストール 最新の spring は Gemfile に書きます。
+group :development, :test do gem &#39;spring&#39; end  で</description>
+    </item>
+    
+    <item>
+      <title>FacebookChatAPIを使ってFacebookの友逹にメッセージを送信する</title>
+      <link>http://tkengo.github.io/blog/2013/10/23/send-chat-message-to-facebook/</link>
+      <pubDate>Wed, 23 Oct 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/10/23/send-chat-message-to-facebook/</guid>
+      <description>Facebook にはチャット機能があって、送ったチャットはここで見ることが出来ます。
+もし相手がオンラインなら、画面右下にこんな感じのチャットダイアログが表示されます。
+このチャット、使っている人も多いかと思いますが Facebook は Chat API というチャットメッセージ送信のための API を提供していて、この API を通して Facebook の友逹にチャットを送信できます。この Chat API は Graph API とはまったく別の物で、使い方も違います。Graph API を ruby から扱うための gem は他にもたくさんあるのですが、それらから Chat API を扱うことはできません。
+今回、自分で作ってる Web サービスに通知の仕組みを組み込みたくて Chat API を ruby から利用するための gem を作って公開したので、それを紹介したいと思います。
+Chat API の仕様については Facebook Developers のページで確認できます。
+https://developers.facebook.com/docs/chat/
+FacebookChat facebook_chat というそのまんまの名前の gem を作りました。ソースは github で公開しています。
+https://github.com/tkengo/facebook_chat
+使い方はリポジトリの README にだいたい書いているのですが、ここでも紹介します。
+インストール bundler を使っている場合は Gemfile に以下の行を追加して
+gem &#39;facebook_chat&#39;  そして
+$ bundle install  してください。</description>
+    </item>
+    
+  </channel>
+</rss>

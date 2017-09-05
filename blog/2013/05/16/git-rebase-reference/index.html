@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>gitのコミットの歴史を改変する(git rebase) 1 / 2 &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2013-05-16</p>
+      <h1><a href="http://tkengo.github.io/blog/2013/05/16/git-rebase-reference/">gitのコミットの歴史を改変する(git rebase) 1 / 2</a></h1>
+    </header>
+    <article>
+      
+
+<p>git には <code>rebase</code> というとても便利なコマンドがあります。その中でも特に便利なのが <code>-i</code> または <code>--interactive</code> オプションです。便利なのですがよく忘れるのでまとめもかねてこの記事で詳しく紹介します。</p>
+
+<h2 id="前提">前提</h2>
+
+<p>この記事では説明のために以下のようなコミット状態である前提で話を始めます。よくあるコミットの流れです。</p>
+
+<p><img src="/assets/img/2013-05-16-git-rebase-reference/revision001.png" alt="" /></p>
+
+<h2 id="git-rebase-i">git rebase -i</h2>
+
+<p><code>-i</code> は <code>--interactive</code> とあるように、対話的に <code>rebase</code> が実行できるコマンドです。これでなにが出来るかというと</p>
+
+<ul>
+<li>コミットメッセージを編集する</li>
+<li>コミットをまとめる</li>
+<li>コミットを分割する</li>
+<li>コミットの順番を移動させる</li>
+<li>コミットを削除する</li>
+</ul>
+
+<p>など、いろんなことが出来ます。基本的な構文は</p>
+
+<pre><code class="language-bash">[kengo@tkengo-mac] $ git rebase -i &lt;commit&gt;
+</code></pre>
+
+<p>これだけ。 <em>&lt;commit&gt;</em> には特定のコミットを指定します。たとえば</p>
+
+<pre><code class="language-bash">[kengo@tkengo-mac] $ git rebase -i HEAD~3
+</code></pre>
+
+<p>とすると、最後から3つまでのコミットについて、上に書いた何かしらの操作(コミットメッセージ編集だったり順番を入れ替えたり)を出来ます。このコマンドを実行するとテキストエディタが開いてコミットの一覧が表示されて</p>
+
+<pre><code>pick cce19c9 通信用のクラスの実装とテストの追加
+pick 70b3379 メソッド名のタイポ修正
+pick aebf22c テストが落ちてたので修正
+
+# Rebase cce19c9..aebf22c onto b8e5722
+#
+# Commands:
+#  p, pick = use commit
+#  r, reword = use commit, but edit the commit message
+#  e, edit = use commit, but stop for amending
+#  s, squash = use commit, but meld into previous commit
+#  f, fixup = like &quot;squash&quot;, but discard this commit's log message
+#  x, exec = run command (the rest of the line) using shell
+#
+# These lines can be re-ordered; they are executed from top to bottom.
+#
+# If you remove a line here THAT COMMIT WILL BE LOST.
+# However, if you remove everything, the rebase will be aborted.
+#
+# Note that empty commits are commented out
+</code></pre>
+
+<p>上の方にコミットログが表示されてるのがわかります。下の方は全部コメントになっていて、これの使い方を説明してくれています。各コミットの行の先頭になにやら <strong>pick</strong> とありますが、この部分を <strong>edit</strong> やら <strong>reword</strong> やら書き換えて処理を実行してきます。 <strong><span style="color:red;">上から順に行の先頭に指定されたコマンドに従って、コミットを1つずつ適用していく</span></strong> ことになります。コメント部分にもあるように、指定できるコマンドは <code>pick</code> <code>reword</code> <code>edit</code> <code>squash</code> <code>fixup</code> <code>exec</code> の6つです。</p>
+
+<p>1つずつ詳しく見ていきます。</p>
+
+<h2 id="pick-何もしない">pick(何もしない)</h2>
+
+<p><strong>pick</strong> が指定されているコミットは特になにもされません。先の例でいうと</p>
+
+<pre><code class="language-bash">[kengo@tkengo-mac] $ git rebase -i HEAD~3
+</code></pre>
+
+<p>として</p>
+
+<pre><code>pick cce19c9 通信用のクラスの実装とテストの追加
+pick 70b3379 メソッド名のタイポ修正
+pick aebf22c テストが落ちてたので修正
+
+# コメント部分は省略...
+</code></pre>
+
+<p>と出ますが、このままテキストエディタを終了(vimの場合は <code>:q</code>)させると特になにもせずに処理が終了します。ログを確認してみても特になにも変わっていません。</p>
+
+<h2 id="reword-コミットメッセージを修正する">reword(コミットメッセージを修正する)</h2>
+
+<p><strong>reword</strong> が指定されているコミットは内容自体には手を加えずにコメントのみ修正されます。</p>
+
+<p><img src="/assets/img/2013-05-16-git-rebase-reference/revision001.png" alt="" /></p>
+
+<p>たとえばこのコミットで言うと <code>18a48c3</code> の <strong>バグ修正</strong> というコメントをもっと具体的に説明しておいたほうがいいかもしれません。そんな時は</p>
+
+<pre><code class="language-bash">[kengo@tkengo-mac] $ git rebase -i 18a48c3~1
+</code></pre>
+
+<p>として</p>
+
+<pre><code>reword 18a48c3 バグ修正
+pick cce19c9 通信用のクラスの実装とテストの追加
+pick 70b3379 メソッド名のタイポ修正
+pick aebf22c テストが落ちてたので修正
+
+# コメント部分は省略...
+</code></pre>
+
+<p>として、テキストエディタを終了させると(vimの場合は <code>:wq</code>)、次に修正するコメントを入力する画面に切り替わります。</p>
+
+<pre><code>本番環境の判定方法が間違っていたので修正
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# Not currently on any branch.
+# Changes to be committed:
+#   (use &quot;git reset HEAD^1 &lt;file&gt;...&quot; to unstage)
+#
+# modified:   environment.php
+#
+</code></pre>
+
+<p>ここでコメントを入力してテキストエディタを終了させるとコミットメッセージのみ書き換わります。この時、コメントを修正した以降のコミットのハッシュが変わります。以前のコミットについては無くなるわけではなく、裏でこっそり生きているので、元に戻せます。</p>
+
+<p><img src="/assets/img/2013-05-16-git-rebase-reference/revision002.png" alt="" /></p>
+
+<h2 id="edit-rebaseを一旦止める">edit(rebaseを一旦止める)</h2>
+
+<p><strong>edit</strong> が指定されていれば rebase が一旦そのコミットで止まります。これはコミットを分割したい時などに便利です。</p>
+
+<p><img src="/assets/img/2013-05-16-git-rebase-reference/revision001.png" alt="" /></p>
+
+<p>たとえばこのコミットで言うと <code>cce19c9</code> の <strong>通信用のクラスの実装とテストの追加</strong> で、クラスのコミットとテストのコミットに分割したいこともあるかもしれません。そんな時は</p>
+
+<pre><code class="language-bash">[kengo@tkengo-mac] $ git rebase -i cce19c9~1
+</code></pre>
+
+<p>こうして</p>
+
+<pre><code>edit cce19c9 通信用のクラスの実装とテストの追加
+pick 70b3379 メソッド名のタイポ修正
+pick aebf22c テストが落ちてたので修正
+</code></pre>
+
+<p>とすれば rebase が始まって <code>cce19c9</code> のコミットで rebase が止まって、以下のようなメッセージが表示されてシェルに制御が戻ります。</p>
+
+<pre><code>Stopped at cce19c9... 通信用のクラスの実装とテストの追加
+You can amend the commit now, with
+
+    git commit --amend
+
+Once you are satisfied with your changes, run
+
+    git rebase --continue
+</code></pre>
+
+<p>この後はいつもの通り git を使ってコミットしていきます。たとえば以下の様な感じ。</p>
+
+<pre><code class="language-bash">[kengo@tkengo-mac] $ vim HttpRequest.php # クラスの実装を行います
+[kengo@tkengo-mac] $ git add HttpRequest.php
+[kengo@tkengo-mac] $ git commit -m '通信用クラスの追加'
+[kengo@tkengo-mac] $ vim HttpRequestTest.php # クラスのテストを追加します
+[kengo@tkengo-mac] $ git add HttpRequestTest.php
+[kengo@tkengo-mac] $ git commit -m '通信用クラスのテストの追加'
+</code></pre>
+
+<p>ここまでやったら後は指示にしたがって <code>rebase --continue</code> をします。</p>
+
+<pre><code class="language-bash">[kengo@tkengo-mac] $ git rebase --continue
+</code></pre>
+
+<p><img src="/assets/img/2013-05-16-git-rebase-reference/revision003.png" alt="" /></p>
+
+<p>これでコミットの分割ができました。 <strong>reword</strong> の時と同じように修正した部分以降のコミットのハッシュが書き換わります。また、同じように前のコミットは裏でこっそり生きているので後で参照することができます。</p>
+
+<h2 id="squash-コミットをまとめる">squash(コミットをまとめる)</h2>
+
+<p><strong>squash</strong> が指定されているコミットはその1つ前のコミットとまとめられます。</p>
+
+<p><img src="/assets/img/2013-05-16-git-rebase-reference/revision001.png" alt="" /></p>
+
+<p>たとえばこのコミットの <code>70b3379</code> の <strong>メソッド名のタイポ修正</strong> 。ちょっと恥ずかしいので、何事もなかったかのようにしたいと思うことがあるかもしれません。そういう時は <code>cce19c9</code> とまとめてしまいます。いつものように</p>
+
+<pre><code class="language-bash">[kengo@tkengo-mac] $ git rebase -i cce19c9~1
+</code></pre>
+
+<p>こうして</p>
+
+<pre><code>pick cce19c9 通信用のクラスの実装とテストの追加
+squash 70b3379 メソッド名のタイポ修正
+pick aebf22c テストが落ちてたので修正
+</code></pre>
+
+<p>とすると、次はコミットメッセージを入力する画面に切り替わります。</p>
+
+<pre><code># This is a combination of 2 commits.
+# The first commit's message is:
+
+通信用のクラスの実装とテストの追加
+
+# This is the 2nd commit message:
+
+メソッド名のタイポ修正
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# Not currently on any branch.
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+# modified:   HttpRequest.php
+#
+</code></pre>
+
+<p>ここで <strong>メソッド名のタイポ修正</strong> というコメントを消して</p>
+
+<pre><code>通信用のクラスの実装とテストの追加
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# Not currently on any branch.
+# Changes to be committed:
+#   (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)
+#
+# modified:   HttpRequest.php
+#
+</code></pre>
+
+<p>こんな感じにして終了させれば <code>cce19c9</code> と <code>70b3379</code> がまとまって新たなコミットが出来上がります。これでタイポの歴史はなかったことになりました。同じようにコミットのハッシュは変わりますし、前のコミットは 後で参照できます。</p>
+
+<p><img src="/assets/img/2013-05-16-git-rebase-reference/revision004.png" alt="" /></p>
+
+<h2 id="残りは">残りは</h2>
+
+<p>ちょっと記事が長くなってきたので、残りはパート2で説明したいと思います。</p>
+
+<ul>
+<li><code>fixed</code> について</li>
+<li><code>exec</code> について</li>
+<li>コミットの順番の入れ替えについて</li>
+<li>コミットの削除について</li>
+</ul>
+
+<p><a href="/blog/2013/06/08/git-rebase-reference2/">パート2の記事はこちら</a></p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/git">git</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2013/05/16/git-rebase-reference/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2013/05/16/git-rebase-reference/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2013/05/16/git-rebase-reference/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

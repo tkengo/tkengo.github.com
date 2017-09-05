@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Capybara on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/capybara/</link>
+    <description>Recent content in Capybara on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Tue, 28 Jan 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/capybara/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>レガシープロジェクトで ruby の capybara を使って仕様化テストをやってみる</title>
+      <link>http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/</link>
+      <pubDate>Tue, 28 Jan 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/</guid>
+      <description>レガシーでテストのないプロジェクトのメンテナンスはつらいものです。テストを書こうにもそもそもテストできるような設計になっておらず、ビューとロジックが分離されていない古い PHP なんかは、なかなかテストを書き始め辛いところもあります。そこで実際にブラウザを起動して自動テストを進めることが出来る capybara を使って仕様化テストをやってみようという試みです。実際に会社では PHP で出来たレガシーなシステムに対して capybara でテストを作ってまわしています。
+capybara というと ruby で開発されている有名なウェブアプリケーションテストフレームワークですが ruby でできているからといって ruby のプロジェクトにしか使えないわけではありません。capybara にはテストを実行する際に利用するドライバを指定できて、それには selenium や poltergeist も対応しています。これらのドライバを使ってブラウザを起動して (polgergeist の場合はヘッドレスなので実際にブラウザは起動せずにオンメモリで) 本当にウェブアプリケーションにアクセスしてテストを実行することができます。
+この記事では Rails 以外のたとえば PHP や JSP などで出来てるウェブアプリケーションに対して selenium ドライバを使って capybara をやってみたいと思います。
+※仕様化テストとは 現在の仕様を元にテストが通るようにテストを書いていきます。これを書いておくことによって、ある箇所のソースコードの変更によって全然別の箇所で影響があって意図しない動作をして不具合になってしまった、なんてことを未然に防ぐことができます。レガシーなプロジェクトのメンテナンスでも心に余裕がもてます。
+ruby をインストールする 普段から ruby を使ってる人は既に ruby はインストールされていると思うので、その場合はこのステップは飛ばしましょう。
+ruby 以外のプロジェクトで使うにしても capybara 自身が ruby がないと動かないので何はともあれ ruby のインストールから始めます。ruby のインストールは rbenv を使うと楽でね。元々 ruby のバージョン切り替えのためのツールなのですが、別に ruby を複数バージョンいれないとしてもこのツール自体シンプルで使いやすいし、今後 ruby のバージョンが上がってもバージョンアップが簡単なのでとりあえず入れておくといいと思います。
+この辺を見れば簡単に ruby のインストールまでできます。
+ rbenvリポジトリのREADME(英語) rbenvを使って3分でRubyをインストールする方法まとめ  ruby がインストールできたら、あとで使うので bundler という gem をインストールしておきます。</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Javascript on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/javascript/</link>
+    <description>Recent content in Javascript on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Tue, 30 Jun 2015 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/javascript/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>果たして JavaScript で演算子オーバーロードは可能なのか</title>
+      <link>http://tkengo.github.io/blog/2015/06/30/operator-overload-in-javascript/</link>
+      <pubDate>Tue, 30 Jun 2015 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2015/06/30/operator-overload-in-javascript/</guid>
+      <description>果たして僕の他に誰が JavaScript で演算子オーバーロードをやりたいと思っている人がいるだろうか。
+世の中のニーズは置いといて、少なくとも自分の中では欲しいと思うことがあった。JavaScript で自作のオブジェクトを作った際に、それらのオブジェクト同士の演算を定義したいことがある。Ruby や C# のもつ演算子オーバーロードの言語機能を羨ましく思いながら JavaScript でもそんなことができないのか調べて試行錯誤した結果をまとめてみようと思う。
+はじまり 完全な趣味で JavaScript で行列やベクトルの演算ができる mx.js というものを作っている。mx.js では Matrix と Vector というオブジェクトが出てくるが、それら同士の足し算や引き算、掛け算を演算子を使ってやりたい、というところがモチベーションとなる。
+JavaScript は言語機能として演算子オーバーロードを持っていないので、行列やベクトルのオブジェクト同士の演算を定義しようとすると普通はメソッドを定義することになる。そう、こういう風に。
+var m1 = Matrix.create([ ... ]); var m2 = Matrix.create([ ... ]); // m1とm2の各要素を足し合わせる m1.add(m2);  これは一般的な、誰にでも思いつく実装でしょう。そうではなくて、もっと直感的に、まるで数値を扱うかのようにこんな風に書ければとても嬉しい。
+// m1とm2の各要素を足し合わせる var m3 = m1 + m2;  これを目指して試行錯誤を繰り返していく。
+オブジェクトからプリミティブへの変換 とはいえ、演算子オーバーロードがない JavaScript において、そんなことどうやって実現すればいいのか。実は JavaScript ではオブジェクトに対して + や - のような二項演算子を適用した場合、左オペランドから右オペランドの順に valueOf というオブジェクトをプリミティブ型に変換するためのメソッドが暗黙的に呼び出される。つまりはこういうこと。
+Matrix.prototype.valueOf = function() { return this.rows + &amp;quot; x &amp;quot; + this.</description>
+    </item>
+    
+  </channel>
+</rss>

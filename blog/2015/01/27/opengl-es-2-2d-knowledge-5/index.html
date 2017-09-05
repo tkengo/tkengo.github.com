@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>テクスチャマッピング &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-01-27</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/01/27/opengl-es-2-2d-knowledge-5/">テクスチャマッピング</a></h1>
+    </header>
+    <article>
+      
+
+<p><a href="/blog/2014/12/20/opengl-es-2-2d-knowledge-0">OpenGL 基礎シリーズ</a> の第 5 回です。</p>
+
+<h1 id="テクスチャマッピング">テクスチャマッピング</h1>
+
+<p>実は OpenGL では jpg や png といった画像の類をそのままフレームバッファに描画することはできないし、そもそも画像読み込み系の関数すら持ち合わせていない困ったチャンなのだ。この時点で画像描画に関しては詰んでそうだけど、そんなことはなくって (そんなことがあったら今頃 OpenGL なんて誰も使っていない) ちゃんと方法がある。それがテクスチャだ。</p>
+
+<p>テクスチャという単語は聞いたことがあるかもしれないし「テクスチャを貼り付ける」だとか「画像を貼り付ける」だとかいうのは良く言われる。2D でゲームを作る場合はテクスチャを画像と同じ大きさの四角形のポリゴンに対して貼り付けることで画像を、例えばキャラクターの画像など画面上に表示させることができる。でも一体テクスチャとはどういうものなのか、どういう原理で画像をディスプレイに表示しているんだろうか。それがわかれば OpenGL で自由に画像を表示できるようになる。エフェクトをつけるのだって自由自在。</p>
+
+<p>あなたは既にテクスチャのある世界への一歩を踏み出している。</p>
+
+<h1 id="テクスチャの準備">テクスチャの準備</h1>
+
+<p>画像を表示するためにテクスチャを使うならば兎にも角にも、表示したい画像の用意が必要になる。ここでは Android Studio で新規プロジェクトを作った時に最初から同梱されているあの有名なドロイド君を使って説明を進めてみようと思う。いつもありがとう、ドロイド君。画像に困ったときは君だね☆</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/ic_launcher.png" alt="ドロイド君登場" /></p>
+
+<p>さて、ドロイド君に登場してもらったところで実際にこのドロイド君をテクスチャとして利用するためには、いろいろと前準備をやっとかないといけない。もっとも単純には GPU に対して以下のような要求を送ってやることになる。</p>
+
+<ul>
+<li>テクスチャが欲しいので新しく作ってちょうだい！</li>
+<li>ありがとう。じゃぁこれからこのテクスチャに対していろいろ操作するからね</li>
+<li>フィルタリングの設定はこれでお願い</li>
+<li>画像データをそっちに送るのでよろしく〜</li>
+</ul>
+
+<p>それぞれの要求には専用の API が用意されているのでそれを呼び出すだけでいいので簡単なのだ。猫でもわかる OpenGL！</p>
+
+<p><em>※マルチテクスチャを利用する場合はもう少し手順が増えることになるけど、それにもちゃんと専用の API が用意されている。とりあえず最低限これだけ把握できていれば問題はない。</em></p>
+
+<h2 id="テクスチャの生成">テクスチャの生成</h2>
+
+<p>画像を読み込んでそれをテクスチャに割り当てるためには GPU に対して新しいテクスチャを生成するよう要求しないといけない。Android には <code>glGenTextures</code> というメソッドがあり、それを使って新しいテクスチャを生成する。テクスチャが生成されると整数型の数字 (1 とか 2 とか) を受け取り、それがテクスチャの ID となる。ちなみに Android では一気に複数のテクスチャの生成を要求することができる。</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/generate-textures.png" alt="テクスチャ生成のイメージ図" /></p>
+
+<h2 id="生成したテクスチャのバインド">生成したテクスチャのバインド</h2>
+
+<p>テクスチャを生成したらそのテクスチャをバインドする必要がある。テクスチャをバインドすることで、そのバインドされたテクスチャに対して、テクスチャパラメータの設定をしたり画像データを送信したりすることができるようになる。OpenGL のテクスチャ関連のメソッドのリファレンスを確認すればわかるけど、それらのメソッドの引数にはテクスチャ ID がない。つまりテクスチャに対する操作は、メソッドの引数でテクスチャ ID を指定するのではなく、OpenGL 側でテクスチャの状態を持っていて現在バインドされているテクスチャに対して行われるということになる。</p>
+
+<p>テクスチャのバインドは <code>glBindTexture</code> というメソッドがあり、引数としてテクスチャ生成時に受け取ったテクスチャの ID を渡す。</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/bind-texture.png" alt="テクスチャバインドのイメージ図" /></p>
+
+<h2 id="フィルタリングの設定">フィルタリングの設定</h2>
+
+<p>テクスチャをバインドしたら、まずそのテクスチャに対してフィルタリングの設定をしてあげる。ここでフィルタリングの話をするよりかは、順番的にはまず画像を表示できるまでの仕組みを説明して、その後でフィルタリングの話をした方がわかりやすいので、ここでは省略。</p>
+
+<h2 id="画像データを-gpu-へ転送">画像データを GPU へ転送</h2>
+
+<p>そしてバインドされたテクスチャに対して画像データを送信する。画像データを送信するためにはメモリにピクセルデータを読み込む必要があるけど、最初に書いたとおり OpenGL には画像読み込みの関数はない。ただし、Android には <code>Bitmap</code> という画像を取り扱えるクラスがあってそれをそのまま OpenGL に渡せるように Android がラッパーを準備してくれている。とっても親切！こんな風にしてバインドしているテクスチャを変更しながら画像データを送信してテクスチャを準備していく。</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/tex-image-2d.png" alt="画像データ送信のイメージ図" /></p>
+
+<p><em>※Android ではない場合でも、たとえば WebGL の場合だと HTML の img 要素を DOM から取得してそれをそのまま渡せるような仕組みになっている。C 言語とかだと、画像読み込み部分は自作せずとも既存のライブラリがたくさんあるのでそれを使って画像を読み込んで、OpenGL にはそのポインタを渡せばいい。世の中には偉大な先人たちが作った便利なものがたくさんあるもので、OpenGL にその機能がないのであれば他から拝借すればよい。</em></p>
+
+<h1 id="頂点座標と-uv-座標の準備">頂点座標と UV 座標の準備</h1>
+
+<p>画像データの送信まで完了すればテクスチャを使う準備は完了していて、バインドされているテクスチャはフラグメントシェーダによって参照される。フラグメントシェーダでは、バインドされているテクスチャのどこの座標の色を使うのかを指定することでその座標の色を抽出してきてくれる。この <strong>テクスチャのどこの座標を使う</strong> という情報が UV 座標と言って、左上を原点とした 0 〜 1 の範囲の座標系になっている。左上が <code>(0, 0)</code> 、右上が  <code>(1, 0)</code> 、左下が <code>(0, 1)</code> 、そして図には書いてないけど右下はもちろん <code>(1, 1)</code> になる。真ん中は <code>(0.5, 0.5)</code> ってことだね。</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/uv-coordinates.png" alt="UV 座標" /></p>
+
+<p>そしてこの UV 座標、どこで指定するのかというと、頂点座標と一緒にバーテックスシェーダへ渡してあげる。フラグメントシェーダに直接渡すのではなくバーテックスシェーダに渡して、そこからフラグメントシェーダへ渡されることになる。UV 座標は主にフラグメントシェーダで使われるのに、まずバーテックスシェーダへ渡さなきゃいけないのはなんだか回りくどいけど、例えば四角形のポリゴンにテクスチャを描画することを考えてみる。</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/polygon-and-texture-image1.png" alt="四角形ポリゴンとテクスチャ画像" /></p>
+
+<p>まずポリゴンの頂点情報はこんな風になる。</p>
+
+<pre><code class="language-java">float[] vertices = new float[] {
+    // 1つめの三角形
+    0f, 1f, 0f, // 左上
+    0f, 0f, 0f, // 左下
+    1f, 0f, 0f, // 右下
+
+    // 2つめの三角形
+    1f, 0f, 0f, // 右下
+    1f, 1f, 0f  // 右上
+    0f, 1f, 0f  // 左上
+};
+</code></pre>
+
+<p>次に、この各頂点と対応した UV 座標はこんな風になる。</p>
+
+<pre><code class="language-java">float[] texCoords = new float[] {
+    0f, 0f, // 左上の頂点に対するUV座標
+    0f, 1f, // 左下の頂点に対するUV座標
+    1f, 1f, // 右下の頂点に対するUV座標
+
+    1f, 1f, // 右下の頂点に対するUV座標
+    1f, 0f  // 右上の頂点に対するUV座標
+    0f, 0f  // 左上の頂点に対するUV座標
+};
+</code></pre>
+
+<p>各頂点と UV 座標が対応しているのがわかる。</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/polygon-and-texture-image2.png" alt="頂点座標と UV 座標の対応" /></p>
+
+<p>これらの頂点座標 (<code>vertices</code>) と UV 座標 (<code>texCoords</code>) をバーテックスシェーダに渡した上で OpenGL の API を介して GPU に対して描画命令を発行する。もちろん、バーテックスシェーダ内では UV 座標をフラグメントシェーダへ渡すようにコーディングしている前提で。すると、前の記事で書いたように座標変換の後、ラスタライザによってフラグメントが生成される。そしてフラグメントシェーダでは、その生成されたフラグメント及び UV 座標を受け取る。UV 座標はラスタライザによって補完されているので、頂点毎に対応する座標を指定するだけで良くなっている、というわけ。</p>
+
+<p>フラグメントシェーダでは受け取った UV 座標を元に、バインドされているテクスチャから指定された UV 座標の位置の色情報を参照し、それをそのまま出力させることで画面には画像が表示されるという仕組みになっている。実際には描画は三角形ポリゴン毎に行われるので、四角形ポリゴンでまとまった処理はされずに 2 つの三角形が順次処理されていく。</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/polygon-and-texture-image3.png" alt="" /></p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/polygon-and-texture-image4.png" alt="" />
+<img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/polygon-and-texture-image5.png" alt="ポリゴンにドロイド君が描画される様子" /></p>
+
+<p><em>※ちなみに UV 座標の <strong>UV</strong> という名前の由来は xyz と同じで単なる記号。私達が 3D 空間を表す時は、座標として <code>(x, y, z)</code> という文字を使うけど、UV 座標もそれと同じで xyz の前にある文字から 2 文字取ってきただけ。おっと、アルファベットの並び順からみて <code>u-v-w-x-y-z</code> となってるので、前の 2 文字なんだったら <code>v</code> と <code>w</code> じゃないか！いやいや実は <code>w</code> は既に使われている (座標系変換の話のところで同次座標系という話がちらっと出てきたけど、そこで <strong>1</strong> を指定していた部分。あの要素に <code>w</code> が使われている)。なので <code>u</code> と <code>v</code> になる。ただのトリビアだけどこういうどうでもいい話も好きだな。</em></p>
+
+<h1 id="テクスチャのフィルタリング">テクスチャのフィルタリング</h1>
+
+<p>これまでで画像をテクスチャに読み込み、画面に表示させるまでの仕組みをみてきた。最後にテクスチャに対するフィルタリングの説明をしてこの記事を終わろうと思う。テクスチャの UV 座標は 0 〜 1 の範囲になっていた。ただ当然ながらテクスチャに読み込ませた元画像はそうなってなくって、例えばだけど幅と高さがそれぞれ 256 ピクセルなのであれば元々の座標は 0 〜 255 まであるはずなんだよね。それを 0 〜 1 の範囲として扱うわけなので、当然 UV 座標と元の座標がぴったり一致せずにずれることがある。その時にホントはどの色を使えばいいの？という色の決め方を OpenGL に教えてあげることができる。</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/gap-in-uv.png" alt="UV 座標と元の座標のずれ" /></p>
+
+<p>フィルタリングには代表的には最近傍フィルタリングと線型フィルタリングの 2 種類がある。</p>
+
+<h2 id="最近傍フィルタリング">最近傍フィルタリング</h2>
+
+<p>UV 座標から見て画像のピクセルの中心点に一番近いピクセルの色が採用される。図では赤いプラスマークで表された UV 座標から見てピクセルの中心点に一番近いのは右上のピクセルになるので、右上のピクセルの色が採用される。</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/nearest-filtering.png" alt="最近傍フィルタリング" /></p>
+
+<h2 id="線型フィルタリング">線型フィルタリング</h2>
+
+<p>UV 座標の周りにある画像のピクセルの色を参照して、各ピクセルの中心までの距離に応じて色を混ぜ、最終的にその混ぜた色が採用される。</p>
+
+<p><img src="/assets/img/2015-01-27-opengl-es-2-2d-knowledge-5/linear-filtering.png" alt="線型フィルタリング" /></p>
+
+<hr />
+
+<p>最近傍フィルタリングより線型フィルタリングの方が見た目は綺麗になるけど、計算量は線型フィルタリングの方が多いので負荷が高いのは線型フィルタリングということになる。これはケースバイケースで使い分けていくのが良い。フィルタリングの設定は Android の場合は <code>glTexParameteri</code> というメソッドを使って行う。このメソッドの引数にはテクスチャ ID はないので、例のごとく現在バインドされているテクスチャに対しての設定をする、ということになる。また、これらのフィルタリングは <strong>テクスチャが拡大される時</strong> 及び <strong>テクスチャが縮小される時</strong> でそれぞれ設定することができる。</p>
+
+<pre><code class="language-java">// テクスチャが縮小される時は線型フィルタリング
+GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+
+// テクスチャが拡大される時は線型フィルタリング
+GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+</code></pre>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>OpenGL でゲームを作る時、ほとんどの場合はなにかしらの画像を表示することになる。その時にこのテクスチャの知識は必須になってくるけど、UV 座標の指定の仕方さえ理解していればあとはどうにでも応用することができる。この辺まできてようやく OpenGL で Hello World するための下地が整ってきたような感じがするかな？</p>
+
+<p>次は最後の記事。次回 <a href="/blog/2015/02/01/opengl-es-2-2d-knowledge-6">Hello World in OpenGL!</a> に続く。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/opengl">OpenGL</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/01/27/opengl-es-2-2d-knowledge-5/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/01/27/opengl-es-2-2d-knowledge-5/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/01/27/opengl-es-2-2d-knowledge-5/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

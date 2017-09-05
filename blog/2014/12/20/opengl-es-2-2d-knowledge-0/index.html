@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>独学で 1 ヶ月間 OpenGL を学んで得た基礎知識のまとめ ~ 2D 編 ~ &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-12-20</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/12/20/opengl-es-2-2d-knowledge-0/">独学で 1 ヶ月間 OpenGL を学んで得た基礎知識のまとめ ~ 2D 編 ~</a></h1>
+    </header>
+    <article>
+      
+
+<p>OpenGL。その単語の響きだけで素晴らしく魅力的に思える 3D コンピューターグラフィックスライブラリは、これまで何人もの駆け出しゲームプログラマーに幾度と無く挫折を味わわせてきた。<strong>「ゲーム作るならやっぱり高速に描画できる OpenGL でしょ。でも自分が作るゲームに 3D はいらないし、しかも難しそうだし、別に 2D 描画だけできればいいや」</strong> と、軽い気持ちで手を出したのが運の尽き、世の中そんなに甘くはなかった。OpenGL というその難攻不落城は私達の進む道を阻むように高々とそびえ立っている。</p>
+
+<p>OpenGL がコレほどまでに取っ付きにくいのは <strong><span style="color:red;">気軽に Hello World できない</span></strong> からなんじゃないかと思う。OpenGL の場合だとそれは何かしら 1 つの図形を表示することにあたるのかな。でもたったそれだけなのに、覚えることが山ほどありすぎて全然本題にたどり着くことができないし、OpenGL には OpenGL ならではの複雑さがある。巷にあふれているサンプルコードについて「なぜそう書けばこう動くのか」という仕組みやその意味を、コードを読んだだけでしっかりと理解できる人はどれくらいいるだろうか。英語でも何でもとりあえず頑張って読んでみて、そういうところからソースコードをコピペして、コンパイルして、やったー動いたー、ってなったとしても、その先には闇しか見えない。基本を理解してないと応用はできないのです。でもね！それは仕方ないことなのです、たぶん。何を始めるにも基礎知識は必要になってくる。逆に言えば基礎がしっかりしていればあとはなんでもできる。</p>
+
+<p>ということで、こういうインターネット上の情報はいくらあっても損はしないので、OpenGL で 2D を扱うために 3D の基礎を説明して、んで OpenGL 使うんだったら基礎おさえとけば 2D でも 3D でも難易度そんなに変わらなくね？ってとこに気付けたら、その知識を元にプログラミングができるところまでブログの記事にまとめてみようと思う。ちなみに本とかで体系的に勉強したわけではないので、間違いがあれば突っ込んでくれると喜びます。</p>
+
+<h1 id="前提">前提</h1>
+
+<p>さて、前置きが少し長くなったけど、今回の記事の対象となるものは <strong>Android 向けの OpenGL ES 2.0</strong> です。知ってる人もいるかもしれないけど OpenGL ES の 1.0 と 2.0 は <strong><span style="color:red;">後方互換性がない別物になってる</span></strong> ので 1.0 と間違ってこの記事を読み進めるようなことがあったら、の〜みそぷ〜ですよ。今後、記事内で OpenGL というと OpenGL ES 2.0 のことを指すことにする。で、Android 向けなので記事中のソースコードも Android のソースコード、つまり Java。</p>
+
+<p>ただ、基礎知識部分は OpenGL ES 2.0 に限らず 3D 表現を行う上で共通の部分が多く、2.0 以降は後方互換性を保たれているので将来的にもその知識はしっかり再利用できる。また Android 以外のプラットフォームでも同じような OpenGL の API は提供されている (たとえば iOS とか C++ とか JavaScript とか)。だから、Android 前提の記事とはいいつつも、他のプラットフォームではまったく役に立たないかというとそうでもないと思う。具体的に Java のソースコードが出てくるのは最後の記事くらいで、他はほぼ基本の説明みたいなものだから。</p>
+
+<h1 id="理由">理由</h1>
+
+<p>どうしてこの記事の中で扱うのが Android 用の OpenGL ES 2.0 かというと</p>
+
+<ol>
+<li>OpenGL を勉強する時に Android を使ったから。</li>
+<li>今の主流であるプログラマブルシェーダについても知識をつけたかったから。(プログラマブルシェーダは OpenGL ES 2.0 からの機能)</li>
+</ol>
+
+<p>くらいの単純な理由。要するに勉強のためのプラットフォームは何でもよくて自分が好きなものでやればよいってことね。最近だと OpenGL ES の仕様に準拠した WebGL という仕様もあって、ブラウザで JavaScript から GPU を使える。ブラウザで動作確認できるってことでだいぶ敷居が低くなってるし、軽く始めたいのなら WebGL はうってつけじゃないだろうか。</p>
+
+<h1 id="対象">対象</h1>
+
+<ul>
+<li>OpenGL で 2D または 3D ゲームを作ってみたい人</li>
+<li>OpenGL の中でどういう処理がされているか知りたい人</li>
+<li>OpenGL でドヤ顔したい人</li>
+<li>OpenGL と共に歩んでいきたい人</li>
+</ul>
+
+<h1 id="目次">目次</h1>
+
+<p>さすがにこの難攻不落城を 1 回で全て攻略しようとすると途中で「もう無理ぽ」する人がでてきそうなので、何回かに分けて少しずつ前進していきたい。そうだ、何事も突き詰めていけば単純だ。結局は OpenGL だって</p>
+
+<p><strong><span style="color:red;">どこに描画するのか教えてくださーい</span></strong> <br/>
+<strong><span style="color:red;">どのように描画するのか教えてくださーい</span></strong></p>
+
+<p>という 2 つのことを私達に要求してきているだけ。それだけっす。</p>
+
+<p>以下目次。</p>
+
+<ol>
+<li><a href="/blog/2014/12/27/opengl-es-2-2d-knowledge-1">OpenGL が世界を描画する仕組み</a></li>
+<li><a href="/blog/2015/01/03/opengl-es-2-2d-knowledge-2">頂点情報とプリミティブ</a></li>
+<li><a href="/blog/2015/01/10/opengl-es-2-2d-knowledge-3">バーテックスシェーダによる座標系変換</a></li>
+<li><a href="/blog/2015/01/17/opengl-es-2-2d-knowledge-4">ラスタライザの画素生成と線形補間</a></li>
+<li><a href="/blog/2015/01/27/opengl-es-2-2d-knowledge-5">テクスチャマッピング</a></li>
+<li><a href="/blog/2015/02/01/opengl-es-2-2d-knowledge-6">Hello World in OpenGL!</a></li>
+</ol>
+
+<h1 id="付録">付録</h1>
+
+<p>OpenGL ES 2.0 について勉強する際に、個人的に良いテキストだったと思ったもの (というと上から目線でテメーコノヤローですね、すみません。とてもお世話になりました)。有用な情報が詰まっているので、時間があれば熟読して知識を深めるのも良いかなーと。</p>
+
+<ul>
+<li><p><a href="https://www.khronos.org/opengles/2_X">OpenGL ES 2_X - The Standard for Embedded Accelerated 3D Graphics</a></p>
+
+<p>まずはやっぱりここやのぉ。OpenGL ES の仕様を策定しているクロノスグループのサイト。OpenGL ES 2.0 と GLSL の仕様書を PDF でダウンロードできる。ぜーんぶ英語だけどね&hellip;</p></li>
+
+<li><p><a href="http://androidblog.reindustries.com/a-real-open-gl-es-2-0-2d-tutorial-part-1/">A real Open GL ES 2.0 2D tutorial</a></p>
+
+<p>このブログと同じく 2D 描画を目的として解説していて、シリーズもので part1 から part8 まである。実際に動作するサンプルコードがあるのでめちゃくちゃ勉強になる。これもまた英語だけどね&hellip;</p></li>
+
+<li><p><a href="http://marina.sys.wakayama-u.ac.jp/~tokoi/oglarticles.html">床井研究室</a></p>
+
+<p>大学の先生だと思うけど、講義で使うようなテイストでたくさんの記事が書いてあってかなり勉強させてもらった。たまに「こういう課題をやってきてね」で締められてる記事もあって、あぁ学生君がんばれって気持ちになる。</p></li>
+
+<li><p><a href="http://wgld.org/">wgld.org</a></p>
+
+<p>WebGL について膨大な量のテキストが書かれているサイト。基礎知識だけでなく高度な 3D 表現のテクニックもデモと共に丁寧に紹介されていてとてもためになるサイト。運営者が日本人で全部日本語なのはうれしい。</p></li>
+</ul>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/opengl-2d%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA">OpenGL 2Dシリーズ</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/12/20/opengl-es-2-2d-knowledge-0/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/12/20/opengl-es-2-2d-knowledge-0/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/12/20/opengl-es-2-2d-knowledge-0/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

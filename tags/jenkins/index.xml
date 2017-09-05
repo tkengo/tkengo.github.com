@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Jenkins on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/jenkins/</link>
+    <description>Recent content in Jenkins on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Thu, 04 Oct 2012 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/jenkins/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>RailsプロジェクトでJenkinsを使ってCIしてみる</title>
+      <link>http://tkengo.github.io/blog/2012/10/04/rails-jenkins-ci/</link>
+      <pubDate>Thu, 04 Oct 2012 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2012/10/04/rails-jenkins-ci/</guid>
+      <description>会社のプロジェクトでRuby on Railsを使っていて、Jenkinsを使ってCI環境を整えたくって ずっと試行錯誤していたのですが、最近ようやく出来上がったのでその全貌を明らかにします！
+ちなみに全部Linuxでの話なので、Windowsの人は残念ながら役に立ちません&amp;hellip;
+目標 今回Jenkinsを使って以下のようなことがやりたかった。
+ githubにあるリポジトリのRSpecのテストを自動的に実行したい Capybaraを使ったテストもやってるので、ブラウザが起動する環境で自動テストを実行したい。 これは別途デスクトップ環境(今回の場合はUbuntuデスクトップ)を準備してそこでテストさせたい。 コードカバレッジを出力してるのでJenkinsから見れるようにしたい テストケース一覧もJenkinsから見れるようにしたい  この目標に向かっていろいろと設定をしていきます。
+Javaのインストール Jenkinsを動作させるにはJavaが必要ですのでJDKをインストールします。 この記事執筆時点ではこちらから 最新のJDKがダウンロードできます。JDKのダウンロードボタンをクリックして Accept License Agreement の ラジオボタンにチェックを入れてからLinux用のJDKをダウンロードしてインストールします。
+$ cd /usr/local/src $ wget http://download.oracle.com/otn-pub/java/jdk/7u7-b10/jdk-7u7-linux-x64.rpm $ rpm -ivh jdk-7u7-linux-x64.rpm  これでインストール完了。
+$ java -version  と打って、Javaのバージョン番号が表示されれば成功。
+Jenkinsのインストール yumで簡単にインストールできます。以下rootユーザーで作業します。
+$ wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat/jenkins.repo $ rpm --import http://pkg.jenkins-ci.org/redhat/jenkins-ci.org.key $ yum install jenkins  これだけです。そして以下のコマンドで起動できます。
+$ /etc/init.d/jenkins start  この状態でhttp://hostname:8080/にアクセスするとJenkinsの画面が開きます。
+プラグインのインストール Jenkinsには豊富なプラグインが存在します。 今回の目標としていることも、プラグインなしには実現出来ないので、まず最初にプラグインをインストールします。 Jenkinsの管理 ＞ プラグインの管理 とたどっていき、 利用可能 のタブをクリックします。 今回使うプラグインは以下の3つです。</description>
+    </item>
+    
+  </channel>
+</rss>

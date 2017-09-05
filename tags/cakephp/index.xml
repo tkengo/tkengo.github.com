@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Cakephp on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/cakephp/</link>
+    <description>Recent content in Cakephp on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Mon, 12 Dec 2011 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/cakephp/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>日本人ならではのCakePHPへの貢献(CakePHP Advent Calendar 2011)</title>
+      <link>http://tkengo.github.io/blog/2011/12/12/cakephp-advent-calender/</link>
+      <pubDate>Mon, 12 Dec 2011 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2011/12/12/cakephp-advent-calender/</guid>
+      <description>この記事はCakePHP Advent Calendar 2011に参加しています。13日目です。
+前日は@slumbers99さんのPrefixルーティングとthemeのススメでした。 3キャリア対応サイトをCakePHPで作った時に利用されたというPrefixルーティングとテーマのお話ですね。 テーマは僕も使ったことがありますが、とても便利な機能だと思います！便利なものはどんどん使って楽していきたいですね。
+まえおき みなさん素晴らしい記事を次々と公開されていく中、なにを書こうかとずっと迷っていましたが、 今回はタイトルの通りCakePHPへの貢献について少し書きたいと思います。自分自身の経験によるものです。
+CakePHPへの貢献しているでしょうか？僕は全然やってません。 やってませんが、CakePHPが1.1の頃からずっと使っていて、なにかしら役に立ちたいなぁと思って今まで過ごしてきました。 でも、ド田舎に住む1利用者に過ぎない僕みたいな技術者が、何が出来るだろうとも感じていました。 そういう人って実際に多いんじゃないかな。 CakePHP利用者で僕が昔から知ってる人達の日記を読みながら「勉強会とか楽しそうだな」と羨ましく思ったものです。
+でも、最近ちょっと考えが変わってきました。 自分が出来ること をすればいいんです。 コアデベロッパでもないのに開発に携わろうとしたり、無理に遠くでやってるイベントに参加しようとしたり、そういうことがダメでした。 大事なので2回言いますが、 自分が出来ること をすればいいんです。僕の場合は2つありました。
+ ブログでアウトプットする CakePHPのドキュメントの翻訳  です。ブログでのアウトプットの重要性は、もう既に多くの人が声高に叫んでいます。 アウトプットを頑張るようにしました。
+それから、僕は英語が好きです。英語力はある方とはいえないけど、読み書きはある程度できます。 なので、それをCakePHPと結びつけて役立てるにはどうしたらいいのか、っていうことを考えた時にドキュメントの翻訳にたどり着きました。
+さて今回はこのドキュメントの翻訳について少し書いていきたいと思います。
+最初にやること これがCakePHP2.0のドキュメントです。Cookbook。 既にいくらか日本語化されている部分もあります。 翻訳に参加したければまずはCakePHPドキュメントチームに挨拶ぐらいしておきましょう （しなくてもいいかもしれませんが、僕はメールを送りました）。 一応ここにも「翻訳に参加する場合はメールください」とありますし。 簡単な自己紹介と翻訳に参加したい旨のメールです。こんな感じ
+Dear CakePHP docs team. My name is Kengo Tateishi. I&#39;m a programmer in Japan. I have developed a web application with CakePHP since its version was 1.1.x. I love CakePHP. I would like to participate in translating the CakePHP 2.</description>
+    </item>
+    
+  </channel>
+</rss>

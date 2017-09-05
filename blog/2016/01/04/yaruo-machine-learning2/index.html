@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>やる夫で学ぶ機械学習 - 単回帰問題 - &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2016-01-04</p>
+      <h1><a href="http://tkengo.github.io/blog/2016/01/04/yaruo-machine-learning2/">やる夫で学ぶ機械学習 - 単回帰問題 -</a></h1>
+    </header>
+    <article>
+      
+
+<p>やる夫で学ぶ機械学習シリーズの第 2 回です。回帰について見ていきます。</p>
+
+<p>第 1 回はこちら。<a href="/blog/2016/01/03/yaruo-machine-learning1/">やる夫で学ぶ機械学習 - 序章 -</a></p>
+
+<p>目次はこちら。<a href="/blog/2016/06/06/yaruo-machine-learning0/">やる夫で学ぶ機械学習シリーズ</a></p>
+
+<h1 id="問題設定">問題設定</h1>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+今日は回帰について詳しく見ていく。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+回帰って響きがカッコいいお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ここからは、より具体的な例を混じえながら話を進めていこう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+具体例は、やる夫の明日のお昼ごはんぐらい大事だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+まったく意味がわからないたとえなんだが&hellip;。そうだな、たとえば、主人公の攻撃力によって、敵キャラに与えるダメージが決まるゲームがあるとしよう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+よくある設定だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ダメージには揺らぎがあって、常に同じダメージを与えられるとは限らない。さて、実際に何度か敵キャラに攻撃してみて、その時の攻撃力と与えたダメージをグラフにプロットしてみると、こんな風になっていたとしよう。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/linear-regression1.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+なるほど。攻撃力が高くなればなるほど、与えるダメージも大きくなっているお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+やる夫はコレを見て、攻撃力が 10 の時にどれくらいダメージを与えられるかわかるか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+馬鹿にしてるのかお！そんなの簡単だお。だいたい 60 前後くらいだお？</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/linear-regression2.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。俺たちはこれから機械学習を使って、今やる夫がやったように、攻撃力からダメージを予測していく。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+そんなの、このプロットを見れば、だいたい誰にでもわかるお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+それはこの問題設定が単純だからだよ。実際に機械学習を使って解きたい問題は、複雑な問題であることがほとんだ。そういうものを機械にまかせるために、データから学習させるんだよ。それが機械学習だ。後からもっと複雑な問題も見ていくから、その時もまた同じことが言えるかどうかだな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ふーん。</p>
+
+<h1 id="最小二乗法">最小二乗法</h1>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+どうやって学習していくんだお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+関数をイメージするんだ。このプロットの各点を通る関数の形がわかれば、攻撃力からダメージがわかるだろ。ただし、ダメージにはノイズが含まれているから、関数がきっちり全ての点を通るわけじゃない。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/linear-regression3.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+これは一次関数だお！一次関数は、切片と傾きがわかれば関数の形が決まるから、それを調べることになるのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+冴えてるな。俺たちがいまから考える関数は、切片と傾きを $\theta$ を使って表すと、こんな風になる。</p>
+
+<p>$$
+y = \theta_0 + \theta_1 x
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うっ、式が出てくると急に数学っぽくなるお&hellip;、$\theta$ ってなんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+$\theta$ はこれから俺たちが求めていく未知数だ。パラメータとも言う。文字は別になんでもいいんだが、統計学の世界では、未知数や推定値を $\theta$ で表すことが多いので、今回も $\theta$ を使っただけだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+まあ、今の例の場合は切片と傾きだと思っておくお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+今はそれで問題ないだろう。そして、わかっているとは思うが $x$ が攻撃力、$y$ がダメージに対応している。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+そこは OK だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+なにか具体的な値を実際に代入して確認してみるとイメージもつきやすいだろう。そうだな、たとえば $\theta_0 = 1$、$\theta_1 = 2$ としてみよう。さっきの式はどうなるかわかるか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やらない夫の質問はいつも優しすぎるお。代入するだけだお。</p>
+
+<p>$$
+y = 1 + 2x
+$$</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+よし、ではその式の $x$ に何か代入して $y$ を求めてみようか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$x = 5$ の時を計算してみるお。</p>
+
+<p>\begin{eqnarray}
+  y &amp; = &amp; 1 + 2x \<br />
+  &amp; = &amp; 1 + 2 \cdot 5 \<br />
+  &amp; = &amp; 11
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+つまり、パラメータが $\theta_0 = 1$、$\theta_1 = 2$ の場合は、攻撃力が 5 の時に与えるダメージは 11 くらいになるってことだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+でも、さっきのグラフを見ると攻撃力 5 の時は、だいたい 40 〜 50 くらいはダメージを与えてるお。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/linear-regression2-2.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。つまり俺たちがいま適当に定義したパラメータは間違ってるってことだ。これから、機械学習を使って、この $\theta_0$ と $\theta_1$ の正しい値を求めていくんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+把握したお。で、どうやって求めていくんだお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その前に、さっきの式をこのように書き直すぞ。</p>
+
+<p>$$
+f_{\theta}(x) = \theta_0 + \theta_1 x
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$y$ が $f_{\theta}(x)$ に変わっただけだお。てか、なんでこんなことするお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+こうすることによって、これが $\theta$ というパラメータを持ち、$x$ という変数の関数だということを明示的に表せるだろう。それに $y$ のままにしておくと、この後に混乱することになるからな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ふーん。まあ、やらない夫がそうするっていうなら、だまって従うお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+肝心の $\theta$ の求め方だが、いま、俺たちの手元には、攻撃力とダメージのデータがある。さっきのグラフにプロットしてあった点だな。つまり学習用のデータだ。これを $f_{\theta}(x)$ に代入して得られた値と、実際の値の差が最小になるように $\theta$ を決定していくんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ん、ちょっと何いってるかよくわからないお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+具体的にいくつか学習用データを列挙してみよう。攻撃力に小数点があるのはいささか奇妙だが、とりあえず違和感は置いておこう。</p>
+
+<table>
+<thead>
+<tr>
+<th>攻撃力($x$)</th>
+<th>ダメージ($y$)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>3.0</td>
+<td>30</td>
+</tr>
+
+<tr>
+<td>3.7</td>
+<td>35</td>
+</tr>
+
+<tr>
+<td>4.3</td>
+<td>33</td>
+</tr>
+
+<tr>
+<td>4.6</td>
+<td>44</td>
+</tr>
+</tbody>
+</table>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やらない夫は、この 4 つの赤い点のデータを列挙したのかお？</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/linear-regression4.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだ。さっき、パラメータを $\theta_0 = 1$、$\theta_1 = 2$ という風に適当に決めて、$1 + 2x$ という式を作ったが、これに実際に $x$ の値を代入したものを表に足してみるぞ。</p>
+
+<table>
+<thead>
+<tr>
+<th>攻撃力($x$)</th>
+<th>ダメージ($y$)</th>
+<th>$\theta_0 = 1$、$\theta_1 = 2$ の時の $f_{\theta}(x)$</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>3.0</td>
+<td>30</td>
+<td>7.0</td>
+</tr>
+
+<tr>
+<td>3.7</td>
+<td>35</td>
+<td>8.4</td>
+</tr>
+
+<tr>
+<td>4.3</td>
+<td>33</td>
+<td>9.6</td>
+</tr>
+
+<tr>
+<td>4.6</td>
+<td>44</td>
+<td>10.2</td>
+</tr>
+</tbody>
+</table>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+これを見て、学習用データの値、つまり $y$ だな、それと $f_{\theta}(x)$ で計算した値が、ズレてることがわかるか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+かなりズレてるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ただ、$y$ と $f_{\theta}(x)$ の値は一致しているのが理想だ。わかるか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+わかるお。$y$ を予測するための関数が $f_{\theta}(x)$ なんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+理想に近づけるためには $y$ と $f_{\theta}(x)$ の誤差、つまり $|y - f_{\theta}(x)|$ が小さくなれば良い。全ての学習用データにおいて、誤差の和が最も小さくなるようなパラメータ $\theta$ を見つければいいというわけだ。こういう問題は最適化問題と呼ばれる。ついてこれてるか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うっ、うん、なんとか&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+図を使うと、よりわかりやすいかもしれないな。青い点が学習用データ、青い線が $1 + 2x$ のグラフ、そして赤い点線がそれらの差だ。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/linear-regression5.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あ、これだとわかりやすいお。誤差を最小にするってことは、この赤い点線の高さを小さくするってことだお。それはつまり、$f_{\theta}(x)$ が学習用のデータにフィットしていくってことになるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そういうことだな。学習用データの個数を n 個とすると、誤差の和は以下のような式で表せる。この式では $\theta$ が変数となっているところに注意だ。</p>
+
+<p>$$
+E(\theta) = \frac{1}{2}\sum_{i=1}^n (y^{(i)} - f_{\theta} (x^{(i)}))^2
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+いや、いきなり難易度あげすぎだお。まだ心の準備ができてなかったお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+まず、誤解されないように最初に説明しておくと、$x^{(i)}$ や $y^{(i)}$ は i 乗という意味ではなくて、i 番目の学習用データということだ。$x^{(1)}$ は 3.0 で $y^{(1)}$ が 30、それから $x^{(2)}$ は 3.7 で $y^{(2)}$ が 35、という具合だな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+そこは、なんとなくそういう雰囲気を感じていたお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+誤差の部分だが、実際には単純な誤差じゃなくて二乗誤差を使っている。なので、誤差の部分を二乗しているんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+全体を 2 で割ってるのは何だお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+後で $E(\theta)$ を微分することになるんだが、微分した式をちょっとだけ簡単にするためのトリックだ。最適化問題は、何か定数が全体に掛かっていたとしても、求まる答えは変わらないからこういうことができる。まあ、あまり深く考えなくていいさ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+おまじない的なものは気持ち悪いお&hellip;、うーん、全体像はわかったけど、ちょっと、まだピンときてないお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+具体的に値を入れて計算してみるか。$\theta_0 = 1$、$\theta_1 = 2$ として、さっき列挙した 4 つの学習用データを実際に代入してみよう。$f_\theta(x^{(i)})$ や $y^{(i)}$ はさっきの表の値を参照すると&hellip;</p>
+
+<p>\begin{eqnarray}
+E(\theta) &amp; = &amp; \frac{1}{2}\sum_{i=1}^n (y^{(i)} - f_{\theta} (x^{(i)}))^2 \<br />
+&amp; = &amp; \frac{1}{2}\left((30 - 7.0)^2 + (35 - 8.4)^2 + (33 - 9.6)^2 + (44 - 10.2)^2\right) \<br />
+\<br />
+&amp; = &amp; \frac{529.0 + 707.5 + 547.5 + 1142.4}{2} \<br />
+&amp; = &amp; 1463.2
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+1463.2？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+この 1463.2 という値自体に特に意味はないが、この値がどんどん小さくなるように、パラメータの $\theta$ を更新していくことが目的だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あー、この値が小さくなるということは、つまり予測値 $f_\theta(x)$ と、学習用データ $y$ の誤差が小さくなる、ということかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そういうことだ。このようなアプローチは最小二乗法と呼ばれる。</p>
+
+<h1 id="最急降下法">最急降下法</h1>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$E(\theta)$ の値を小さくしたいのはわかったけど、どうやって小さくしていくんだお？$\theta$ を適当に決めて、値を代入して、前の値と比較していくのはさすがに面倒だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そんな面倒なことはしないさ。この $E(\theta)$ のことを「目的関数」や「コスト関数」と呼ぶんだが、これを $\theta_0$ と $\theta_1$ について偏微分していく。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+偏微分？そんなもんで、わかるのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+微分の定義を思い出せ。微分は変化の度合いを求めるためのものだったろう。微分を習った時に、増減表を作ったりしなかったか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+増減表&hellip;、そういえば、そんなものがあったお。なつかしいお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+簡単な例で試してみようか。こういう二次関数があるとしよう。最小値は明らかに $x = 1$ の時の $g(1) = 0$ だな。この二次関数の増減表はどうなる？</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/linear-regression6.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+お&hellip;、今回の質問は少し難易度があがったお。えーっと&hellip;、まずは関数を微分するお。</p>
+
+<p>$$
+\frac{d}{dx}g(x) = 2x - 2
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+んで、導関数の符号を見ながら、増減表を作って&hellip;、これでいいかお？</p>
+
+<div style="text-align:center;">
+<table style="margin:0 auto;">
+<tbody>
+<tr>
+<th>$x$ の範囲</td>
+<td>$x &lt; 1$</td>
+<td>$x = 1$</td>
+<td>$x &gt; 1$</td>
+</tr>
+
+<tr>
+<th>$\frac{d}{dx}g(x)$ の符号</td>
+<td style="background-color:transparent;">-</td>
+<td style="background-color:transparent;">0</td>
+<td style="background-color:transparent;">+</td>
+</tr>
+
+<tr>
+<th>$g(x)$ の増減</td>
+<td>&#8600;</td>
+<td></td>
+<td>&#8599;</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+よし。この増減表を見ると、$x &lt; 1$ の時は右下がりになっている。逆に $x &gt; 1$ の時は右上がり、これは言い換えると左下がりになっているな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+増減表を見ても、グラフを見ても、確かにそうなっているお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+たとえば $x = 3$ からスタートして $g(x)$ の値を小さくするためには、$x$ を少しずつ左にずらしていけばいい。なぜなら、増減表から $x &gt; 1$ の時は、グラフが左下がりになっているのがわかるからだ。$x = -3$ からだと、逆に右にずらしていけばいいな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+それって、導関数の符号によって、$x$ をずらす方向が変わるってことかお？マイナスだったら右下がりだから右にずらして、プラスだったら左下がりだから左にずらす、ってことになるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その通りだ。導関数は元の関数の傾きを表しているからな。微分して導関数を求めて、その符号によって $x$ の位置をずらす、別の言い方をすると $x$ を更新していくことで、最小値を求めるんだ。$x$ の更新を式にするとこうだな。</p>
+
+<p>$$
+x := x - \eta\frac{d}{dx}g(x)
+$$</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+この手法を最急降下法と言う。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$\eta$ って、なんだお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+$\eta$ は、学習率と呼ばれる正の定数だ。学習率が小さければ、$g(x)$ の最小値にたどり着くまでに何度も $x$ を更新する必要があって、時間がかかってしまう。逆に学習率を大きくすれば、速く $g(x)$ の最小値にたどり着ける可能性があるが、$x$ が定まらず発散してしまう可能性もある。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ちょっと待つお&hellip;、よくわからんお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そういう時はいつでも、簡単な値を代入して、具体的に確認してみるんだ。たとえば $\eta = 1$ として、$x = 3$ からスタートしてみるんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やってみるお。$g(x)$ の微分は $2x - 2$ だから、$x$ を更新する式は $x := x - \eta(2x - 2)$ になるお。右辺の $x$ にどんどん代入してみるお。</p>
+
+<p>\begin{eqnarray}
+x &amp; := &amp; 3 - 1(2\cdot 3 - 2) = 3 - 4 = -1 \<br />
+x &amp; := &amp; -1 - 1(2\cdot -1 - 2) = -1 + 4 = 3 \<br />
+x &amp; := &amp; 3 - 1(2\cdot 3 - 2) = 3 - 4 = -1 \<br />
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+これは大変だお！！無限ループするお！！！</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+じゃぁ、今度は $\eta = 0.1$ として、同じく $x = 3$ からスタートしてみるんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やってみるお。面倒くさいから小数は、小数点以下 1 桁までで計算するお。</p>
+
+<p>\begin{eqnarray}
+x &amp; := &amp; 3 - 0.1\cdot(2\cdot 3 - 2) = 3 - 0.4 = 2.6 \<br />
+x &amp; := &amp; 2.6 - 0.1\cdot(2\cdot 2.6 - 2) = 2.6 - 0.3 = 2.3 \<br />
+x &amp; := &amp; 2.3 - 0.1\cdot(2\cdot 2.3 - 2) = 2.3 - 0.2 = 2.1 \<br />
+x &amp; := &amp; 2.1 - 0.1\cdot(2\cdot 2.1 - 2) = 2.1 - 0.2 = 1.9 \<br />
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うーん、$x$ が 1 に近づいていってるけど、とても近づき方が遅いお&hellip;。小数点の計算、面倒だお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+つまり、そういうことだな。$\eta$ が大きいと、$x$ をずらしすぎて、左に行ったり右に戻ったりを繰り返しているのがわかる。一方で、$\eta$ が小さいと、とても少しずつだが、$x$ が左にずれていっているのがわかる。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+なるほど。さすが、やらない夫だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+話を目的関数 $E(\theta)$ に戻すぞ。この関数は、変数として $\theta_0$ と $\theta_1$ の 2 つをもつ 2 変数関数だ。つまり各々の $\theta$ の更新を式にすると、こうだ。わかるか？</p>
+
+<p>$$
+\theta_0 := \theta_0 - \eta\frac{\partial E}{\partial \theta_0} \<br />
+\theta_1 := \theta_1 - \eta\frac{\partial E}{\partial \theta_1}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+んー、ちょっと複雑になったけど、$g(x)$ が $E$ に変わって、偏微分になっただけだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+実際に $E$ を偏微分をしてみようか。まずは $\theta_0$ からだ。どうなる？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+えっ、あ、やる夫がやるのかお。えーっと&hellip;、あー、$\theta_0$ 自体は $E$ の中にはなくて、$f_{\theta}(x)$ の中にあるから、まずは代入しないといけなくて&hellip;、あ、2 乗されてるから、展開も必要だお。うっ、これは結構、面倒くさいお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+正攻法だと少し面倒くさいから、合成関数の微分を使うともっと楽にできるな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ん、合成関数の微分？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+$f$ と $g$ という関数があったとき、これらの合成関数 $f(g(x))$ を $x$ で微分する場合はこうなる。これを使えば簡単になるぞ。</p>
+
+<p>$$
+\frac{df}{dx} = \frac{df}{dg}\cdot\frac{dg}{dx}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+お、これを目的関数に適用すればいいのかお？えっと&hellip;、こうかお？</p>
+
+<p>$$
+\frac{\partial E}{\partial \theta_0} = \frac{\partial E}{\partial f_{\theta}}\cdot\frac{\partial f_{\theta}}{\partial \theta_0}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+それぞれ計算してみるお。まずは $E$ を $f_{\theta}$ で微分するところから&hellip;</p>
+
+<p>\begin{eqnarray}
+\frac{\partial E}{\partial f_{\theta}} &amp; = &amp; \frac{\partial}{\partial f_{\theta}} \left(\frac{1}{2}\sum_{i=1}^n (y^{(i)} - f_{\theta} (x^{(i)}))^2\right) \<br />
+&amp; = &amp; \sum_{i=1}^n (f_{\theta} (x^{(i)}) - y^{(i)})
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あー、ここで微分した時に次数の 2 が前に降りてきて、約分されて式が綺麗になるってわけかお。なるほど。次は $f_{\theta}$ の微分だお。</p>
+
+<p>\begin{eqnarray}
+\frac{\partial f_{\theta}}{\partial \theta_0} &amp; = &amp; \frac{\partial}{\partial \theta_0} \left(\theta_0 + \theta_1 x\right) \<br />
+&amp; = &amp; 1
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+おっ、簡単になったお。この微分した結果 2 つを掛ければいいんだから&hellip;、答えはこうだお！あってるかお？</p>
+
+<p>\begin{eqnarray}
+\frac{\partial E}{\partial \theta_0} &amp; = &amp; \sum_{i=1}^n (f_{\theta} (x^{(i)}) - y^{(i)}) \cdot 1 \<br />
+&amp; = &amp; \sum_{i=1}^n (f_{\theta} (x^{(i)}) - y^{(i)})
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+よし、いいぞ。$\theta_1$ に関しても、$E$ の微分はまったく同じだし、$f_{\theta}$ の微分は今度は $x$ になるな。要するに、$E$ を $\theta_1$ で偏微分した式はこうだ。</p>
+
+<p>$$
+\frac{\partial E}{\partial \theta_1} = \sum_{i=1}^n (f_{\theta} (x^{(i)}) - y^{(i)})x^{(i)}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+合成関数の微分って便利だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+俺たちは、偏微分した結果を手に入れたので、結局は $\theta$ の更新式は以下のようになる。</p>
+
+<p>\begin{eqnarray}
+\theta_0 &amp; := &amp; \theta_0 - \eta\sum_{i=1}^n (f_{\theta} (x^{(i)}) - y^{(i)}) \<br />
+\theta_1 &amp; := &amp; \theta_1 - \eta\sum_{i=1}^n (f_{\theta} (x^{(i)}) - y^{(i)})x^{(i)}
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うーん、だいぶおぞましい式だお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+実装するときの注意点だが、これら 2 つの $\theta$ は同時に更新していかなければならないんだ。$\theta_0$ を更新し終わった後に $\theta_1$ を更新しようとする時、更新済みの $\theta_0$ を使っていけない。更新前の $\theta_0$ を使うんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+頭の片隅に置いとくお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+これで、すべての道具はそろった。おさらいも兼ねて、まとめよう。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+俺たちは、攻撃力からダメージを計算するために、この未知の関数の切片と傾きを調べたかった。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/linear-regression3.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そのため、この関数を以下のように定義した。</p>
+
+<p>$$
+f_\theta(x) = \theta_0 + \theta_1 x
+$$</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そして、学習用データと、この関数の値の誤差を、以下のような関数で定義した。これを目的関数と呼ぶんだった。</p>
+
+<p>$$
+E(\theta) = \frac{1}{2}\sum_{i=1}^n (y^{(i)} - f_{\theta} (x^{(i)}))^2
+$$</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+俺たちのゴールは、この目的関数の値を最小化する $\theta_0$ と $\theta_1$ を見つけることだ。なぜなら、この目的関数は誤差の関数であり、誤差が小さければ小さいほど $f_\theta(x)$ の正しい形がわかるからだ。そのために、最急降下法を使って以下のようにパラメータ $\theta_0$ と $\theta_1$ を更新していく。</p>
+
+<p>\begin{eqnarray}
+\theta_0 &amp; := &amp; \theta_0 - \eta\sum_{i=1}^n (f_{\theta} (x^{(i)}) - y^{(i)}) \<br />
+\theta_1 &amp; := &amp; \theta_1 - \eta\sum_{i=1}^n (f_{\theta} (x^{(i)}) - y^{(i)})x^{(i)}
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+この更新のフェーズを学習と呼ぶことが多いな。更新を止めるタイミングは、目的関数の値が更新の前後であまり変わらなくなってきた時だ。もしくは一定回数だけ繰り返すという場合もある。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+具体的な $\theta$ の値がわかったら、あとはもう $f_\theta(x)$ に攻撃力を入れれば、ダメージが出力される。これでめでたく目標達成だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+単純な一次関数の形を見つけるだけなのに、たいした苦労だお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+最初にも言ったが、これは問題設定が単純なので、あまり嬉しさが伝わらないかもしれないが、実際はもっと複雑な問題を解きたいことが多い。次はもう少し複雑な例を見てみるか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ちょっと疲れたから、休憩するお&hellip;</p>
+
+<hr />
+
+<p><a href="/blog/2016/06/02/yaruo-machine-learning3/">やる夫で学ぶ機械学習 - 多項式回帰と重回帰 -</a> へ続く。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92">機械学習</a>
+      
+        <a class="tag-link" href="tags/%E3%82%84%E3%82%8B%E5%A4%AB%E3%81%A7%E5%AD%A6%E3%81%B6">やる夫で学ぶ</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2016/01/04/yaruo-machine-learning2/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2016/01/04/yaruo-machine-learning2/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2016/01/04/yaruo-machine-learning2/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

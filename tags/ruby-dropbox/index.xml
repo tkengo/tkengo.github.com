@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ruby Dropbox on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/ruby-dropbox/</link>
+    <description>Recent content in Ruby Dropbox on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Sat, 14 Sep 2013 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/ruby-dropbox/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Ruby on Rails を使って Dropbox にファイルを送信する</title>
+      <link>http://tkengo.github.io/blog/2013/09/14/dropbox-api-on-ruby-on-rails/</link>
+      <pubDate>Sat, 14 Sep 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/09/14/dropbox-api-on-ruby-on-rails/</guid>
+      <description>Ruby on Rails を使って Dropbox の API を呼び出してファイルを送信したかったので少し調べてみました。DropboxAPI は事前に OAuth 認証でアクセストークンを取得しておき、そのトークンを使って API にアクセスするという一般的なやり方です。
+Dropbox アプリの作成 まずは Dropbox のアプリを作らないといけません。アプリに対してユーザーが認証を行ってアクセストークンを発行してもらいます。Dropbox のアプリは https://www.dropbox.com/developers/apps ここから作ることが出来ます。この記事では Dropbox アプリは作成済みの前提で進めていきます。
+ちなみに Dropbox アプリは作り方によって、フルアクセスだったり特定の権限しかもらえなかったりします。アプリを作る時に、ウィザード形式でいくつか質問がありますのでそれに答えていく形になります。
+アクセストークンの取得 Dropbox の OAuth 認証は OAuth 1.0 と OAuth 2.0 の2つのバージョンがあります。Dropbox としては OAuth 1.0 でも OAuth 2.0 でもどちらでもアクセストークンを取得できる API は用意されているのですが、後述する DropboxSDK がどうも OAuth 2.0にしか対応していない ようなので OAuth 2.0 の方を使います。
+omniauth の Dropbox 用ストラテジを準備する ruby で OAuth 認証するといえば有名なのは omniauth ですね。omniauth の Dropbox 用ストラテジは OAuth 1.0 のものしかありませんでしたので OAuth 2.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>zshのターミナルにリポジトリの情報を表示してみる &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2013-05-12</p>
+      <h1><a href="http://tkengo.github.io/blog/2013/05/12/zsh-vcs-info/">zshのターミナルにリポジトリの情報を表示してみる</a></h1>
+    </header>
+    <article>
+      
+
+<p>zshのターミナルに今いるパスのリポジトリの情報を表示してみることにします。最終目標はこんな感じ。</p>
+
+<p><img src="/assets/img/2013-05-12-zsh-vcs-info/goal1.png" alt="" />
+<img src="/assets/img/2013-05-12-zsh-vcs-info/goal2.png" alt="" />
+<img src="/assets/img/2013-05-12-zsh-vcs-info/goal3.png" alt="" /></p>
+
+<ul>
+<li>ブランチ名を表示<!-- a --></li>
+<li>全てコミットされてきれいな状態であれば緑色<!-- a --></li>
+<li>addされていないファイルがあれば<code>+</code>マークをつけて赤色</li>
+<li>commitされていないファイルがあれば<code>!</code>マークをつけて黄色</li>
+</ul>
+
+<p>ちなみにこの記事に書いてあることは zsh のバージョンが <strong>4.3.10</strong> 以上に限って有効です。</p>
+
+<p>さて、これを実現するには <strong>vcs_info</strong> というものを使います。以下のような記述を <code>~/.zshrc</code> に追加します。</p>
+
+<pre><code class="language-bash"># この行は現在のパスを表示する設定です。ブランチを表示して色をつける設定とは関係ありません
+RPROMPT=&quot;%{${fg[blue]}%}[%~]%{${reset_color}%}&quot;
+
+autoload -Uz vcs_info
+setopt prompt_subst
+zstyle ':vcs_info:git:*' check-for-changes true
+zstyle ':vcs_info:git:*' stagedstr &quot;%F{yellow}!&quot;
+zstyle ':vcs_info:git:*' unstagedstr &quot;%F{red}+&quot;
+zstyle ':vcs_info:*' formats &quot;%F{green}%c%u[%b]%f&quot;
+zstyle ':vcs_info:*' actionformats '[%b|%a]'
+precmd () { vcs_info }
+RPROMPT=$RPROMPT'${vcs_info_msg_0_}'
+</code></pre>
+
+<p>最初はネットから拾ってきてそれをそのまま使ってて動くには動いてたのですが、正直設定内容を全然理解してなくってイミフでしたので、勉強もかねてマニュアルを読んでちょっと改造してみました。以下つらつらと解説していきますが、ほぼマニュアルの日本語訳みたいなものですが自分用まとめということで。</p>
+
+<h1 id="vcs-info-って">vcs_info って？</h1>
+
+<p><strong>vcs</strong> は <strong>V</strong>ersion <strong>C</strong>ontrol <strong>S</strong>ystems のこと(だと思う)。</p>
+
+<p>subversion とか CVS とか git とかいわゆるバージョン管理システムと呼ばれるものから情報を自動的に取得してくれる関数です。</p>
+
+<p>vsc_info 関数で取得した情報をもとに、それをプロンプトに表示したりします。</p>
+
+<h2 id="サポートしてるvcs">サポートしてるVCS</h2>
+
+<p>サポートしてるバージョン管理システムは以下の12個。めっちゃあるよ。</p>
+
+<ul>
+<li><strong>Bazaar</strong> (bzr) <a href="http://bazaar-vcs.org/">http://bazaar-vcs.org/</a></li>
+<li><strong>Codeville</strong> (cdv) <a href="http://codeville.org/">http://codeville.org/ </a></li>
+<li><strong>Concurrent Versioning System</strong> (cvs) <a href="http://www.nongnu.org/cvs/">http://www.nongnu.org/cvs/</a></li>
+<li><strong>Darcs</strong> (darcs) <a href="http://darcs.net/">http://darcs.net/</a></li>
+<li><strong>Fossil</strong> (fossil) <a href="http://fossil-scm.org/">http://fossil-scm.org/</a></li>
+<li><strong>Git</strong> (git) <a href="http://git-scm.com/">http://git-scm.com/</a></li>
+<li><strong>GNU arch</strong> (tla) <a href="http://www.gnu.org/software/gnu-arch/">http://www.gnu.org/software/gnu-arch/</a></li>
+<li><strong>Mercurial</strong> (hg) <a href="http://mercurial.selenic.com/">http://mercurial.selenic.com/</a></li>
+<li><strong>Monotone</strong> (mtn) <a href="http://monotone.ca/">http://monotone.ca/</a></li>
+<li><strong>Perforce</strong> (p4) <a href="http://www.perforce.com/">http://www.perforce.com/</a></li>
+<li><strong>Subversion</strong> (svn) <a href="http://subversion.tigris.org/">http://subversion.tigris.org/</a></li>
+<li><strong>SVK</strong> (svk) <a href="http://svk.bestpractical.com/">http://svk.bestpractical.com/</a></li>
+</ul>
+
+<h2 id="vcs-info-を使う準備">vcs_info を使う準備</h2>
+
+<p>で、これらのバージョン管理システムの情報を自動的に取得してくれる <strong>vcs_info</strong> 君ですが、こいつを使うための宣言みたいなことをやってるんですね。それが最初の行のこれ。</p>
+
+<pre><code class="language-bash">autoload -Uz vcs_info
+</code></pre>
+
+<p>これで <strong>vcs_info</strong> 君を使う準備ができたのですが、さてバージョン管理システムの情報を取得するためにはこいつをどっかで呼び出さないといけない。</p>
+
+<h2 id="vcs-info-を呼び出す">vcs_info を呼び出す</h2>
+
+<p>で、呼び出してるのが、この行。</p>
+
+<pre><code class="language-bash">precmd () { vcs_info }
+</code></pre>
+
+<p><code>precmd</code> てのが zsh のプロンプトが表示される毎に実行される関数で、ここで呼び出すことによって何かコマンドを叩く毎に <strong>vsc_info</strong> 君がバージョン管理システムから情報を取得してきてくれます。そして情報を取得できたら次はそれをプロンプトに表示しないといけないわけですが、、、</p>
+
+<h2 id="vcs-info-の結果を表示する">vcs_info の結果を表示する</h2>
+
+<p>取得した情報の表示をやってるのがこの行。</p>
+
+<pre><code class="language-bash">setopt prompt_subst
+RPROMPT=$RPROMPT'${vcs_info_msg_0_}'
+</code></pre>
+
+<p>実は <strong>vcs_info</strong> 君は、呼び出された時に <code>$vcs_info_msg_0_</code> という変数に取得してきた情報を格納してくれます。なのでそれをプロンプト変数に設定することでバージョン管理システムの情報を表示することができます。<br/>
+ただ、プロンプトに <code>vcs_info_msg_0_</code> をセットするだけではうまく表示してくれないので <code>prompt_subst</code> というオプションをセットします。これは、プロンプトを表示する際に最初に変数展開をしてくれるというオプションです。</p>
+
+<h2 id="vcs-info-の設定をカスタマイズする">vcs_info の設定をカスタマイズする</h2>
+
+<p><code>$vcs_info_msg_0_</code> に格納される情報は自分でカスタマイズできます。カスタマイズしてるのは以下の部分です。</p>
+
+<pre><code class="language-bash">zstyle ':vcs_info:git:*' check-for-changes true
+zstyle ':vcs_info:git:*' stagedstr &quot;%F{yellow}!&quot;
+zstyle ':vcs_info:git:*' unstagedstr &quot;%F{red}+&quot;
+zstyle ':vcs_info:*' formats &quot;%F{green}%c%u[%b]%f&quot;
+zstyle ':vcs_info:*' actionformats '[%b|%a]'
+</code></pre>
+
+<p><code>:vcs_info:*</code> とすると特にバージョン管理システムを指定しない設定になります。 <code>:vcs_info:git:*</code> とするとバージョン管理システムが git の時のみに有効な設定となります。</p>
+
+<p>1つずつ見てみましょう。</p>
+
+<ul>
+<li><strong>check-for-changes</strong></li>
+</ul>
+
+<p><strong>true</strong> または <strong>false</strong> を指定します(デフォルトは <strong>false</strong>)。<br/>
+  <strong>true</strong> が指定されていると <em>formats</em> という設定項目(後で説明します)で <code>%c</code> と <code>%u</code> というフォーマットが使えるようになります。これは、リポジトリにコミットされていないファイルがあった場合に <code>%c</code> または <code>%u</code> に文字列が格納されます。詳しくは <strong>stagedstr</strong> と <strong>unstagedstr</strong> の説明を参照。<br/>
+  この設定を <strong>true</strong> にするとおそらく実際にバージョン管理システムに問い合わせにいってると思いますが、マニュアルには <strong>デカいリポジトリとかだと結構重くなるよ。だからデフォルトではこの機能は off になってるよ</strong> とあります。</p>
+
+<ul>
+<li><strong>stagedstr</strong></li>
+</ul>
+
+<p>ステージされていてコミットされていない(git add だけされている)ファイルがあった時 <strong>formats</strong> の設定に <code>%c</code> があれば、ここで指定した文字列が表示されます。今回の例では黄色で <code>+</code> プラスマークが表示されます。</p>
+
+<ul>
+<li><strong>unstagedstr</strong></li>
+</ul>
+
+<p>ステージされていない(git add されていない)変更ファイルがあった時 <strong>formats</strong> の設定に <code>%u</code> があれば、ここで指定した文字列が表示されます。今回の例では赤色で <code>!</code> エクスクラメーションマークが表示されます。</p>
+
+<ul>
+<li><strong>formats</strong></li>
+</ul>
+
+<p><code>$vcs_info_msg_0_</code> で表示する内容をここに指定します。 <code>%</code> でエスケープすることで色々なフォーマットが使えます。詳しくは<a href="http://zsh.sourceforge.net/Doc/Release/User-Contributions.html#Configuration-1" target="_blank">マニュアル(英語)</a>。ここでは例で使ってるものだけ解説します。</p>
+
+<ul>
+<li><p><code>%c</code></p>
+
+<p>ステージされていてコミットされていない(git add だけされている)ファイルがあった時に <strong>stagedstr</strong> で指定した文字列に展開されます。ない場合は空です。</p></li>
+
+<li><p><code>%u</code></p>
+
+<p>ステージされていない(git add されていない)変更ファイルがあった時に <strong>unstagedstr</strong> で指定した文字列に展開されます。ない場合は空です。</p></li>
+
+<li><p><code>%b</code></p>
+
+<p>カレントブランチ名に展開されます。</p></li>
+</ul>
+
+<p>例では <code>%F{green}%c%u[%b]%f</code> という値を設定しています。これは</p>
+
+<ul>
+<li>通常はブランチ名のみカッコ <code>[]</code> でくくって緑色で表示<!-- a --></li>
+<li>add されていないファイルがある時は頭に <code>+</code> がついて赤くなる</li>
+<li>commit されていないファイルがある時は頭に <code>!</code> がついて黄色くなる</li>
+</ul>
+
+<p>となります。</p>
+
+<ul>
+<li><strong>actionformats</strong></li>
+</ul>
+
+<p>rebase 途中だったり merge でコンフリクトが発生したり、何か特別な状況になった時に <strong>formats</strong> の代わりに <strong>actionformats</strong> で指定した文字列が <code>$vcs_info_msg_0_</code> に格納されます。</p>
+
+<h1 id="設定完了">設定完了</h1>
+
+<p>ようやっと設定の全貌が理解できました。わからないまま使ってるより、きちんとわかって使ったほうがスッキリしますね。ただ、ここで説明している以外にも <strong>vcs_info</strong> 以外の関数やら、フック機能やら、まだまだ便利そうな機能がありそうですのでさらにマニュアルを読み進めて行きたいところです。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/zsh">zsh</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2013/05/12/zsh-vcs-info/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2013/05/12/zsh-vcs-info/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2013/05/12/zsh-vcs-info/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

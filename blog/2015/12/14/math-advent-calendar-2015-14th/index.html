@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>プログラマと数学 &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-12-14</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/12/14/math-advent-calendar-2015-14th/">プログラマと数学</a></h1>
+    </header>
+    <article>
+      
+
+<p>この記事は <a href="http://www.adventar.org/calendars/852">Math Advent Calendar 2015</a> の 14 日目の記事です。</p>
+
+<p>他のブログが本格的な数学のお話を記事にしている中、僕はというとそんなに高度な数学の話ができるわけではないので、自身の数学との関わり方や、また今年に入って開催してきた <a href="http://maths4pg-fuk.connpass.com/">プログラマのための数学勉強会@福岡</a> の振り返りとその今後についてを書いていきます。同じような境遇の人が少しでもこっち側の世界に足を踏み入れれるようになることを願って。</p>
+
+<h1 id="プログラマから見た数学の楽しさ">プログラマから見た数学の楽しさ</h1>
+
+<p>アルゴリズムやディープラーニング、ビッグデータ、WebGL など、よく聞くいわば流行りのワードについて、そういうものを使った技術やサービスを見つけた時「実際、中身はどういう風に動いているんだろう？」という好奇心はプログラマであれば潜在的には誰でも持っているのではないでしょうか。それは私達プログラマが、普通の人よりもより身近に普段からそういうことに接しているからだと思いますし、何よりも夢があるからです。</p>
+
+<p>Google は画像を投げるだけで高速に画像の中身を識別できるようになりました。Facebook は顔写真から個人を予測することができるようになりました。映像や 3D の技術を使ったプロジェクションマッピングなども有名になりました。最先端の技術には夢が詰まっています。</p>
+
+<p>ご存知のように、そういった技術の背後には高度な数学な知識が必要なものもあります。完全に理解するのはとても無理かもしれません。でも、それでも数学を知っているのと知っていないのでは、そういった技術をより身近に感じることができるかどうかには雲泥の差があります。</p>
+
+<p>前にも書きましたが、数学という道具はプログラミングにおいて必ずしも必要なものではありません。しかし数学はプログラミングにおいて視野を広げるための武器になり得ます。ディープラーニングの仕組みがわかると楽しいし、ましてや自分で実装ができた日には興奮して眠れないことでしょう。</p>
+
+<h1 id="考えることの楽しさ">考えることの楽しさ</h1>
+
+<p>数学にはもう一つ僕が好きな側面があります。考える事の楽しさです。たとえば数学にはよく「公式」というものが出てきます。二次方程式の解の公式 (1) とか、三角関数の加法定理 (2) (3) とか。</p>
+
+<p>$$
+x = \frac{-b\pm\sqrt{b^2-4ac}}{2a}
+\tag{1}
+$$
+$$
+\sin(\alpha+\beta) = \sin\alpha\cdot\cos\beta + \cos\alpha\cdot\sin\beta
+\tag{2}
+$$
+$$
+\cos(\alpha+\beta) = \cos\alpha\cdot\cos\beta - \sin\alpha\cdot\sin\beta
+\tag{3}
+$$</p>
+
+<p>中学生や高校生の頃、こういう式はよく暗記していたと思います。でも歴史上初めてこれを発見した人達は、何かしらの方法でこれらの公式を導出してきたはずです。そして同様に僕達も丸暗記なんてしなくても、いろんな方法で公式を「導出」することだってできるのです。もちろん暗記が完全に悪というとそうではないと思います。我々には有限の時間しかありませんので効率よく知識を頭に詰め込んでいく必要があります。</p>
+
+<p>ただ、それだけだと数学はまったくおもしろくありません。数式を見つめて、数式をいじって、数式と戯れます。裏に隠れてるものを見つける努力をします。代数的な解釈や、図形的な解釈もしてみます。グラフを書くのも良いです。そうやって自分で「考えて」みます。一見、まったく関係のないように見えることでも実は繋がっていたりします。</p>
+
+<p>$(x+a)(x+b)=c$ という式をみて何を思い浮かべるでしょうか。とりあえず $x^2 + ax + bx + ab = c$ という風に展開するのは誰でも思いつきそうです。$x$ について解いてみますか？$x \ge 0, a \ge 0, b \ge 0$ という条件を付け加えて、縦が $(x+a)$ で、横が $(x+b)$ という長方形の面積が $c$ になる、という解釈をしてみるのもありでしょう。下図の赤は $x^2$ 、黄色は $ax$ 、緑は $bx$ 、白は $ab$ なので、全部たすと長方形の面積 $c$ になるし、実際にさっき展開した式と一致しています。</p>
+
+<p><img src="/assets/img/2015-12-14-math-advent-calendar-2015-14th/rect.png" alt="四角形" /></p>
+
+<p>思えば、僕はそういうこと、つまり公式を暗記して問題を解くばかりが正解ではなく、自分で考えることの楽しさに気付いてから数学がとても好きになったのでした。たくさんの数式や問題を見て、そして考えて、背後にある繋がりを見つけたり、美しい式やグラフにうっとりしたり。題材は無限にあります。暗記せずに考えてみましょう。</p>
+
+<h1 id="数学ができないなりの楽しさ">数学ができないなりの楽しさ</h1>
+
+<p>とはいえ、そんなに「考える」と言われても、その土台となる経験や知識を持っていないとどうにもならないこともあります。実際に僕もしょっちゅう詰まります。そのためには長く根気強く数学と付き合っていく必要はあります。</p>
+
+<p>話は変わりますが、私は今年の中旬から福岡でプログラマのための数学勉強会という勉強会を主催してきました。実はプログラマのための数学勉強会を開催する時も悩みました。自分は数学科卒でもないし、博士なんか持ってない、それに別に数学が極めて得意なわけでもないし、こんな自分が数学に関する勉強会なぞ主催していいんだろうかと不安に思っていました。</p>
+
+<p>他の理由もあって、最初は開催は無理だろうと思っていましたが、Twitter のフォロワーや、東京の勉強会の主催者である <a href="https://twitter.com/taketo1024">@taketo1024</a> さんからの後押しもあって開催に踏み切ることができました。それからは、数学が得意じゃないからというような理由はもう考えないようにしました。無意味な恐怖心が邪魔をしていただけだと思います。</p>
+
+<p>僕はただ数学が好きですし、そういう想いを通して数学好きな人と知り合いになれれば嬉しいなと思ったし、そういうことを伝えるために立場も何も関係ないんじゃないかな、と。何よりも、交流ってやっぱり楽しいんだし。</p>
+
+<h1 id="プログラマのための数学勉強会とは">プログラマのための数学勉強会とは</h1>
+
+<p>結局は、プログラマのための数学勉強会を通して伝えたかった僕の想いとしては、やっぱり数学って楽しいよっていうことです。数学自体も楽しいし、その先に見えるものは、プログラマとしての自分をもっとワクワクさせてくれます。</p>
+
+<p>まだ 2 回しか開催していませんが、幸いにも一定数の参加者には来ていただいていますし、来年になってもモチベーションを失わない限りは隔月くらいで続けていきたいという気持ちはあります。これからもっと一緒に楽しめる人が増えればとてもうれしいです。</p>
+
+<h1 id="数学資料まとめ">数学資料まとめ</h1>
+
+<p>チラ裏だけで終わるのもアレなので僕が読んだことのある、無料の数学関連の文書を貼っておきます。主に大学レベルのものばかりですが、お金払って勉強を始めるには敷居が高いなぁと感じている方にはオススメです。</p>
+
+<ul>
+<li><p><a href="http://proofcafe.org/k27c8/math/math/liner_algebraI/index.html">線形代数学</a></p>
+
+<p>線形代数の基礎となる単語や概念が解説されている Web サイトです。</p></li>
+
+<li><p><a href="http://www.math.tohoku.ac.jp/~atsushi/Jarticle/lin_alg.pdf">線型代数学入門</a></p>
+
+<p>上記と同じく線形代数の基礎です。こっちは PDF なので、ダウンロードしてオフラインでも読めますが、ページ数がかなり多くて読むのがちょっと大変かも。</p></li>
+
+<li><p><a href="http://proofcafe.org/k27c8/math/math/analysisI/index.html">微分積分入門</a></p>
+
+<p>微分積分の基礎です。図が多くてわかりやすいです。</p></li>
+
+<li><p><a href="http://www.ic.is.tohoku.ac.jp/~swk/lecture/yaruodsp/main.html">やる夫で学ぶディジタル信号処理</a></p>
+
+<p>フーリエ変換に関する入門記事です。会話形式で話が進んでいき図の挿入もあり、とてもわかりやすいです。PDF もあります。</p></li>
+
+<li><p><a href="http://wiki.fdiary.net/lacs/?PSCS.PDF">プログラミングのための確率統計の下書き</a></p>
+
+<p>プログラミングのための確率統計という本の下書き PDF です。ページ数がかなりありますがとてもわかりやすいです。私はこの下書きを読んだ後に実際に本を買って読みましたが、下書きでも十分な内容だと思います。</p></li>
+
+<li><p><a href="http://herumi.github.io/ango/">クラウドを支えるこれからの暗号技術</a></p>
+
+<p>少し純粋な数学からは離れるかもしれませんが、暗号技術の話です。</p></li>
+</ul>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%9E%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E6%95%B0%E5%AD%A6%E5%8B%89%E5%BC%B7%E4%BC%9A">プログラマのための数学勉強会</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/12/14/math-advent-calendar-2015-14th/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/12/14/math-advent-calendar-2015-14th/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/12/14/math-advent-calendar-2015-14th/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

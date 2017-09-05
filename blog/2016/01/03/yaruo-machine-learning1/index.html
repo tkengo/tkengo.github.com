@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>やる夫で学ぶ機械学習 - 序章 - &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2016-01-03</p>
+      <h1><a href="http://tkengo.github.io/blog/2016/01/03/yaruo-machine-learning1/">やる夫で学ぶ機械学習 - 序章 -</a></h1>
+    </header>
+    <article>
+      
+
+<p>やる夫で学ぶ機械学習を書いてみました。</p>
+
+<p>やる夫で学ぶ機械学習シリーズの第 1 回です。記事がとても長くなったので、分割してます。</p>
+
+<p>目次はこちら。<a href="/blog/2016/06/06/yaruo-machine-learning0/">やる夫で学ぶ機械学習シリーズ</a></p>
+
+<h1 id="機械学習">機械学習</h1>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+機械学習やってみたいけど、そもそもどうすりゃいいかまったくわからんお。Wikipedia を見たけど、何を言ってるのかさっぱりだお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+お前、Wikipedia でわかるわけがないだろ、常識的に考えて&hellip;</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+そうなのかお&hellip;。しかも、やたら数式が出てきて、日本語でおｋって言いたくなるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+確かに数式は出てくるが、そもそも数式というのは日本語で言うと長ったらしくなるものを誰にでもわかるように厳密で簡潔に表してるものなんだぞ。というか、やる夫は機械学習で何がしたいんだ？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+えっ&hellip;、あーえーっと、ほら、アレだお&hellip;なんか、こう、パーッと、いい感じの&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+お前、ただ機械学習って言いたいだけだろ&hellip;</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+そんなことないお！！やる夫は流行に敏感なんだお！！！</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+まず機械学習で何をやりたいかを考えることは大事なことなんだが&hellip;、じゃぁ質問を変えよう。機械学習はどういうところで使われていると思う？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+スパムメールの判定とか、文字認識、金融市場の予測なんかに使われてるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その通りだ。よく知ってるじゃないか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+Wikipedia に書いてあったお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+実際は、それ以外にも幅広い分野で利用されているんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+万能タイプなんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そんなことはないぞ。機械学習があればなんでもできるようになるわけじゃない。どこに適用できて、どこに適用できないのかを見極めるのも大事なことだ。それに、大抵の場合は大量の学習データを人手で用意する必要もあるんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+機械学習ってそんなもんなのかお&hellip;、ちょっと面倒くさいお。勉強するモチベーションさがってきたお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+まあそういうな。機械学習のおかげで、今まで出来なかったことが出来るようになった事例はたくさんあるんだ。勉強してみると案外おもしろいもんだぞ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ふーん。そこまで言うなら勉強につきあってやってもいいお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+なんで急に上から目線なんだよ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ここでやる夫が勉強をやめると、話が続かないんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+まったく&hellip;。じゃぁ最初は機械学習でどういう問題を扱えるかという話からだ。</p>
+
+<h1 id="回帰-分類-クラスタリング">回帰、分類、クラスタリング</h1>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+さっき言ったように、機械学習はどんな問題でも扱えるわけじゃない。機械学習が得意とする問題には、主に以下のようなものがある。</p>
+
+<ul>
+<li>回帰</li>
+<li>分類</li>
+<li>クラスタリング</li>
+</ul>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+統計学で同じような単語を聞いたことがあるお。回帰分析とか、統計的分類とか。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+やる夫は統計学に明るいのか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+えっ、いや、Wikipedia で読んだことあるだけだお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+確かに回帰や分類は、統計学で言うところのそれと同じだな。どこが違うかって言われると微妙だが、その辺を気にしてもあまり建設的ではないから、話を先に進めよう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やらない夫がはぐらかしたお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+いいんだよ。とりあえず、回帰の話をしようか。英語で Regression とも言う。回帰は、わかりやすく言うと学習データとして &ldquo;連続するデータ&rdquo;、例えば時系列データ、などが与えられた時、未知のデータがどういうものかを予測するものだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+いや、全然わかりやすくないお&hellip;、なに言ってるんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+例えば株価の予測をしたいとしよう。この場合、学習用の時系列データというのは「昨日の株価」「2 日前の株価」「3 日前の株価」&hellip;「n 日前の株価」が使えるだろう。実際に株価がいくらだったのかは、調べればわかるよな。この時、これらの学習データを使って「明日の株価はどうなりそうか」や「この先のトレンドはどうなりそうか」などを予測するのが回帰だ。</p>
+
+<table>
+<thead>
+<tr>
+<th>日付</th>
+<th>株価</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>昨日</td>
+<td>¥1,000</td>
+</tr>
+
+<tr>
+<td>2 日前</td>
+<td>¥1,100</td>
+</tr>
+
+<tr>
+<td>3 日前</td>
+<td>¥1,070</td>
+</tr>
+</tbody>
+</table>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+株価の予測ができるなんてチートだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+現実はそううまくはいかない。株価が変動する要因は過去の株価だけではないからな。他にも現在の景気や企業の業績など様々な要因があるはずだし、未来を完全に見通せるわけでもない。あくまで予測と言っているんだから、参考の域を出ない。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+まあ、そこはなんとなくわかるお。時系列データじゃないけど、たとえば、身長から体重を求めるのも回帰の一種かお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。まあ、体重なんかは実際に測定すればすぐわかることではあるが、例としては正しいな。よくわかってるじゃないか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+楽勝だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では、次は分類だ。英語で Classification とも言う。これはそんなに難しくない。たとえばスパムメールの判定はこの分類問題に当てはまる。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+分類は直感的にわかるお。Twitter のつぶやきを見て、この人は男なのか？女なのか？を判別することも分類問題かお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。スパムメール判定や、今やる夫が言った男女判別などは二値分類と呼ばれる。未知のデータを 2 つのうちのどちらのクラスに属するかを予測するんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+回帰の話の時に出てきた学習用データは、この場合はどうなるんだお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+スパムメール判定の場合、過去に受信したメール 1 通に対して、人間の手でそのメールがスパムかスパムでないかを見極めた答え、という情報のペアだな。</p>
+
+<table>
+<thead>
+<tr>
+<th>メール</th>
+<th>スパム</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>2015-12-19 お疲れ様です。今度の&hellip;</td>
+<td>x</td>
+</tr>
+
+<tr>
+<td>2015-12-20 主人がオオアリクイに&hellip;</td>
+<td>o</td>
+</tr>
+
+<tr>
+<td>2015-12-20 ハワイ旅行に当選しま&hellip;</td>
+<td>o</td>
+</tr>
+</tbody>
+</table>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+オオアリクイメール懐かしいお&hellip;まだ息してるのかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+二値分類とは別に、3 つ以上のクラスに分類する問題もあって、多値分類や多値クラス分類と言う。文字認識なんかがそうだな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+えっ、ちょっとわからんお。文字認識がどうして分類問題になるんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+0 〜 9 という数字を認識するプログラムがあったとするだろ。そのプログラムに <img src="/assets/img/yaruo/machine-learning/mnist0.png" alt="" /> こういう画像を与えるとおそらく 0 と識別されるだろう。<img src="/assets/img/yaruo/machine-learning/mnist9.png" alt="" /> これは 9 と識別されるだろう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+当たり前だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+これはつまり、与えられた画像 <img src="/assets/img/yaruo/machine-learning/mnist0.png" alt="" /> や <img src="/assets/img/yaruo/machine-learning/mnist9.png" alt="" /> が 0 〜 9 の 10 個のクラスのどれに分類されるか、という問題を解いている。文字認識はこれの拡張版で、アルファベットであれば a 〜 z の 27 個のクラス、ひらがなや漢字も含めるのであればもっとたくさんのクラスに分類する問題ということだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+わかったような、わかってないような&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+全てを完璧に理解しようとする必要はないぞ。ただ、自分の中で「どこからわからなくなったのか」という境界線はハッキリさせておくんだ。そういうところは後から戻って来て何度でもやり直せばいい。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うまく言いくるめられてるだけのような気がするけど、言いたいことはわかったお。ここでウダウダやってても進行に支障がでるんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+進行に支障ってお前、登場人物がそういうところまで気にするかよ&hellip;</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やらない夫は、いらないツッコミをするより話を先に進めて欲しいお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では、最後にクラスタリングだ。分類と似ているが、ちょっと違う。たとえば生徒 100 人分の数学と国語の点数があったとして、その生徒達を数学が得意なグループや国語が得意なグループなんかに分けることをクラスタリングという。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+それって結局分類してるんじゃないかお？分類とどう違うのかがわからんお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+分類は学習用データにあらかじめ「ラベル」がついている。正解データとも言うな。メールがスパムかスパムでないか、という具合だ。変わってクラスタリングにはデータにそういったラベルは付いていない。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+もしかして教師あり学習と教師なし学習ってやつかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。回帰と分類は教師あり、クラスタリングは教師なし、だな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+回帰、分類、クラスタリング、教師あり学習、教師なし学習&hellip;、単語をたくさん覚えるの面倒だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ここで完璧に覚えなくてもいいし、暗記しただけだったらどうせ覚えてもすぐ忘れるだろ。実践していくうちに嫌でも覚えるさ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やらない夫がそう言うなら、怠けることにするお。</p>
+
+<h1 id="数学とプログラミング">数学とプログラミング</h1>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ところで、そろそろ概要は飽きてきたお。機械学習の中身をもっと知りたいお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+やる夫は微分と線形代数の知識はあるか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うっ&hellip;、いちおう理系だったからなんとなく、なんとなくは覚えてるお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+多少の数学の知識は必要となってくるから、不安だったら復習はしておいて損はないぞ。とは言っても、そんなに難しいレベルが必要になるわけでもないから、わからなくなったら都度調べるというスタンスでも問題はないと思うが。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+復習なんて面倒くさいから、わからなくなったらやらない夫に聞くお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+お前、そんなんで大丈夫かよ&hellip;</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+別に数学は嫌いじゃないから、ちゃんと教えてくれれば問題ないお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+プログラムは組めるのか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+そっちは得意だお。やる夫は Ruby や PHP を使って Web サービスも作ったことがあるんだお。JavaScript もオチャノコサイサイ、プログラミング好きだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+やる夫がプログラミング得意なんて、シュールだな。では、そっちの方は心強いな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+笑うなお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+さっき機械学習は統計学にも近いという話をしたが、こういった分野では Python や R、それから Matlab なんかの言語がよく使われる。特に、論文の実装なんかは Matlab になってることは多いな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やる夫がやったことない言語ばっかりだお&hellip;、てか Matlab とかはじめて聞いたお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+元々プログラミングが得意なんだったら、新しい言語を覚えるのも、別になんてことないだろ。そこはきっと、やる夫にとっては大きな問題ではないさ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あっ、ん&hellip;？Matlab って有料なのかお？いや、Standard ライセンスとか、めちゃくちゃ高くないかお？こんだけお金があれば、数ヶ月は余裕で暮らせるお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+それは盛り過ぎだろ&hellip;。まあそうだな、Matlab は有料だから、趣味で使う人間はあまりいないだろう。代わりに Octave という Matlab クローンがあって、そっちはオープンソースになっていて、誰でも無料で使うことができる。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+そんなものがあるのかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+実際、論文の実装として公開されている Matlab のプログラムを Octave で実行したりもできるので、かなり使える。ただ、完全互換ではないようだな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ふーん、世の中にはいろんな便利なものがあるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+やる夫が機械学習をやってみたいなら、さっき挙げた言語を少し勉強しておいても損はないぞ。もちろん Ruby や PHP、JavaScript でも、できないことはないがな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+新しく言語を覚えるなんて面倒くさいから、わからなくなったらやらない夫に聞くお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+お前、そんなんで大丈夫かよ、まじで&hellip;</p>
+
+<hr />
+
+<p><a href="/blog/2016/01/04/yaruo-machine-learning2/">やる夫で学ぶ機械学習 - 単回帰問題 -</a> へ続く。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92">機械学習</a>
+      
+        <a class="tag-link" href="tags/%E3%82%84%E3%82%8B%E5%A4%AB%E3%81%A7%E5%AD%A6%E3%81%B6">やる夫で学ぶ</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2016/01/03/yaruo-machine-learning1/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2016/01/03/yaruo-machine-learning1/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2016/01/03/yaruo-machine-learning1/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

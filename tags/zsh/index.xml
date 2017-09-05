@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Zsh on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/zsh/</link>
+    <description>Recent content in Zsh on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Thu, 30 May 2013 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/zsh/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Fukuoka.php Vol.7 1周年に参加してきた</title>
+      <link>http://tkengo.github.io/blog/2013/05/30/fukuoka-php-anniversary/</link>
+      <pubDate>Thu, 30 May 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/05/30/fukuoka-php-anniversary/</guid>
+      <description>2013/05/29(水)にFukuoka.php Vol.7 1周年が開催されたので、参加してきました。
+僕もちょこちょこ参加させてもらっては、たまに発表枠をもらってしゃべったりしてたのですが、早いものでもう1年経つのですね。この1年で自分自身も大きく成長しました。後から読み返してみたら、どうも二番煎じみたいな日記になってしまいましたが、まあいっか。
+勉強会に参加する目的 勉強会に参加する時、どういう気持ちで参加しているでしょうか。
+ 純粋に技術の勉強をする 新技術に触れてモチベーションを高める  それぞれ理由はあると思います。僕も最初は純粋に技術目的で参加していました。
+もっと大事なこと もちろん技術の勉強も大事なのですが、せっかくいろんな人が集まる場なのですから、それだけじゃなくてもっと出来ることがあるはず。
+それは
+コミュニケーション 是非とも他の参加者の方達と仲良くなりたいと思っています。そこら中で言われててもうあたりまえのようなことですが、この業界では人脈はとても大事なものですよね。僕はたくさんの人といろんな視点から話せるのはとても刺激があると思います(もちろん技術についても、また日常の他愛ない話題についても)
+昔は勉強会に参加して、最初の「こんにちはー」と、最後の「おつかれさまでしたー」ぐらいしか会話をしていませんでしたが、やっぱそれはもったいないなぁです。
+もっと言うと、インターネット上に情報が潤沢にある今時、技術の勉強それ自体は頑張れば1人でもいくらでも出来ます。だけど、知り合いを増やすっていうことこそ、みんなが集まる勉強会みたいな場じゃないと出来ないんじゃないかなーと思います。
+そして自主的に積極的に LTなんかをやります！これもよく言われることなのですが、参加者と発表者の違いはとても大きいです。考えてみると、発表者にはただの参加者よりもメリットがあるんです。
+ 説明するためのスライド作るので自分の中の知識が体系的に整理できる こっちから話かけなくても向こうから話かけてきてくれる！「今日しゃべってたあのネタなんですけどね、いいですね。うちでも&amp;hellip;」みたいな。 みんなに自分のことを知ってもらえる なんか達成感  それから、メリットとはまた違うかもしれませんが、自分のしゃべりが終わった後に質問とかたくさんでるのも嬉しいですね。みんな興味をもってくれたのかな、って思うと技術の紹介をした甲斐もあります。
+アウトプットにフィードバックがあると嬉しいのは技術者ならみんな知っているはず！
+今回の発表 今回のFukuoka.phpでは発表枠をいただいていましたので、VagrantとChef-soloを使った開発環境の構築の仕方について少ししゃべってきました。 実際に職場での開発に活用してます。大活躍です。
+資料はこちら https://speakerdeck.com/tkengo/vagrant-plus-chef-solo
+なんとなく勉強会に参加している人。ちょっと気の持ちようを変えて参加してみませんか。</description>
+    </item>
+    
+    <item>
+      <title>zshのターミナルにリポジトリの情報を表示してみる</title>
+      <link>http://tkengo.github.io/blog/2013/05/12/zsh-vcs-info/</link>
+      <pubDate>Sun, 12 May 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/05/12/zsh-vcs-info/</guid>
+      <description>zshのターミナルに今いるパスのリポジトリの情報を表示してみることにします。最終目標はこんな感じ。
+ ブランチ名を表示 全てコミットされてきれいな状態であれば緑色 addされていないファイルがあれば+マークをつけて赤色 commitされていないファイルがあれば!マークをつけて黄色  ちなみにこの記事に書いてあることは zsh のバージョンが 4.3.10 以上に限って有効です。
+さて、これを実現するには vcs_info というものを使います。以下のような記述を ~/.zshrc に追加します。
+# この行は現在のパスを表示する設定です。ブランチを表示して色をつける設定とは関係ありません RPROMPT=&amp;quot;%{${fg[blue]}%}[%~]%{${reset_color}%}&amp;quot; autoload -Uz vcs_info setopt prompt_subst zstyle &#39;:vcs_info:git:*&#39; check-for-changes true zstyle &#39;:vcs_info:git:*&#39; stagedstr &amp;quot;%F{yellow}!&amp;quot; zstyle &#39;:vcs_info:git:*&#39; unstagedstr &amp;quot;%F{red}+&amp;quot; zstyle &#39;:vcs_info:*&#39; formats &amp;quot;%F{green}%c%u[%b]%f&amp;quot; zstyle &#39;:vcs_info:*&#39; actionformats &#39;[%b|%a]&#39; precmd () { vcs_info } RPROMPT=$RPROMPT&#39;${vcs_info_msg_0_}&#39;  最初はネットから拾ってきてそれをそのまま使ってて動くには動いてたのですが、正直設定内容を全然理解してなくってイミフでしたので、勉強もかねてマニュアルを読んでちょっと改造してみました。以下つらつらと解説していきますが、ほぼマニュアルの日本語訳みたいなものですが自分用まとめということで。
+vcs_info って？ vcs は Version Control Systems のこと(だと思う)。
+subversion とか CVS とか git とかいわゆるバージョン管理システムと呼ばれるものから情報を自動的に取得してくれる関数です。
+vsc_info 関数で取得した情報をもとに、それをプロンプトに表示したりします。</description>
+    </item>
+    
+  </channel>
+</rss>

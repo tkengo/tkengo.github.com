@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>プログラマのための数学勉強会@福岡を開催しました &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-09-07</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/09/07/mathematics-for-programmer-first/">プログラマのための数学勉強会@福岡を開催しました</a></h1>
+    </header>
+    <article>
+      
+
+<p>こんにちは。</p>
+
+<p>先日 <a href="http://maths4pg-fuk.connpass.com/event/18609/">プログラマのための数学勉強会@福岡</a> を LINE Fukuoka のオフィスで開催しました。当日はうちの社員も含めて全体で40名程度の人々で会場が埋まりました。この規模のイベントは主催したことがなかったので少々 (いや、かなり) 不安でしたが、多くの参加者に来て頂きまして無事にイベントを終えることができたので、とりあえずホッとしています。</p>
+
+<p>Togetter にハッシュタグがついているツイートもまとめました。</p>
+
+<p><a href="http://togetter.com/li/870605">プログラマのための数学勉強会@福岡ツイートまとめ</a></p>
+
+<p><img src="/assets/img/2015-09-07-mathematics-for-programmer-first/appearance.jpg" alt="会場の様子" /></p>
+
+<p>タイムキーパー役がいなかったので終了時間が予定より30分程オーバーしてしまいましたが、当日は以下の様なタイムテーブルの予定でした。</p>
+
+<table>
+<thead>
+<tr>
+<th>時間</th>
+<th>タイトル</th>
+<th>発表者</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>18:30 - 19:00</td>
+<td>受付</td>
+<td></td>
+</tr>
+
+<tr>
+<td>19:00 - 19:30</td>
+<td>数学とプログラミングの世界を楽しもう - ProjectEuler -</td>
+<td><a href="https://twitter.com/tkengo">@tkengo</a></td>
+</tr>
+
+<tr>
+<td>19:30 - 19:50</td>
+<td>暗号技術を支える素数</td>
+<td><a href="https://twitter.com/shoyan__">@shoyan__</a></td>
+</tr>
+
+<tr>
+<td>20:00 - 20:30</td>
+<td>ぼくの実装した最弱のディープラーニング</td>
+<td><a href="https://twitter.com/kis">@kis</a></td>
+</tr>
+
+<tr>
+<td>20:30 - 21:00</td>
+<td>圏論超絶基礎の基礎の基礎入門</td>
+<td><a href="https://twitter.com/nobkz">@nobkz</a></td>
+</tr>
+</tbody>
+</table>
+
+<h1 id="数学とプログラミングの世界を楽しもう-projecteuler">数学とプログラミングの世界を楽しもう - ProjectEuler -</h1>
+
+<p>僕の話でした。</p>
+
+<p>福岡での初開催ということで、最初から少し難易度を下げた話題を取り扱おうと思っていました。ということで、題材にプロジェクトオイラーの初級の問題を選んで、その問題の紹介と効率的な解き方の解説を入れてみました。スライドでは数列に関する 4 つの問題とその効率的な解き方を紹介していて、当日は時間がなかったので 1 〜 3 つ目に紹介した問題の解説は飛ばして、4 つ目の問題の解説だけやりました。</p>
+
+<p><a href="https://speakerdeck.com/tkengo/shu-xue-topuroguramingufalseshi-jie-wole-simou-puroziekutooira">資料はこちら</a></p>
+
+<p><img src="/assets/img/2015-09-07-mathematics-for-programmer-first/tkengo.jpg" alt="数学とプログラミングの世界を楽しもう" /></p>
+
+<h2 id="資料に対する補足1-はしょった解説">資料に対する補足1 - はしょった解説</h2>
+
+<p>まず当日の発表では時間が足りなくて完全にスルーした 1 〜 3 つ目の問題ですが、公開した資料にはちゃんと全部解説スライドをつけています。基本的にどれも数列の問題で、高校の時に習った数列の和を求めることを目標としていますが、問題番号が後に行く程難しそうになっていくのがわかります。</p>
+
+<h2 id="資料に対する補足2-数列の一般項から無理数を消去">資料に対する補足2 - 数列の一般項から無理数を消去</h2>
+
+<p>こちらも発表の時には時間が足りなくて最後にはしょった部分になります。4 つ目に紹介したフィボナッチ数列の問題で一般項を求めた後に無駄に頑張って最後にループを省いた結果を示していますが、一般項に無理数が入っているのでそのまま計算機で計算すると誤差が出てしまうのは容易に想像できるかと思います。ですので、実際にフィボナッチ数の一般項を計算機を使って計算する時に誤差がでないように、一般項から無理数が消える仕組みを説明したスライドがあります。一般項を計算する時はそのまま計算するのではなく、ちょっと工夫してやるようにしましょう。</p>
+
+<h1 id="暗号技術を支える素数">暗号技術を支える素数</h1>
+
+<p>GMO ペパボ社の <a href="https://twitter.com/shoyan__">@shoyan__</a> の話でした。</p>
+
+<p>暗号についての簡単な概要の説明から入って、公開鍵暗号方式の一つである RSA 暗号の暗号化、復号化の手法について簡単な数式を混じえながらの解説でした。RSA 暗号の安全性は、巨大な数の素因数分解が非常に困難であることに担保されていることは有名な話ですが、素数を使った鍵の生成方法からわかりやすく解説してくれました。暗号に使われる素数は 300 桁以上の巨大な数とのことですが、日本語での一番大きな数の位が 10^68 の無量大数ということを考えるとどれ程大きな数なのかわかりやすいですね。</p>
+
+<p><a href="https://speakerdeck.com/shoyan/an-hao-ji-shu-wozhi-erusu-shu">資料はこちら</a></p>
+
+<p><img src="/assets/img/2015-09-07-mathematics-for-programmer-first/shoyan.jpg" alt="暗号技術を支える素数" /></p>
+
+<h1 id="ぼくの実装した最弱のディープラーニング">ぼくの実装した最弱のディープラーニング</h1>
+
+<p>あの <a href="https://twitter.com/kis">きしださん</a> の話でした。</p>
+
+<p>最近なにかと話題にディープラーニングの話題でした。プレゼンではご自身が開発された GUI 付きの学習ソフトウェアの紹介と共に、ディープラーニングの概要や、ソフトウェアの中で使われている技術や工夫などを話して頂きました。学習には GPU を使っているらしく CPU を使うよりも学習速度が早いということでした、さすがですね。ディープラーニングを業務としてやっているわけでもなく専門としているわけでもなく、しかも個人的にここまでのものを作りこんでいる人はなかなかいないんじゃないでしょうか。</p>
+
+<p><a href="http://www.slideshare.net/nowokay/ss-52481509">資料はこちら</a></p>
+
+<p><img src="/assets/img/2015-09-07-mathematics-for-programmer-first/kis.jpg" alt="GUI アプリを披露するきしださん" /></p>
+
+<h1 id="圏論超絶基礎の基礎の基礎入門">圏論超絶基礎の基礎の基礎入門</h1>
+
+<p>グルーヴノーツ社の <a href="https://twitter.com/nobkz">@nobkz</a> さんの話でした。</p>
+
+<p>僕が数学の勉強会をやりたいなとつぶやいたところに発破かけてくれた人で、プログラマのための数学勉強会@福岡は彼のお陰で開催が決定したと言っても過言ではありません。そんなのぶかずさんの圏論超絶入門のお話でした。今回の 4 人の登壇者の中で唯一ホワイトボードを使ってまるで大学の授業のようなプレゼンをした人で、彼らしい発表だったと思います。内容はというと、出だしでも彼が言っているように僕は難しくて分かりませんでしたが(笑)、雰囲気だけはなんとなくつかめた気がします。圏論の本、読んでみるとよさそうです。</p>
+
+<p>資料はこちら(まだ公開されていないようです)</p>
+
+<p><img src="/assets/img/2015-09-07-mathematics-for-programmer-first/nobkz.jpg" alt="ホワイトボードに板書するのぶかずさん" /></p>
+
+<h1 id="開催を終えて">開催を終えて</h1>
+
+<p>とりあえずホット一息です。しばらく登壇はいいかなという感じ。この勉強会の開催については昔から動機だけはありましたが、実際の開催までの経緯は <a href="/blog/2015/08/15/mathematics-for-programmer/">前にも書いた通り</a> なかばインターネッツの流れに身を任せたところもありまして、ただ、僕の中のそれ以外の想いとしてはこの勉強会に参加した人達の中で「数学やりなおしたい」とか「数学って面白いんじゃ？」とか感じて、おうちに帰った後にせこせこ &ldquo;行列&rdquo; とか &ldquo;素数&rdquo; とかでググってみた、って人が 1 人でもいてくれたら嬉しい、そういう人達を増やせるイベントにしたかったな、というのはあります。数学という道具はプログラミングにおいて必ずしも必要なものではありません。しかし数学はプログラミングにおいて視野を広げるための武器にもなり得ます。考えることは楽しいことです。別に全てを知らなくてもいいです。わからなければ調べて考えましょう。自分なりの綺麗な説明を作り上げてみましょう。考えることを楽しみましょう。暗記ではないですよ。</p>
+
+<p>プログラマのための数学勉強会@福岡の第二回目の開催は個人的にも気になるところですが、イベントの最後に「発表者が足りないので次の開催はみなさんの誰かがしゃべってくれるかどうかにかかってます」的な話をしたので、誰か声をかけていただいて人数がそろえばまた開催できる日もきっと来ることでしょう。すぐに次を開催というわけではもちろんないですが、東京の本家と同じように隔月ぐらいでゆっくり続けていければなと思っています。</p>
+
+<p>当日は参加者の皆さん及び登壇者のみなさん、カメラマンとして来てくれた <a href="https://twitter.com/keita_kawamoto">@keita_kawamoto</a> 、そして会場準備を手伝ってくれた LINE Fukuoka のスタッフのみなさん、ありがとうございました。また第二回があればそこでお会いしましょう。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%9E%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E6%95%B0%E5%AD%A6%E5%8B%89%E5%BC%B7%E4%BC%9A">プログラマのための数学勉強会</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/09/07/mathematics-for-programmer-first/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/09/07/mathematics-for-programmer-first/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/09/07/mathematics-for-programmer-first/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

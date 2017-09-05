@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Jquery Mobile on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/jquery-mobile/</link>
+    <description>Recent content in Jquery Mobile on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Thu, 30 Aug 2012 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/jquery-mobile/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>jQuery Mobileでscriptタグが2回実行されてハマった</title>
+      <link>http://tkengo.github.io/blog/2012/08/30/jquery-mobile-js-execute/</link>
+      <pubDate>Thu, 30 Aug 2012 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2012/08/30/jquery-mobile-js-execute/</guid>
+      <description>モバイルフレームワークのjQuery mobileを使ってると、scriptタグに書いたJavaScriptがなぜか2回実行されてしまって、かなりはまりました。
+こんなコードで
+&amp;lt;html&amp;gt; &amp;lt;head&amp;gt; : : &amp;lt;script src=&amp;quot;jquery-mobile.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt; &amp;lt;/head&amp;gt; &amp;lt;body&amp;gt; &amp;lt;/body&amp;gt; &amp;lt;/html&amp;gt; &amp;lt;script type=&amp;quot;text/javascript&amp;quot;&amp;gt; alert(&#39;hoge&#39;); &amp;lt;/script&amp;gt;  これだと、最後の行のscriptタグが2回実行されて、hogeというアラートが2回表示されてしまいました。これが何故2回実行されてしまうのかが、まったくわからずに半日くらいはまってましたが、リファレンス読んだら解決しました。
+ドキュメント読め俺&amp;hellip;
+で、解決策はというと
+&amp;lt;body&amp;gt; &amp;lt;div data-role=&amp;quot;page&amp;quot;&amp;gt; &amp;lt;/div&amp;gt; &amp;lt;/body&amp;gt;  という風に、 data-role 属性に page という値を指定してあげると解決しました。 jQuery mobileはページ間移動にはAjaxを使い、そのレスポンスをbodyに挿入して現在のページと差し替えます。 Ajaxのレスポンスの中に data-role=&amp;quot;page&amp;quot; という属性があると、そのタグに囲まれた部分だけを挿入する、という仕組みのようです。
+リファレンスを読む限りはこの属性値は通常、ページ毎に配置するように書かれています。
+参考 jQuery mobile リファレンス</description>
+    </item>
+    
+  </channel>
+</rss>

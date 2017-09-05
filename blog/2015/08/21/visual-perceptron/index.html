@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>「目に見えるパーセプトロン」という資料を作ったので公開します &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-08-21</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/08/21/visual-perceptron/">「目に見えるパーセプトロン」という資料を作ったので公開します</a></h1>
+    </header>
+    <article>
+      
+
+<p>先日、社内の勉強会でネタが募集されていたので機械学習、特にパーセプトロンについてしゃべりました。パーセプトロン自体は非常に単純なモデルで、理解も実装も比較的容易で、それゆえに様々なものの基礎になっています。近年、深層学習と呼ばれる学習を何層にも渡って行うような概念が話題になっていますが、そこに出てくるニューラルネットワークは一種の多層パーセプトロンでもあります。ここ数年での機械学習や深層学習の進歩のスピードは素晴らしいものがありますが、そんな中で基礎的な部分を押さえておくことはより大事になってくるのではないでしょうか。</p>
+
+<p>社内勉強会で使ったスライドでは、簡単な機械学習の概要とパーセプトロンの仕組みを解説してみました。インターネット上に公開したので、このブログでも紹介しておきます。</p>
+
+<p><br/></p>
+
+<div style="width:65%;">
+<script async class="speakerdeck-embed" data-id="c8b3a217eb8b4d26b6350867bca5d2ae" data-ratio="1.33333333333333" src="//speakerdeck.com/assets/embed.js"></script>
+</div>
+
+<h1 id="補足">補足</h1>
+
+<p>いくつか資料の補足をしておきたいと思います。</p>
+
+<h2 id="学習について">学習について</h2>
+
+<p>基本的には対象データから素性を抽出して、それを識別しながら重みが間違っていれば更新していくという流れです。素性という単語は他にも特徴量と呼ばれたりもします。スライドには、とりあえず全ての学習データが無くなるまで繰り返していくと最終的には理想的な(重みベクトルを法線とする)直線が引かれますが、そうならないこともあるのでその場合は何度か学習を繰り返します。</p>
+
+<p>学習の終了判定は一定の判断基準を持って学習の終了とするか、もしくはある一定回数だけ学習を繰り返したら終了とするかのどちらかになると思います。どちらを選ぶかはケースバイケースですが、勉強や練習のためにパーセプトロンを実装するだけであれば、後者の方法の方がはるかに簡単です。</p>
+
+<h2 id="線形分離不可能について">線形分離不可能について</h2>
+
+<p>パーセプトロンは基本的に線形分離可能な問題にしか適用することができません。それは資料のまとめの部分にも書いてある通りなのですが、あるテクニックを使うと線形分離不可能な問題にも適用することができます。</p>
+
+<p>たとえば分類対象データから抽出した素性が二次元ベクトルでそれらが 2 つのクラスに分類されるんだけど、直線を引いて 2 つに分割できない、すなわち線形分離不可能な問題だった場合、その抽出された素性をより高次元な空間に写像してあげます。たとえばとある二次元の素性 (x, y) があったとすると、これを (x, y, x^2, y^2) などという四次元の空間に写像してあげて、この素性をパーセプトロンに渡して学習を繰り返すと、二次元では線形分離不可能だった問題が四次元で線形分離可能になる場合があります。</p>
+
+<p>これをカーネルトリックと言います。</p>
+
+<h1 id="目に見える">目に見える</h1>
+
+<p>スライドのタイトルにもある通り <strong>目に見える</strong> というところが推しポイントです。何が目に見えるのかというと学習の過程です。スライドだと二次元の空間において学習していく過程を簡単に説明しました。その部分を読んだ上で今度は三次元空間において学習していく過程を表現したものを作ってみました。それがこれです。</p>
+
+<p><a href="http://tkengo.github.io/perceptron_visualization/"><div style="font-size:20px;">目に見えるパーセプトロン</div></a></p>
+
+<p>three.js を使って作っています。まずページを開くと初期状態で以下のようなものが表示されます。各点が三次元の素性ベクトルを空間にプロットしたものです。</p>
+
+<p><img src="/assets/img/2015-08-21-visual-perceptron/perceptron.png" alt="三次元空間に素性ベクトルをプロットした図" /></p>
+
+<p>ここでスペースキーを押すたびに学習データを読み込んで学習を進めていきます。その際に都度、重みベクトル (ピンク色の矢印) を更新して空間を分割する平面 (資料では二次元なので <strong>線</strong> だったけど、これは三次元なので<strong>平面</strong>) が更新されていく様子がわかると思います。学習データがなくなるまで学習が進むと、青と緑の点が綺麗に 2 分割されている状態が出来上がると思います。</p>
+
+<p><img src="/assets/img/2015-08-21-visual-perceptron/perceptron2.png" alt="分離超平面の図" /></p>
+
+<p>マウスでグリグリ視点を動かすことも出来るのでいろいろいじってみてください。ちなみにソースコードはこちら。</p>
+
+<p><a href="https://github.com/tkengo/perceptron_visualization">https://github.com/tkengo/perceptron_visualization</a></p>
+
+<p>それでは。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92">機械学習</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/08/21/visual-perceptron/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/08/21/visual-perceptron/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/08/21/visual-perceptron/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

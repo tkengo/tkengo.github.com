@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Capistrano on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/capistrano/</link>
+    <description>Recent content in Capistrano on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Thu, 12 Dec 2013 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/capistrano/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>capistrano をバージョン 3 にアップデートして時代の流れに乗る</title>
+      <link>http://tkengo.github.io/blog/2013/12/12/version-up-capistrano-v3/</link>
+      <pubDate>Thu, 12 Dec 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/12/12/version-up-capistrano-v3/</guid>
+      <description>2013 年 6 月頃に capistrano のバージョン 3 がリリースされました。かなり久しぶりのメジャーバージョンアップで色々変わっているようです。
+Intobox でもデプロイには capistrano を使っていて、今回 capistrano のバージョンアップをしましたので手順の紹介とハマったことなどをまとめたいと思います。
+capistrano v3 capistrano v3 は、より良いモジュール化、より簡単なデバッグ、より高速なデプロイ、などを設計目標として掲げています。
+変更点が多いのでアップグレードガイドが公式サイトより提供されています。基本的にはここを見ながら進めていくのですが、やることといえば
+ Gemfile に gem &#39;capistrano&#39;, &#39;~&amp;gt; 3.0&#39; を追加 bundle install bundle exec cap install  をやって Capfile や config/deploy.rb を変更点に合わせてひたすら修正していくだけになります。ただ、バージョンアップ中にハマったポイントはあったので v2 と v3 の変更点も見ながら紹介していきます。
+v2 と v3 の変更点 必要な gem が変わった v3 からは、何をデプロイするかによって必要な gem が異なり、細かく分かれています。たとえば rbenv を使う Rails プロジェクトをデプロイする場合は
+gem &#39;capistrano&#39; gem &#39;capistrano-rails&#39; gem &#39;capistrano-bundler&#39; gem &#39;capistrano-rbenv&#39;  と、それぞれ必要な gem を指定してあげる必要があります。一見必要な gem が増えて面倒くさそうですが、これは capistrano が Rails だけのものではなくなったということです(まぁ v2 の頃から Rails 以外でもデプロイできてたわけですが。v3 では明示的に必要なものがモジュール化されています)。</description>
+    </item>
+    
+    <item>
+      <title>webistranoを使ってたとえばZendFrameworkをデプロイしてみる</title>
+      <link>http://tkengo.github.io/blog/2012/11/30/cap-and-webi/</link>
+      <pubDate>Fri, 30 Nov 2012 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2012/11/30/cap-and-webi/</guid>
+      <description>Ruby on Rails のデプロイ自動化でよく使われる capistrano と、そのGUI環境の webistrano ですが、もちろん Ruby on Rails 以外にも使うことができます。 今回は ZendFramework のデプロイをしてみようと思います。
+ゴール ここでは、以下のような状況のもと本番環境にデプロイする準備をします。
+ github 上の master ブランチにあるソースコードをデプロイする。 リポジトリでは ZendFramework 本体やログディレクトリなどは管理していない。  インストール capistrano は ruby 製です。まずは ruby がないと始まらないので最初に ruby をインストールします。1.8.6 以上が必要です。それから webistrano は DB として mysql を利用しますので、こちらもインストールしておきます。ruby と mysql のインストールは他に詳しい記事がいっぱいあるので割愛。
+ruby と mysql が準備できたら capistrano と webistrano をインストールします。といっても webistrano をインストールするときに一緒に capistrano も入るので webistrano をインストールするだけです。
+$ cd path/to/webistrano // git から clone $ git clone git@github.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Opengl 2dシリーズ on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/opengl-2d%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA/</link>
+    <description>Recent content in Opengl 2dシリーズ on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Sat, 20 Dec 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/opengl-2d%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>独学で 1 ヶ月間 OpenGL を学んで得た基礎知識のまとめ ~ 2D 編 ~</title>
+      <link>http://tkengo.github.io/blog/2014/12/20/opengl-es-2-2d-knowledge-0/</link>
+      <pubDate>Sat, 20 Dec 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/12/20/opengl-es-2-2d-knowledge-0/</guid>
+      <description>OpenGL。その単語の響きだけで素晴らしく魅力的に思える 3D コンピューターグラフィックスライブラリは、これまで何人もの駆け出しゲームプログラマーに幾度と無く挫折を味わわせてきた。「ゲーム作るならやっぱり高速に描画できる OpenGL でしょ。でも自分が作るゲームに 3D はいらないし、しかも難しそうだし、別に 2D 描画だけできればいいや」 と、軽い気持ちで手を出したのが運の尽き、世の中そんなに甘くはなかった。OpenGL というその難攻不落城は私達の進む道を阻むように高々とそびえ立っている。
+OpenGL がコレほどまでに取っ付きにくいのは 気軽に Hello World できない からなんじゃないかと思う。OpenGL の場合だとそれは何かしら 1 つの図形を表示することにあたるのかな。でもたったそれだけなのに、覚えることが山ほどありすぎて全然本題にたどり着くことができないし、OpenGL には OpenGL ならではの複雑さがある。巷にあふれているサンプルコードについて「なぜそう書けばこう動くのか」という仕組みやその意味を、コードを読んだだけでしっかりと理解できる人はどれくらいいるだろうか。英語でも何でもとりあえず頑張って読んでみて、そういうところからソースコードをコピペして、コンパイルして、やったー動いたー、ってなったとしても、その先には闇しか見えない。基本を理解してないと応用はできないのです。でもね！それは仕方ないことなのです、たぶん。何を始めるにも基礎知識は必要になってくる。逆に言えば基礎がしっかりしていればあとはなんでもできる。
+ということで、こういうインターネット上の情報はいくらあっても損はしないので、OpenGL で 2D を扱うために 3D の基礎を説明して、んで OpenGL 使うんだったら基礎おさえとけば 2D でも 3D でも難易度そんなに変わらなくね？ってとこに気付けたら、その知識を元にプログラミングができるところまでブログの記事にまとめてみようと思う。ちなみに本とかで体系的に勉強したわけではないので、間違いがあれば突っ込んでくれると喜びます。
+前提 さて、前置きが少し長くなったけど、今回の記事の対象となるものは Android 向けの OpenGL ES 2.0 です。知ってる人もいるかもしれないけど OpenGL ES の 1.0 と 2.0 は 後方互換性がない別物になってる ので 1.0 と間違ってこの記事を読み進めるようなことがあったら、の〜みそぷ〜ですよ。今後、記事内で OpenGL というと OpenGL ES 2.0 のことを指すことにする。で、Android 向けなので記事中のソースコードも Android のソースコード、つまり Java。
+ただ、基礎知識部分は OpenGL ES 2.0 に限らず 3D 表現を行う上で共通の部分が多く、2.</description>
+    </item>
+    
+  </channel>
+</rss>

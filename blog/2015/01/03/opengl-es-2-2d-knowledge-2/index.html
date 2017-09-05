@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>頂点情報とプリミティブ &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-01-03</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/01/03/opengl-es-2-2d-knowledge-2/">頂点情報とプリミティブ</a></h1>
+    </header>
+    <article>
+      
+
+<p><a href="/blog/2014/12/20/opengl-es-2-2d-knowledge-0">OpenGL 基礎シリーズ</a>の第 2 回です。</p>
+
+<h1 id="opengl-の座標系">OpenGL の座標系</h1>
+
+<p>まず頂点の話をする前に前提として知っておかなければならない座標系の話がある。私達が 3D の世界を扱う時は <strong>右手座標系</strong> と <strong>左手座標系</strong> という 2 つの座標系が存在する。それぞれの違いは z 軸の向き。</p>
+
+<ul>
+<li>右手座標系は z 軸の手前の方がプラス、z 軸の奥のほうがマイナス</li>
+<li>左手座標系は z 軸の手前の方がマイナス、z 軸の奥のほうがプラス</li>
+</ul>
+
+<p>3D の座標を扱う時はこの座標系のどちらかを採用しており、我らが OpenGL ではポリゴンを配置する時の座標系は右手座標系を使う。この右手座標系は数学の世界で使われている座標系で OpenGL がこれを採用したのはそれが理由と言われている。(※ちなみにご存知 Windows の DirectX 3D は標準では左手座標系を採用している)</p>
+
+<p><img src="/assets/img/2015-01-03-opengl-es-2-2d-knowledge-2/coordinate-system.png" alt="座標系" /></p>
+
+<p>2D を扱うにあたって遠近感を出すために z 軸を意識することはあんまりないけど、描画する要素の重なりを制御するために使うことはよくある。ゲームなどで画像を重ねて描画するにあたっては z 軸の奥の方がプラスになってる方がわかりやすく、右手座標系のように z 軸の手前の方がプラスになっているのは違和感がある人が多いかもしれないけど、自分の感覚と違ってもそこだけは間違えないようにしないと、背景の方がキャラクターより前にきてしまって、あれ？なんでキャラクターいないの？という風に思った通りの描画が出来なくなってしまうので要注意。</p>
+
+<p><em>※ちなみになんで右手と左手というんだろうか？それは、親指の先を x 軸プラス方向、人差し指の先を y 軸プラス方向、中指の先を z 軸プラス方向と思って、実際の座標系の軸を手を使って形作ってみるとわかる。右手でそれをすると中指が自分の方向を向いて、左手でそれをすると中指が向こう側を向くはずだ。こういう単純でどうでもいいことでも、理由がわかって納得できると面白いですよね？</em></p>
+
+<h1 id="プリミティブ">プリミティブ</h1>
+
+<p>もう何度も言ってる気がするけど OpenGL では 3D の頂点情報 <code>(x, y, z)</code> を定義して、それを GPU に転送することで描画を行う。それによって描画されるものを <strong>プリミティブ</strong> と言って、OpenGL の世界で描画できる最小単位のことを言う。また新しい言葉が出てきた！ってひるまないひるまない。ただ単に言葉の定義だけ。で、プリミティブには以下の 3 種類がある。</p>
+
+<ul>
+<li>点 - 頂点数 1</li>
+<li>線 - 頂点数 2</li>
+<li>ポリゴン(三角形) - 頂点数 3</li>
+</ul>
+
+<p><img src="/assets/img/2015-01-03-opengl-es-2-2d-knowledge-2/primitives.png" alt="プリミティブの種類" /></p>
+
+<p>OpenGL ではポリゴンに色をつけて描画することが、そのまま図形 (三角形や四角形) を描画することになる。</p>
+
+<p>ポリゴンは「多角形」という意味だけど OpenGL では実は三角形のポリゴンしか描画できない。えっ、なにそれ？使えないじゃん？！という疑問を持つのは当然だけど、三角形は <strong>他の多角形と比べて単純</strong> という性質を持っているので、その性質を利用することで GPU の計算量を減らすことができる。とはいえ三角形以外の多角形も描画できないとやってられなーい、ってことになるけどでもね、実は全ての多角形は三角形の組み合わせで表現することができるようになっているし、少し工夫すれば円にも近似することができるのでまったく問題はない。</p>
+
+<h1 id="頂点情報の準備">頂点情報の準備</h1>
+
+<p>という話をしたところで、それでは早速以下の図のような四角形のポリゴンを描画することを考えてみる。これを描画するにはどのような情報が必要になるのだろう？</p>
+
+<p><img src="/assets/img/2015-01-03-opengl-es-2-2d-knowledge-2/square-polygon.png" alt="四角形のポリゴン" /></p>
+
+<h2 id="頂点座標">頂点座標</h2>
+
+<p>図を見て分かる通り四角形を描画するためには 4 つの頂点が必要になる。ただし、先にも説明した通り OpenGL では三角形のポリゴンしか描画できないので、以下の三角形を 2 つ組み合わせて四角形を表現する。</p>
+
+<ul>
+<li>1 つ目の三角形(左下の方) <code>(0, 1, 0)</code> - <code>(0, 0, 0)</code> - <code>(2, 0, 0)</code></li>
+<li>2 つ目の三角形(右上の方) <code>(2, 0, 0)</code> - <code>(2, 1, 0)</code> - <code>(0, 1, 0)</code></li>
+</ul>
+
+<p>ね、三角形の組み合わせで四角形を表現できたでしょ？他の多角形の場合も同様に三角形の数が多くなるだけで、ちゃんと三角形だけで表現できる。さて話がそれた。三角形 2 つとしてみると頂点座標は 6 個あるけど、そのうち 2 つは重複してるので実際に定義するのは 4 つで良い。</p>
+
+<pre><code class="language-java">float[] vertices = new float[] {
+    0f, 1f, 0f, // 左上 (0番目の頂点)
+    0f, 0f, 0f, // 左下 (1番目の頂点)
+    2f, 0f, 0f, // 右下 (2番目の頂点)
+    2f, 1f, 0f  // 右上 (3番目の頂点)
+};
+</code></pre>
+
+<h2 id="頂点インデックス">頂点インデックス</h2>
+
+<p>頂点座標が決まったら次はどの頂点で三角形を描画するのかを GPU に教えてあげる必要がある。座標を指定した順番で描画してくれればいいじゃないか！って思うけど、まあ実はそういう風に描画することもできる。でも頂点インデックスという考え方を身につけておいたほうが後々楽になってくるので、とりあえず読んでみよう。まずわかりやすいように図中に頂点の番号を書いてみる。この番号は上の方に書いてるサンプルコードで頂点座標を <code>new float[] { ... }</code> した時に定義した順番と同じで、コメントに「x 番目の頂点」と書いてあるその x と一致する。</p>
+
+<p><img src="/assets/img/2015-01-03-opengl-es-2-2d-knowledge-2/vertex-indices1.png" alt="頂点番号" /></p>
+
+<p>この頂点の番号 (この番号のことを頂点インデックスと言う) を使ってどういう三角形を描画するのかを親切に GPU に教えてあげる。以下のような配列を定義してそれを GPU に転送することで、指定された 3 つの頂点をつなげて以下のような三角形のポリゴンを得ることができる。</p>
+
+<pre><code class="language-java">short[] indices = new short[] {
+    0, 1, 2, // 1つ目の三角形を構成する3つの頂点の番号
+    2, 3, 0  // 2つ目の三角形を構成する3つの頂点の番号
+};
+</code></pre>
+
+<p><img src="/assets/img/2015-01-03-opengl-es-2-2d-knowledge-2/vertex-indices2.png" alt="頂点インデックスを指定して三角形を作る" /></p>
+
+<h2 id="カリング">カリング</h2>
+
+<p>わざわざ頂点インデックスをたどる順番に矢印をつけたのは意味があって、実はポリゴンというのは裏表を持っている。な、なんだってー！ポリゴンの裏表をどうやって判断するかというと</p>
+
+<ul>
+<li>反時計回りに頂点インデックスを指定していくと表になる</li>
+<li>時計回りに頂点インデックスを指定していくと裏になる</li>
+</ul>
+
+<p>という風に指定した頂点インデックスの順番を見て裏表を判断している。そして OpenGL ではカリングといって、高速化のために裏面のポリゴンを描画しない機能がある。</p>
+
+<p>ポリゴンの裏表については下の図のように A さんと B さんをそれぞれ z 軸上に y 軸を挟んで反対側に置いてみるとわかりやすい。A さんから見た三角形は反時計回りで頂点インデックスが指定されているから表向きになるんだけど、B さんから見た三角形は時計回りに指定されているので裏向きになる。今後の話に出てくることになるけど、この A さんと B さんはカメラに置き換えることができる。カメラがどこから世界を見ているかによって、ポリゴンの表面が見えたり裏面が見えたりすることになり、裏面が見えていれば描画させないようにすることができる。</p>
+
+<p><img src="/assets/img/2015-01-03-opengl-es-2-2d-knowledge-2/culling.png" alt="視点を変えてみた時の頂点の指定順序の違い" /></p>
+
+<p>とはいえ 2D の場合だと z 軸の奥の方を見るようにカメラが固定されることが多いし、立方体のようなポリゴンは作らずに平面ポリゴンだけ使えば事足りると思うので、あまりカリングについて意識することはない。ただ頂点インデックスの順番によってはカリングの機能が ON になっていると描画されないこともあるよ、という程度の認識を頭の片隅にでも置いておけば大丈夫。</p>
+
+<h1 id="描画モードの指定-div-id-drawing-mode-div">描画モードの指定<div id="drawing-mode"></div></h1>
+
+<p>頂点座標と頂点インデックスが用意できたら、あと決める必要があるのは描画モード。描画モードとは頂点座標と頂点インデックスを使ってどんな風にプリミティブを描画するかどうかを決めるものだ。まだ何か決めることがあるの？もう&hellip;と思った人、これで最後です。</p>
+
+<p>描画モードは以下の 7 種類がある。(本家 OpenGL はもう少し種類がある)</p>
+
+<ul>
+<li>GL_POINTS</li>
+<li>GL_LINES</li>
+<li>GL_LINE_STRIP</li>
+<li>GL_LINE_LOOP</li>
+<li>GL_TRIANGLES</li>
+<li>GL_TRIANGLE_STRIP</li>
+<li>GL_TRIANGLE_FAN</li>
+</ul>
+
+<p>POINT が点、LINE が線、TRINGLE が三角形、を作るための描画モードということは何となくわかる。それぞれ詳しく見てみよう。以下の様な頂点座標と頂点インデックスが指定されている前提で話を進めていく。</p>
+
+<p><img src="/assets/img/2015-01-03-opengl-es-2-2d-knowledge-2/drawing-mode.png" alt="頂点座標と頂点インデックス" /></p>
+
+<p>コードで書くとつまりこういうことだ。</p>
+
+<pre><code class="language-java">float[] vertices = new float[] {
+    x1, y1, z1, // 左下   (0番目の頂点)
+    x2, y2, z2, // 右下   (1番目の頂点)
+    x3, y3, z3, // 左真中 (2番目の頂点)
+    x4, y4, z4, // 右真中 (3番目の頂点)
+    x5, y5, z5, // 左上   (4番目の頂点)
+    x6, y6, z6  // 右上   (5番目の頂点)
+};
+short[] indices = new short[] {
+    0, 1, 2, 3, 4, 5
+};
+</code></pre>
+
+<h2 id="gl-points">GL_POINTS</h2>
+
+<p>描画モードに GL_POINTS を指定すると頂点座標がそのまま点として描画される。超単純。</p>
+
+<h2 id="gl-lines-gl-line-strip-gl-line-loop">GL_LINES / GL_LINE_STRIP / GL_LINE_LOOP</h2>
+
+<p><img src="/assets/img/2015-01-03-opengl-es-2-2d-knowledge-2/gl-lines.png" alt="GL_LINES / GL_LINE_STRIP / GL_LILE_LOOP での描画" /></p>
+
+<p>これらの描画モードでは線が描画される。各モードのおおまかな違いは指定された頂点を再利用するかどうか、という点だ。以下まとめてみた。</p>
+
+<table>
+<thead>
+<tr>
+<th>モード</th>
+<th>描画方法</th>
+<th>線の座標</th>
+<th>線の数</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>GL_LINES</td>
+<td>頂点を再利用しない</td>
+<td><code>(0, 1)</code> <code>(2, 3)</code> <code>(4, 5)</code></td>
+<td>3 個</td>
+</tr>
+
+<tr>
+<td>GL_LINE_STRIP</td>
+<td>前回の線に使った頂点を 1 つ再利用する</td>
+<td><code>(0, 1)</code> <code>(1, 2)</code> <code>(2, 3)</code> <code>(3, 4)</code> <code>(4, 5)</code></td>
+<td>6 個</td>
+</tr>
+
+<tr>
+<td>GL_LINE_LOOP</td>
+<td>前回の線に使った頂点を 1 つ再利用して<br/>最初と最後の頂点も利用される</td>
+<td><code>(0, 1)</code> <code>(1, 2)</code> <code>(2, 3)</code> <code>(3, 4)</code> <code>(4, 5)</code> <code>(5, 0)</code></td>
+<td>7 個</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="gl-triangles-gl-triangle-strip-gl-triangle-fan">GL_TRIANGLES / GL_TRIANGLE_STRIP / GL_TRIANGLE_FAN</h2>
+
+<p><img src="/assets/img/2015-01-03-opengl-es-2-2d-knowledge-2/gl-triangles.png" alt="GL_TRIANGLES / GL_TRIANGLE_STRIP / GL_TRIANGLE_FAN での描画" /></p>
+
+<p>これらの描画モードでは三角形が描画される。線の時と同じように各モードのおおまかな違いは頂点を再利用するかどうか、という点だ。GL_TRIANGLE_FAN については頂点の再利用のされ方がちょっと違うので、それだけは見た目にわかりやすいように他とは違う頂点座標で例を示している。</p>
+
+<table>
+<thead>
+<tr>
+<th>モード</th>
+<th>描画方法</th>
+<th>三角形の座標</th>
+<th>三角形の数</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>GL_TRIANGLES</td>
+<td>頂点を再利用しない</td>
+<td><code>(0, 1, 2)</code> <code>(3, 4, 5)</code></td>
+<td>2 個</td>
+</tr>
+
+<tr>
+<td>GL_TRIANGLE_STRIP</td>
+<td>前回の三角形に使った頂点を 2 つ再利用する</td>
+<td><code>(0, 1, 2)</code> <code>(1, 3, 2)</code> <code>(2, 3, 4)</code> <code>(3, 5, 4)</code></td>
+<td>4 個</td>
+</tr>
+
+<tr>
+<td>GL_TRIANGLE_FAN</td>
+<td>前回の三角形に使った頂点を 1 つ再利用して<br/>かつ最初の頂点は必ず再利用する</td>
+<td><code>(0, 1, 2)</code> <code>(0, 2, 3)</code> <code>(0, 3, 4)</code> <code>(0, 4, 5)</code></td>
+<td>4 個</td>
+</tr>
+</tbody>
+</table>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>冒頭の四角形のポリゴンを描画するためには</p>
+
+<ol>
+<li>記事中に書いた四角形用の頂点座標と頂点インデックスの配列を準備して、頂点座標を GPU へ転送しておく</li>
+<li>OpenGL の <code>glDrawElements</code> API に対して、準備した頂点インデックスと <strong>GL_TRIANGLES</strong> モードを渡して描画する</li>
+</ol>
+
+<p>という流れになる。はい、まとめると、要するにプリミティブには</p>
+
+<ul>
+<li>頂点座標</li>
+<li>頂点インデックス</li>
+<li>描画モード</li>
+</ul>
+
+<p>最低限この 3 つが必要になる。たった 3 つのことだけなのにずいぶん説明が長かったけど、頂点座標と頂点インデックスはタダの配列だし、描画モードは定数になっているし、この記事の長さに比べて実際に覚えることやコーディングする量は多くはない。少しは OpenGL の Hello World に近づけた？</p>
+
+<p><em>※ちなみに記事の途中にも書いたけど頂点インデックスは必須ではなく、描画する時に頂点インデックスの指定が必要ない <code>glDrawArrays</code> という API もあるけど、一般的には <code>glDrawElements</code> の方が柔軟だし早いとされる。</em></p>
+
+<p>次回 <a href="/blog/2015/01/10/opengl-es-2-2d-knowledge-3">バーテックスシェーダによる座標系変換</a> に続く。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/opengl">OpenGL</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/01/03/opengl-es-2-2d-knowledge-2/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/01/03/opengl-es-2-2d-knowledge-2/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/01/03/opengl-es-2-2d-knowledge-2/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>畳み込みニューラルネットワークによるテキスト分類を TensorFlow で実装する &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2016-03-14</p>
+      <h1><a href="http://tkengo.github.io/blog/2016/03/14/text-classification-by-cnn/">畳み込みニューラルネットワークによるテキスト分類を TensorFlow で実装する</a></h1>
+    </header>
+    <article>
+      
+
+<p>先日、九工大や東工大などの学生さんが LINE Fukuoka に遊びにきてくれました。せっかく学生さんが遊びに来てくれるので LINE Fukuoka の社員と学生さんとで LT 大会をやろうという運びになって、学生さんは普段やっている研究内容を、LINE Fukuoka 側はなんでも良いので適当な話を、それぞれやりました。当日は私を含む LINE Fukuoka の社員 3 人と、学生さん 2 人の合計 5 人が LT をしました。詳細は LINE Fukuoka 公式ブログに書かれていますので、興味のある方は御覧ください。</p>
+
+<p><a href="http://linefukuoka.blog.jp/archives/56330914.html">[社外活動/報告] 学生を招いてのエンジニア技術交流会を開催しました。</a></p>
+
+<p>LT に使った資料は公開してもいいよ、とのことだったので、せっかくなので公開。当日はテキスト分類のデモをやったのですが、残念ながらデモ環境までは公開できませんでした。ただ、ソースコードは github で公開していますので見ることができますので後ほどリンクを貼っておきます。</p>
+
+<div style="width:65%;">
+<script async class="speakerdeck-embed" data-id="1f878d169f23436495482657f4e1659a" data-ratio="1.33333333333333" src="//speakerdeck.com/assets/embed.js"></script>
+</div>
+
+<p>この LT では時間が 15 分しかなくて実装の話は一切できなかったので、せっかくなのでこの記事では実装の話を書こうと思います。実装にあたっては Google 製の機械学習フレームワークの <a href="https://www.tensorflow.org/">TensorFlow</a> を利用しています。実際は、この実装の元になった実装があって、本当はそれをそのまま使いたかったのですが、自分が適用したいタスクに対してはいくつか問題点があったのと、TensorFlow の感覚を掴みたかったので、自分でスクラッチで実装しました。
+以下ソースコードです。</p>
+
+<p><a href="https://github.com/tkengo/tf/tree/master/cnn_text_classification">tkengo/tf/cnn_text_classification</a></p>
+
+<p>また、もし時間があれば、この記事を読む前に以下のリンク先も合わせて読んでおくとより理解が深まると思います。</p>
+
+<ul>
+<li><a href="http://arxiv.org/abs/1408.5882">Convolutional Neural Networks for Sentence Classification</a> 実装の元になっている論文。</li>
+<li><a href="http://www.wildml.com/2015/12/implementing-a-cnn-for-text-classification-in-tensorflow/">Implementing a CNN for Text Classification in TensorFlow</a> 私の実装の元になったオリジナル実装についての記事。英語。</li>
+<li><a href="/blog/2016/03/11/understanding-convolutional-neural-networks-for-nlp/">自然言語処理における畳み込みニューラルネットワークを理解する</a> 上記ブログと同じ作者が執筆した別記事を私が日本語に翻訳したもの。</li>
+</ul>
+
+<hr />
+
+<p>なお、本記事では実装の詳しい内容を書いていますので、以下のような方を対象読者と想定しています。</p>
+
+<ul>
+<li>ニューラルネットワークに対する簡単な基礎知識はある</li>
+<li>TensorFlow の MNIST For ML Beginners チュートリアルは完了して基本的な概念と使い方の知識はある</li>
+</ul>
+
+<p>完全に初心者だという方は少し難しい内容かもしれませんが、別に当てはまってなければ読んではダメというものでもないので、興味のある方は是非読み進めてみてください。</p>
+
+<h1 id="実装のお話">実装のお話</h1>
+
+<p>では、具体的な実装のお話をしていきます。今回はスライドにもあるように、テキストデータをあるカテゴリに自動分類したいというのがモチベーションです。全体の処理の流れとしては以下のようになっています。</p>
+
+<ol>
+<li>前処理</li>
+<li>畳み込みニューラルネットワークの定義
+
+<ul>
+<li>入力層</li>
+<li>埋め込み層</li>
+<li>畳み込み層</li>
+<li>プーリング層</li>
+<li>全結合層</li>
+<li>出力層</li>
+</ul></li>
+<li>目的関数の定義</li>
+<li>学習</li>
+</ol>
+
+<p>前処理は、学習用データをニューラルネットワークへ渡せるようにデータを整形してあげる処理です。その整形された入力を元にニューラルネットワークの処理が始まります。ニューラルネットワーク自体は全部で 5 層あって <span class="note"><em>(※入力層はカウントしてません)</em></span> 最初の層である埋め込み層の後に、一般的な CNN に見られるような畳み込み層、プーリング層、全結合層、が続き、最後に softmax 関数を使った出力層があります。</p>
+
+<p>後ほど詳しく見ていきます。</p>
+
+<h1 id="前処理">前処理</h1>
+
+<h2 id="学習用データ収集">学習用データ収集</h2>
+
+<p>機械学習のタスクをやる場合にはまず最初に学習用データを準備しないといけません。たぶんここが一番面倒くさい部分じゃないでしょうかね。今回は、自社の悩み相談所含め、Web 上の各種悩み投稿サイトからスクレイピングして約 13 万件のデータを取得しました。取得したデータは、カテゴリ ID とテキスト本文のタブ区切りになるように整形して 1 つのファイルにまとめました。カテゴリ ID はこっちで勝手に決めたもので、たとえば &ldquo;恋愛&rdquo; は 1、&rdquo;結婚&rdquo; は 2、&rdquo;仕事&rdquo; は 3、などです。</p>
+
+<pre><code>1   私は恋がしたいです。
+2   私は結婚を真剣に考えています。
+3   今の職場が嫌で早く転職をしたいです。
+</code></pre>
+
+<h2 id="テキストの数値化">テキストの数値化</h2>
+
+<p>さて、それでは前処理のお話に移ります。ソースコードはこのようになっています。</p>
+
+<pre><code class="language-py">lines = [ l.split(&quot;\t&quot;) for l in list(open(RAW_FILE).readlines()) ]
+
+contents = [ split_word(tagger, l[1]) for l in lines ]
+contents = padding(contents, max([ len(c) for c in contents ]))
+labels   = [ one_hot_vec(int(l[0]) - 1) for l in lines ]
+
+ctr = Counter(itertools.chain(*contents))
+dictionaries     = [ c[0] for c in ctr.most_common() ]
+dictionaries_inv = { c: i for i, c in enumerate(dictionaries) }
+
+data = [ [ dictionaries_inv[word] for word in content ] for content in contents ]
+</code></pre>
+
+<p>まずは、取得したデータを単語に分割する必要がありますので、形態素解析器を使って分かち書きにします。<code>split_word</code> がそれです。今回は <a href="http://taku910.github.io/mecab/#download">MeCab の Python バインディング</a> を使用していて、辞書には <a href="https://twitter.com/overlast">@overlast</a> さんの <a href="https://github.com/neologd/mecab-ipadic-neologd">neologd</a> を使わせてもらいました。この分かち書きの結果を使って、以下の様なテキスト内に出現する全単語の辞書を作ります <span class="note"><em>(※MeCab の辞書とは違うので注意)</em></span>。</p>
+
+<pre><code>1: 私
+2: は
+3: 恋
+4: が
+5: し
+6: たい
+7: です
+8: 。
+9: 結婚
+10: を
+11: 真剣
+12: に
+...
+</code></pre>
+
+<p>先頭の数字は単なるインデックスであって、単語の出現回数ではないので注意。この辞書のインデックスを使えば、さっきのテキストは以下のように数値型の配列で表すことができます <span class="note"><em>(※本当はストップワードは取り除いたほうが良いと思いますが、今回は面倒だったのでそのままにしています)</em></span>。</p>
+
+<pre><code>[ 1 2 3 4 5 6 7 8 ]
+[ 1 2 9 10 11 12 13 14 15 16 8 ]
+[ 17 18 19 4 20 21 22 23 10 5 6 7 8]
+</code></pre>
+
+<p>さらに、ニューラルネットワークへの入力は固定長である必要があるため、学習用データの中で最も長い配列の長さに合わせてパディングします。パディングはテキストの最後に適当な単語 - 今回の実装では <code>&lt;PAD/&gt;</code> - を埋めるようにします。<code>&lt;PAD/&gt;</code> の単語 ID が <strong>0</strong> だとすると、パディング後のデータはこうなります。</p>
+
+<pre><code>[  1  2  3  4  5  6  7  8  0  0 0 0 0 ]
+[  1  2  9 10 11 12 13 14 15 16 8 0 0 ]
+[ 17 18 19  4 20 21 22 23 10  5 6 7 8 ]
+</code></pre>
+
+<p>長さが揃いましたね。今回は、このような配列がニューラルネットワークへの入力データとなります。</p>
+
+<h1 id="畳み込みニューラルネットワークの定義">畳み込みニューラルネットワークの定義</h1>
+
+<h2 id="入力層">入力層</h2>
+
+<p>前処理が完了したらいよいよニューラルネットワークの処理へと移っていきます。最初に入力層です。TensorFlow では <code>placeholder</code> を使います。</p>
+
+<pre><code class="language-py">x_dim = train_x.shape[1]
+input_x = tf.placeholder(tf.int32,   [ None, x_dim       ])
+input_y = tf.placeholder(tf.float32, [ None, NUM_CLASSES ])
+</code></pre>
+
+<p><code>train_x</code> には、前処理で生成したテキストデータを数値配列化したものがデータの数だけ (つまり 13 万件程度) 配列で入っています。配列の配列ですね。そして <code>x_dim</code> には、テキストデータの次元数が入ります。入力層のニューロンを表すのが <code>input_x</code> ですね。学習はミニバッチ分割法で行われるので、複数のデータを受け取れるように <code>[ None, x_dim ]</code> のテンソルになっています。</p>
+
+<h2 id="埋め込み層">埋め込み層</h2>
+
+<p>入力層の次は埋め込み層 (Embedding Layer) です。ここでは入力されたテキスト (実際は数値型の配列) の埋め込み表現を学習します。単語の埋め込み表現としては word2vec が有名で、論文内でも word2vec で事前学習した埋め込み表現を使うようになっていますが、今回はそのような外部ツールは使わずにスクラッチで埋め込み表現を学習させます。理由は 2 つあります。</p>
+
+<ul>
+<li>word2vec を使って事前学習させるの面倒くさい</li>
+<li>TensorFlow には <code>embedding_lookup</code> という埋め込み表現を学習するため関数がある</li>
+</ul>
+
+<p>そういうわけで、論文とは違って word2vec は使わずに TensorFlow の <code>embedding_lookup</code> を使った実装となっています。以下が該当箇所です。</p>
+
+<pre><code class="language-py">w  = tf.Variable(tf.random_uniform([ len(d), EMBEDDING_SIZE ], -1.0, 1.0), name='weight')
+e  = tf.nn.embedding_lookup(w, input_x)
+ex = tf.expand_dims(e, -1)
+</code></pre>
+
+<p>この層の重み行列は <code>w</code> で、<code>[ 単語の種類の総数 x 埋め込み表現の次元数 ]</code> というサイズになっています。今回は埋め込み表現の次元数は <code>EMBEDDING_SIZE = 128</code> に設定しました。この次元数はハイパーパラメータとして実装者側でチューニングする必要がある部分です。</p>
+
+<p><code>embedding_lookup</code> は <code>[ None, x_dim, EMBEDDING_SIZE ]</code> の形のテンソルを返します。テキストデータの各単語について、<code>EMBEDDING_SIZE</code> の次元数を持つ埋め込み表現のベクトルを見つけてくれるわけですね。</p>
+
+<p>最後に <code>expand_dims</code> という関数を呼んでいますが、これは引数に渡されたテンソルの次元を拡張してくれるもので、このソースコードの場合は結果的に <code>[ None, x_dim, EMBEDDING_SIZE, 1 ]</code> というテンソルになります。これは、次の畳み込み層で <code>conv2d</code> という関数を使いますが、この関数が引数として 4 次元のテンソルを取るため、次元を合わせています。</p>
+
+<h2 id="畳み込み層とプーリング層">畳み込み層とプーリング層</h2>
+
+<p>単語の埋め込み表現を獲得できたら次に CNN のキモである畳み込み層とプーリング層です。</p>
+
+<pre><code class="language-py">for filter_size in FILTER_SIZES:
+    w  = tf.Variable(tf.truncated_normal([ filter_size, EMBEDDING_SIZE, 1, NUM_FILTERS ], stddev=0.02), name='weight')
+    b  = tf.Variable(tf.constant(0.1, shape=[ NUM_FILTERS ]), name='bias')
+    c0 = tf.nn.conv2d(ex, w, [ 1, 1, 1, 1 ], 'VALID')
+    c1 = tf.nn.relu(tf.nn.bias_add(c0, b))
+    c2 = tf.nn.max_pool(c1, [ 1, x_dim - filter_size + 1, 1, 1 ], [ 1, 1, 1, 1 ], 'VALID')
+    p_array.append(c2)
+</code></pre>
+
+<p>重み <code>w</code> がフィルタそのもので、<code>[ フィルタの高さ x フィルタの幅 x フィルタのチャンネル数 x フィルタの数 ]</code> というサイズのテンソルです。</p>
+
+<p>今回は高さが 3、4、5 という 3 つサイズを準備して、それぞれのサイズで 128 個のフィルタを使うようにしています。フィルタの幅は、埋め込み表現の次元数と同じにします (つまりテキストを表す行列の列数と同じ)。要するに</p>
+
+<ul>
+<li><code>3 x EMBEDDING_SIZE</code> というフィルタが 128 個</li>
+<li><code>4 x EMBEDDING_SIZE</code> というフィルタが 128 個</li>
+<li><code>5 x EMBEDDING_SIZE</code> というフィルタが 128 個</li>
+</ul>
+
+<p>という風に、合計して 384 個のフィルタを学習することになります。畳み込みの処理自体は TensorFlow の <code>conv2d</code> という関数を使います。</p>
+
+<p>384 個のフィルタそれぞれで畳み込みをかけた後は、最大プーリングです。TensorFlow では <code>max_pool</code> という関数を使います。ここでは、プーリングはウィンドウをスライドさせて適用するのではなく、1 つのフィルタ結果全体に対して適用します。つまりフィルタは全部で 384 個あるので、結果的に 384 個のニューロンが出力されると考えることができますね。</p>
+
+<h2 id="全結合層と出力層">全結合層と出力層</h2>
+
+<p>最後は全結合層です。</p>
+
+<pre><code class="language-py">w  = tf.Variable(tf.truncated_normal([ total_filters, NUM_CLASSES ], stddev=0.02), name='weight')
+b  = tf.Variable(tf.constant(0.1, shape=[ NUM_CLASSES ]), name='bias')
+h0 = tf.nn.dropout(tf.reshape(p, [ -1, total_filters ]), keep)
+predict_y = tf.nn.softmax(tf.matmul(h0, w) + b)
+</code></pre>
+
+<p>まず、過学習防止のためにドロップアプトを実行しています。ドロップアウトの確率は、一般的によく使われる 0.5 にしています。そして、全結合層での定石通りに、入力と重み行列の積を取り、バイアスを足すという操作をして、最後にその出力を <code>softmax</code> 関数に通して、各クラスに属する確率を出力しています。つまり <code>predict_y</code> は <code>[ None, NUM_CLASSES ]</code> の形をしたテンソルになります。</p>
+
+<p>これが今回実装した畳み込みニューラルネットワークの全体です。</p>
+
+<h1 id="目的関数の定義">目的関数の定義</h1>
+
+<p>畳み込みニューラルネットワークの定義が完了したら次は目的関数を定義します。</p>
+
+<pre><code class="language-py">xentropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(predict_y, input_y))
+loss = xentropy + L2_LAMBDA * tf.nn.l2_loss(w)
+global_step = tf.Variable(0, name=&quot;global_step&quot;, trainable=False)
+train = tf.train.AdamOptimizer(0.0001).minimize(loss, global_step=global_step)
+</code></pre>
+
+<p>ニューラルネットワークでは、一般的に目的関数には二乗誤差よりも公差エントロピーが使われます。TensorFlow には <code>softmax_cross_entropy_with_logits</code> という関数がありますので、これを使います。さらに今回は <code>l2_loss</code> 関数を使って、正則化項も追加しています。ラムダの値は <code>L2_LAMBDA = 0.0001</code> としました。</p>
+
+<p>そして、定義した目的関数を最小化するための最適化器を作ります。TensorFlow では様々な最適化器を持っていますが、ここでは <code>AdamOptimizer</code> を利用しました。TensorFlow は自動微分機能を持っているので、最適化のために定義した目的関数の微分をする必要はありません。楽だ。</p>
+
+<h1 id="学習">学習</h1>
+
+<p>最後に、定義した畳み込みニューラルネットワークの学習を行います。</p>
+
+<pre><code class="language-py">for epoch in xrange(NUM_EPOCHS):
+    random_indice = np.random.permutation(train_x_length)
+    for i in xrange(batch_count):
+        mini_batch_x = []
+        mini_batch_y = []
+        for j in xrange(min(train_x_length - i * NUM_MINI_BATCH, NUM_MINI_BATCH)):
+            mini_batch_x.append(train_x[random_indice[i * NUM_MINI_BATCH + j]])
+            mini_batch_y.append(train_y[random_indice[i * NUM_MINI_BATCH + j]])
+
+        _, v1, v2, v3, v4 = sess.run(
+            [ train, loss, accuracy, loss_sum, accr_sum ],
+            feed_dict={ input_x: mini_batch_x, input_y: mini_batch_y, keep: 0.5 }
+        )
+</code></pre>
+
+<p>機械学習では一般的に学習は 1 回だけではなく繰り返し行いますので、今回も例に漏れず一定回数の繰り返しを行っています。<code>NUM_EPOCHS = 10</code> 回の繰り返しを行います。そして各エポック内で学習データをミニバッチの数だけランダムに取り出して、それを最適化器に渡して学習を進めています。ミニバッチ数は <code>NUM_MINI_BATCH = 64</code> に設定しました。</p>
+
+<p>学習自体は <code>sess.run</code> で実行しています。ここが一番ホットな処理部分でしょう。目的関数を微分して勾配を求め、Adam のアルゴリズムに沿って目的関数の値を最小化していきます。</p>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>だいぶ詳細をはしょりながら早足で説明してきました。</p>
+
+<p>ニューラルネットワークでは重みやバイアスなどのパラメータの数が膨大になるのが普通で、今回も正確には数えてませんがたぶん数万個〜数十万個くらいはあるでしょう。スライドにも書いていますが、13 万件程度のデータを 10 エポック繰り返して学習させるには 20 時間程度の時間が必要でした。ただし、今回は CPU しか使っていませんので GPU を使えばもっともっと早く終わるでしょう。</p>
+
+<p>それから、今回実装した畳み込みニューラルネットワークにはたくさんのハイパーパラメータがありました。埋め込み表現の次元数、フィルタ数、フィルタのサイズ、ミニバッチ数、繰り返し (エポック) 数、などなど。これらは、ある程度よく使われている初期値があるとは言え、どういった値にするのかは全部実装者が決めないといけないので、その辺りのチューニングも大事になります。ほとんどのハイパーパラメータについてはトライ&amp;エラーで適切な値を見つけていくしかなく、そうすると 1 回の学習が終わるのに数十時間もかかってるようでは、ハイパーパラメータを修正しながらのチューニングは現実的ではないので、やっぱり GPU が欲しくなります。</p>
+
+<p>と、こんなところでしょうか。</p>
+
+<p>理解できた、できなかった、イミフ、おいしいの？、など感想はいろいろあると思いますが、少しでも誰かの刺激になってれば幸いです。</p>
+
+<h1 id="参考ページ">参考ページ</h1>
+
+<p>ニューラルネットワークの入門や解説が書かれている記事や、今回の実装で使われたツールやライブラリへのリンク集です。</p>
+
+<p>[1] と [2] はニューラルネットワークとディープラーニングについてのオンライン本の英語版と日本語版。日本語版の方はまだ英語の部分も残ってるようで完全に日本語化されてない。</p>
+
+<p>[3] と [4] はそれぞれ、畳み込みニューラルネットワークの説明と、自然言語処理にディープラーニングを使う話。スタンフォード大学が公開。英語。</p>
+
+<p>[5] は機械学習初心者に向けた解説。東京大学の有志が公開。日本語。</p>
+
+<p>[6] と [7] は畳み込みニューラルネットワークを自然言語処理に適用する解説記事の英語版と日本語版。</p>
+
+<p>[8] が今回実装したニューラルネットワークの元になった論文。英語。</p>
+
+<p>[9] と [10] はライブラリ。</p>
+
+<p>[11] は今回の実装の全ソースコード。</p>
+
+<ul>
+<li>[1] <a href="http://neuralnetworksanddeeplearning.com/">Neural Networks and Deep Leaning</a></li>
+<li>[2] <a href="http://nnadl-ja.github.io/nnadl_site_ja/">Neural Networks and Deep Leaning (日本語)</a></li>
+<li>[3] <a href="http://cs231n.github.io/">CS231n Convolutional Neural Networks for Visual Recognition</a></li>
+<li>[4] <a href="http://cs224d.stanford.edu/syllabus.html">CS224d Deep Learning for Natural Language Processing</a></li>
+<li>[5] <a href="http://sig.tsg.ne.jp/ml2015/">TSG Machine Learning</a></li>
+<li>[6] <a href="http://www.wildml.com/2015/11/understanding-convolutional-neural-networks-for-nlp/">Understanding Convolutional Neural Networks for NLP</a></li>
+<li>[7] <a href="/blog/2016/03/08/understanding-convolutional-neural-networks-for-nlp/">Understanding Convolutional Neural Networks for NLP (日本語)</a></li>
+<li>[8] <a href="http://arxiv.org/abs/1408.5882">Convolutional Neural Networks for Sentence Classification</a></li>
+<li>[9] <a href="https://code.google.com/archive/p/word2vec/">word2vec</a></li>
+<li>[10] <a href="https://www.tensorflow.org/">TensorFlow</a></li>
+<li>[11] <a href="https://github.com/tkengo/tf/tree/master/cnn_text_classification">tkengo/tf/cnn_text_classification</a></li>
+</ul>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E3%83%8B%E3%83%A5%E3%83%BC%E3%83%A9%E3%83%AB%E3%83%8D%E3%83%83%E3%83%88%E3%83%AF%E3%83%BC%E3%82%AF">ニューラルネットワーク</a>
+      
+        <a class="tag-link" href="tags/%E8%87%AA%E7%84%B6%E8%A8%80%E8%AA%9E%E5%87%A6%E7%90%86">自然言語処理</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2016/03/14/text-classification-by-cnn/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2016/03/14/text-classification-by-cnn/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2016/03/14/text-classification-by-cnn/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

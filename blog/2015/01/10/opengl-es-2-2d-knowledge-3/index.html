@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>バーテックスシェーダによる座標系変換 &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-01-10</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/01/10/opengl-es-2-2d-knowledge-3/">バーテックスシェーダによる座標系変換</a></h1>
+    </header>
+    <article>
+      
+
+<p><a href="/blog/2014/12/20/opengl-es-2-2d-knowledge-0">OpenGL 基礎シリーズ</a>の第 3 回です。</p>
+
+<h1 id="座標変換">座標変換</h1>
+
+<p>プリミティブの描画には頂点座標が必要なのはわかった。だって、座標情報がないとそもそもどこに描画していいのかがわからないんだから。でもよく考えてみて欲しい、この座標情報って <strong>どの座標系における座標</strong> なんだろう？それって最初に出てきた右手座標系とかいう座標系じゃないの？うーん、そうなんだけどここで話したいのはそういうことじゃない。それじゃディスプレイ上の座標に配置してるに決まってるよ！いやいやそんなことはない。私達は今、OpenGL 上で 3D 空間を扱っている。でも現実のディスプレイは 2D の平面。はい、これらはそもそも次元が違う。</p>
+
+<p>最初にバーテックスシェーダの概要を書いた時に座標系の変換過程を図に示したのを思い出してみると、3D 空間を扱うためには少なくとも 4 つの座標系があった。最初に頂点座標を配置した座標系から最終的にはクリッピング座標系という座標系に変換していく必要があり、それこそがバーテックスシェーダの役割である。そして前回の記事で頂点座標を定義した時、その <code>(x, y, z)</code> で表される頂点座標は、実はローカル座標系における座標を指定していたのだ！ドヤァー</p>
+
+<p>突然ドヤァーされても意味わからないと思うので詳細を見てみよう。</p>
+
+<h1 id="変換行列">変換行列</h1>
+
+<p>では実際バーテックスシェーダで座標系の変換をするっていっても、それってどうやればいいのか。答えは行列です。行列というと高校数学程度の知識が必要になりそうだけど、行列の生成や演算など面倒なことは全て CPU や GPU がやってくれる。私達に必要なのは、<strong><span style="color:red;">どういう変換行列の種類があって、それをどのように組み合わせて利用するのか</span></strong>、ということだけなので「自分理系じゃなかったんだけど&hellip;」という人でも心配はない。便利な世の中〜。</p>
+
+<p>とはいえ、実際にどういうものかぐらいは頭に置いておいたほうがイメージしやすいので、絵に書いてみると行列ってこういうもの。いろいろ難しそうな表現があるけど、わからないならわからないで深く理解しなくても大丈夫な領域ではあるので不安にならずに先に進んで大丈夫だと思う。もし知りたければ適当にググれば解説サイトはいっぱい出てくる。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/matrix-operation.png" alt="行列演算" /></p>
+
+<p><em>※頂点座標は <code>(x, y, z)</code> の 3 次元だったけど図の青枠で囲ってある頂点座標は 4 つになっている。最後の <strong>1</strong> ってなんだろう？これは頂点座標と変換行列の演算を単純にするために導入される <strong>同次座標系</strong> という新しい概念になるのだけど、この話を詳しくしだすと OpenGL から飛び出してしまうのでここでは割愛する。最後の 1 はよくある <strong>おまじない</strong> だ。。
+。</em></p>
+
+<p>では、前提知識をつけたところで実際にどういう風に座標系が変換されていくのかを見ていく。長い長い座標系変換への旅へ出発。</p>
+
+<h1 id="ワールド座標変換">ワールド座標変換</h1>
+
+<p>まずはワールド座標変換。ジョジョじゃないよ。</p>
+
+<p><a href="http://ja.wikipedia.org/wiki/Utah_teapot#mediaviewer/File:Utah_teapot_3dsmax.png" target="_blank">
+<img src="http://upload.wikimedia.org/wikipedia/commons/4/47/Utah_teapot_3dsmax.png" width="300">
+</a>
+<span class="caption">Picture by Hay Kranen / CC-BY</span></p>
+
+<p>ポリゴンが組み合わさって何かしらの形を作っているものは「モデル」と呼ばれ、通常は大量のポリゴンを組み合わせて「人のモデル」とか「木のモデル」とか複雑なものが定義される。ここに表示しているのは <a href="http://ja.wikipedia.org/wiki/Utah_teapot">ユタ・ティーポット</a> と言って、これもモデルの 1 つで CG の分野では有名なモデル。こういったモデルはそのモデル専用のローカル座標を持っており、通常は頂点座標はこのローカル座標系の座標を表している。</p>
+
+<p>そしてワールド座標変換とは、そういったローカル座標で定義されている各モデルを OpenGL 唯一の世界の座標に配置していく作業のことを言う。以下の図では立方体のモデル、三角柱のモデル、四角形のモデル、をそれぞれローカル座標系からワールド座標系へ変換している。こうしてみるとまるで OpenGL の世界の神様になったみたい。ワールド座標変換に使われる行列は</p>
+
+<ul>
+<li>平行移動</li>
+<li>拡大縮小</li>
+<li>回転</li>
+<li>せん断</li>
+</ul>
+
+<p>の 4 つがある。Android には <code>android.opengl.Matrix</code> クラスにそれぞれの行列を生成するためのメソッドがあるので、それらと共に紹介する。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/world-coordinate-translation.png" alt="ワールド座標変換" /></p>
+
+<p><em>※ちなみにせん断については個人的には 2D ではあまり使いドコロがなく良く理解もしていないし <code>android.opengl.Matrix</code> クラスの中にせん断行列を生成してくれるメソッドが見当たらないので説明は割愛する。</em></p>
+
+<h2 id="平行移動">平行移動</h2>
+
+<p>Android では <code>Matrix.translateM</code> メソッドの呼び出しで平行移動行列が生成される。前に呼んでいる <code>Matrix.setIdentityM</code> は単位行列を作るためのメソッドで、行列を生成するにはまず単位行列の形にしておいてそれを生成メソッドに渡すようにする。</p>
+
+<pre><code class="language-java">float[] translationMatrix = new float[16];
+
+Matrix.setIdentityM(translationMatrix, 0);
+Matrix.translateM(translationMatrix, 0, x方向の移動量(tx), y方向の移動量(ty), z方向の移動量(tz));
+</code></pre>
+
+<p>このメソッドによって生成される行列は以下の様なものになる。tx に 1 を指定すれば x 方向に +1 だけ座標が移動するし、ty に -1 を指定すれば y 方向に -1 だけ座標が移動する。この行列をモデルの各頂点にかけてあげれば平行移動した新しい座標のできあがり。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/translate-matrix.png" alt="平行移動行列" /></p>
+
+<h2 id="拡大縮小">拡大縮小</h2>
+
+<p>Android では <code>Matrix.scaleM</code> メソッドの呼び出しで拡大縮小行列が生成される。</p>
+
+<pre><code class="language-java">float[] scaleMatrix = new float[16];
+
+Matrix.setIdentityM(scaleMatrix, 0);
+Matrix.translateM(scaleMatrix, 0, x方向の拡大縮小量(sx), y方向の拡大縮小量(sy), z方向の拡大縮小量(sz));
+</code></pre>
+
+<p>このメソッドによって生成される行列は以下の様なものになる。sx に 2 を指定すれば横方向の長さ(幅)が 2 倍に伸びるし、sy に 0.5 を指定すれば縦方向の長さ(高さ)が半分になる。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/scale-matrix.png" alt="拡大縮小行列" /></p>
+
+<h2 id="回転">回転</h2>
+
+<p>Android では <code>Matrix.rotateM</code> メソッドの呼び出しで回転行列が生成される。</p>
+
+<pre><code class="language-java">float[] rotateMatrix = new float[16];
+
+Matrix.setIdentityM(rotateMatrix, 0);
+Matrix.translateM(rotateMatrix, 0, 回転角度θ, x軸(rx), y軸(ry), z軸(rz));
+</code></pre>
+
+<p>θ を指定して rx を 1 とすれば x 軸を中心として、ry を 1 とすれば y 軸を中心として回転することになる。ちなみに回転行列は中心とする軸によって行列が異なるので、以下のように x、y、z それぞれの軸を中心として回転する 3 種類の回転行列がある。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/rotate-matrix.png" alt="回転行列" /></p>
+
+<hr />
+
+<p>このような平行移動、拡大縮小、回転の行列をモデルの全ての頂点に対して掛けていくことで、ワールド座標系にモデルを配置していくことになる。四角形のモデルであれば頂点数は 4 つなので 4 回の行列演算が行われる。立方体であれば頂点数は 8 つなので 8 回の行列演算。そしてもっと複雑な、たとえば人間のモデルともなると頂点数は数万にのぼることもあるので、その場合は数万回の行列演算が行われることになる。ひえ〜。</p>
+
+<p>少しでもワールド座標系への変換のイメージをつけることができたらいいけど、例えば四角形モデルの各頂点を平行移動する様子はこんな感じになる。この例では四角形モデルを x 座標に +1、z 座標に -1 だけ平行移動している。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/translate-conversion1.png" alt="" />
+<img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/translate-conversion2.png" alt="平行移動の例" /></p>
+
+<h1 id="ビュー座標変換-div-id-view-transformation-matrix-div">ビュー座標変換<div id="view-transformation-matrix"></div></h1>
+
+<p>世界の神様になってモデルを各箇所に配置していく感覚には慣れただろうか。次はビュー座標変換というものを扱う。ここからはカメラの話が出てきてなんとも 3D っぽくなってくる。そもそもカメラとはなんだろう？カメラは同じものが現実世界にもあってすごくわかりやすい。スマホのカメラや一眼レフでも使い捨てカメラ (懐かしいな) でも何でもいいけど、シャッターを押すことで <strong>現実世界の一部を切り取って</strong> 写真にしてくれるよね。そして、シャッターを押す時は「はいチーズ！コナンくん！」『バーローｗｗｗ』とか言いながら <strong>カメラを被写体に向けて</strong> シャッターを押すのである。</p>
+
+<p>OpenGL のカメラもこれと同じで、ワールド座標に配置したモデル達にカメラを向けることで、そのカメラがディスプレイに表示する世界を切り取ってくれる。さて、カメラのパラメータとして必要な情報は以下の 3 つがある。</p>
+
+<ul>
+<li>カメラの位置</li>
+<li>カメラが見ている位置(注視点)</li>
+<li>カメラの上方向</li>
+</ul>
+
+<p>この 3 つのパラメータが決まればカメラが切り取る世界の景色が見えてくる。カメラはどこに置いても構わないし、どこを見ていても構わないので、たとえばワールド空間にこんな風にカメラを配置できる。この場合、カメラの位置が <strong><span style="color:#DE6B2F;">(-2, 1, 0)</span></strong>、カメラが見ている位置が <strong><span style="color:#DCBE2B;">(0, 1, 0)</span></strong>、カメラの上方向が <strong><span style="color:#45892D;">(0, 1, 0)</span></strong> となる。カメラの上方向は文字通り「方向」なので座標ではなく方向を表す単位ベクトルで指定することになる。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/view-coordinate-translation.png" alt="ワールド座標系へのカメラの配置" /></p>
+
+<p><em>※カメラの上方向は正確にはカメラに対して前後に傾いていても問題はない、というか前後に傾いているだけであれば結果として見える景色は同じになって、左右に傾いているのであれば見える景色が違ってくる。上方向が前後に傾いていても景色が同じってのは直感には反するけど、よく考えてみたらカメラの位置と注視点という 2 つのパラメータが決まることでカメラのレンズの向きは決まる。カメラが前後に傾くってことはカメラのレンズの向きが変わる、つまり注視点が変わってる、ってことだ。なのでカメラの上方向で重要なのは前後の傾きよりは左右の傾きであって、その左右の傾きの量で切り取られた後の世界の回転量が決定される。</em></p>
+
+<p>さてさて私達は今、原点が中心にある右手座標系のワールド座標空間を z 軸手前の方から見ており、そこの左上辺りにカメラを配置した。これは私達をメインとして、つまり私達が世界の中心となって世界を見ている。ビュー座標変換は、そんな人間原理的な我々中心で見ている世界から、カメラ中心で見る世界に座標変換することを言う。より具体的に言うと</p>
+
+<ul>
+<li>カメラの位置を原点にもってきて</li>
+<li>カメラが見ている位置を z 軸奥 (-z の方向) を向けて</li>
+<li>カメラの上方向を y 軸上 (+y の方向) を向ける</li>
+</ul>
+
+<p>という変換を行う。先に示したカメラ配置でのビュー変換を直感的に見てみよう。まず、カメラの景色が変わらないようにカメラを原点に移動させてみる。つまりカメラを原点に移動させたらモデルもそれと同じ量だけ移動させる。カメラもモデルも右下の方にずれて、カメラが原点に配置されていることがわかる。これって、移動前と移動後でカメラの景色がかわらないのは理解できるかな？この変換はワールド座標変換で出てきた平行移動行列をモデルの各頂点に掛けるだけで簡単に変換できる。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/view-coordinate-translation2.png" alt="カメラを原点に移動" /></p>
+
+<p>次にカメラの向きを回転してみる。y 軸を中心として 90 度だけ左方向にグルっと回転して、カメラが z 軸奥の方を向くようにする。同じく景色が変わらないようにモデルの座標も回転させている。この変換も同様に、ワールド座標変換で出てきた回転行列をモデルの各頂点に掛けるだけで簡単に変換できる。ここでカメラの上方向が y 軸上を向いていない場合はさらに変換がかかるが、これもカメラの向きを変えた時同様にカメラの上方向が y 軸上を向くように回転行列を掛けるだけで変換できる。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/view-coordinate-translation3.png" alt="カメラの向きを回転" /></p>
+
+<p><em>※直感的に理解できるように、カメラ用の新軸の定義について説明を端折っているし、座標変換の順番ややり方など実際と異なる部分もあるので、あくまで理解用の説明ということで。</em></p>
+
+<p>これでビュー座標系への変換が完了した。この変換のための行列は <code>Matrix.setLookAtM</code> メソッドを使って作ることができる。</p>
+
+<pre><code class="language-java">float[] viewMatrix = new float[16];
+
+Matrix.setLookAtM(
+    viewMatrix, 0,
+   -2f, 1f, 0f, // カメラの位置
+    0f, 1f, 0f, // カメラが見ている位置(注視点)
+    0f, 1f, 0f  // カメラの上方向
+);
+</code></pre>
+
+<h1 id="射影変換-div-id-projection-transformation-matrix-div">射影変換<div id="projection-transformation-matrix"></div></h1>
+
+<p>私達はモデルを OpenGL の世界に配置して、それからそこにカメラを置いて、さらにカメラ中心の世界に変換した。そして次はいよいよ最後、3D の世界を xy 平面上の 2D の世界に投影するための射影変換だ。3D から 2D の変換ってそんなに簡単にできるの？と直感的には思うけど、実はこれまでのワールド座標変換やビュー座標変換と同様に行列を使って一発で変換できる。行列ってすごいでしょ？</p>
+
+<h2 id="投影方法">投影方法</h2>
+
+<p>一般的に投影方法には <strong>透視投影</strong> と <strong>平行投影</strong> の 2 種類がある。</p>
+
+<h3 id="透視投影">透視投影</h3>
+
+<p>カメラの近くのものは大きく見えて、遠くのものは小さく見える、要は遠近感を扱うことができる投影方法。これは私達の感覚そのまま、現実の世界そのままの変換を行う。3D を扱うゲームやコンテンツはこの投影方法を用いている。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/perspective-projection.png" alt="透視投影" /></p>
+
+<h3 id="平行投影">平行投影</h3>
+
+<p>カメラからの距離に関わらずモデルそのものの大きさがそのまま見える。現実世界の私達の感覚とはかけはなれているけど 2D を描画する時はこっちの方が便利。透視投影は平行投影より複雑だし、この記事では 2D を扱うことが目的なので射影変換にはこちらの平行投影を使っていく。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/orthographic-projection.png" alt="平行投影" /></p>
+
+<h2 id="クリッピング">クリッピング</h2>
+
+<p>射影変換のための行列を作るためにはどこからどこまでの領域を投影するのか、という視野空間の情報が必要になる。この視野空間内に存在するモデル達が実際に画面に表示されることになる。平行投影の場合、これに必要なパラメータは以下の 6 つ。</p>
+
+<ul>
+<li><span style="color:#773F9B;">左側の x 座標</span></li>
+<li><span style="color:#773F9B;">右側の x 座標</span></li>
+<li><span style="color:#773F9B;">下側の y 座標</span></li>
+<li><span style="color:#773F9B;">上側の y 座標</span></li>
+<li><span style="color:#C9352B;">カメラから見た手前の z 座標</span></li>
+<li><span style="color:#C9352B;">カメラから見た奥の z 座標</span></li>
+</ul>
+
+<p>これらのパラメータをこちらから与えてあげることで以下のような視野空間が定義される。この時、カメラから見た時の z 座標は奥のほうをプラスとみなして指定する。</p>
+
+<p><img src="/assets/img/2015-01-10-opengl-es-2-2d-knowledge-3/projection-space.png" alt="視野空間の定義" /></p>
+
+<p>そしてこの視野空間を x軸、y軸、z軸、それぞれにおいて -1 から 1 の範囲におさまるように座標を変換してあげないといけない。これを <strong>正規化</strong> といって OpenGL が扱いやすいように変形をしてあげることを言う。</p>
+
+<p>それでは実際に変換はどのようにやるのかというと、平行投影に限ってはこれまでのワールド座標変換やビュー座標変換のようにモデルを動かしたりはせずに、ビュー座標系に置かれた視野空間の中のモデルの頂点座標そのままを使うことが出来る。透視投影と違ってカメラからの距離によっての遠近感の演出がないためモデルの形が変わったりすることがないからね。えっ、じゃぁ平行投影の場合の射影変換って何するの？というと実は何もせずに、先に書いた正規化だけを行う。最終的に正規化されて出来た空間をクリッピング空間と呼び、その座標系のことをクリッピング座標系と呼ぶ。</p>
+
+<p><em>※クリッピング座標系は正規化デバイス座標系と呼ばれたりもする。まあ呼び方なんてそんな躍起になって覚えなくてもいいんじゃないだろうか。ほんとうに大事なのは物事の本質、その座標系がどういうものなのか、っていうところだしね。</em></p>
+
+<p>正規化は以下のような要領でやっていく。</p>
+
+<ul>
+<li>視野空間の中心が原点となるように視野空間内のモデルに平行移動行列を掛ける</li>
+<li>視野空間の幅、高さ、奥行きの長さが 2 になるように視野空間内のモデルに拡大縮小行列を掛ける</li>
+</ul>
+
+<p>これだけ。どれくらい移動させれば原点まで動くのかとか、どれくらい縮小すれば視野空間が 2 x 2 x 2 になるのかとか、求めようと思えば簡単に計算できるけど、そういうのは全部 CPU がやってくれるのであまり気にしなくても良い。Android では平行投影用の行列を <code>Matrix.orthoM</code> メソッドで生成することができる。</p>
+
+<pre><code class="language-java">float[] projectionMatrix = new float[16];
+
+Matrix.orthoM(
+    projectionMatrix, 0,
+    視野空間の左側のx座標,
+    視野空間の右側のx座標,
+    視野空間の下側のy座標,
+    視野空間の上側のy座標,
+    カメラから見た視野空間の手前のz座標,
+    カメラから見た視野空間の奥のz座標
+);
+</code></pre>
+
+<p><em>※透視投影用の行列の生成は平行投影よりもっと複雑で、2D 描画にはあまり使われないのでこの記事での解説は割愛する。ただ、透視投影にも専用の行列を作るための perspectiveM というメソッドがあるので、行列の生成はそいつに任せれば良い。行列の生成方法に興味があるならネット上には多くの記事があるので気になる場合はのぞいてみるのも面白い。ここまで読み進められたモチベーションとここまでで蓄えられた知識があれば意外とスラスラ理解できるかもしれない。</em></p>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>長い長い座標変換の旅がようやくこれで終わった。最初に頂点座標を配置するモデル座標から様々な変換行列を掛けあわせながら最終的にはクリッピング座標系まで変換される。変換過程をひとまとめにして一気に理解しようとするのは到底無理なことではあるが、このように 1 つ 1 つ分解して細かくして見てみるとなんとか理解できそうな気もする。</p>
+
+<p>ここで作った座標変換行列は実際には OpenGL の API を使って頂点情報と同じように GPU に転送され、バーテックスシェーダの中で利用される。バーテックスシェーダでどういう実装をすればいいかの話はまた別にするとして、今回はバーテックスシェーダがどういう仕事をしているのかを主に説明してきた。いきなり実装の話をして意味不明なコードに怒りを募らせノートパソコンを窓から放り投げたくなるよりかは、先にこういった下地を理解しておくことで実装時には驚くほど「なるほど感」が出てくる。</p>
+
+<p>次回 <a href="/blog/2015/01/17/opengl-es-2-2d-knowledge-4">ラスタライザの画素生成と線形補間</a> に続く。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/opengl">OpenGL</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/01/10/opengl-es-2-2d-knowledge-3/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/01/10/opengl-es-2-2d-knowledge-3/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/01/10/opengl-es-2-2d-knowledge-3/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

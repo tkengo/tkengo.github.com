@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>ZendFramework で HTTP 通信部分をスタブ化してテストする &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2013-06-02</p>
+      <h1><a href="http://tkengo.github.io/blog/2013/06/02/zend-framework-http-stub/">ZendFramework で HTTP 通信部分をスタブ化してテストする</a></h1>
+    </header>
+    <article>
+      
+
+<p>テストしてますか？</p>
+
+<p>こないだ業務で ZendFramework を使ったアプリケーションで HTTP 通信の部分をスタブアウトしてテストしたかったので、実際にやってみました。そんなに難しくなかったので、是非やってみると幸せになれるかも！</p>
+
+<h1 id="前提">前提</h1>
+
+<ul>
+<li>ZendFramework バージョン1系</li>
+<li>Zend_Http_Client を使って HTTP 通信をしている</li>
+</ul>
+
+<p>ZendFramework のバージョン2がリリースされてからもうしばらく経ちますが、業務ではバージョン1を使ってる所は結構あるんじゃないでしょうか。</p>
+
+<p>それから ZendFramework を使って HTTP 通信をしようとする場合 <strong>Zend_Http_Client</strong> というクラスがあります。名前からもわかりますが HTTP 通信のためのクライアントで、通信部分の面倒を見てくれるクラスです。今回のアプリケーションは HTTP 通信部分に <strong>Zend_Http_Client</strong> を使っていたので、それ前提で話を進めます。</p>
+
+<h1 id="目標">目標</h1>
+
+<p>最初にスタブアウトとか言いましたが、テストの世界ではスタブとかモックとかいった単語が良く出てきますよね。今回はスタブなのですが、言葉の定義や、それがどういうものなのかは、詳しいサイトがいっぱいあると思うのでそっちに任せるとして、今回やりたかったことは</p>
+
+<ul>
+<li>外部サービスのAPIと通信するクラスがある</li>
+<li>そのクラスのテストを書く</li>
+<li>ただしネットワークに繋がっていなかったり、外部サービスが落ちてる時もテストが成功するようにしたい</li>
+</ul>
+
+<p>ということです。HTTP 通信の部分をスタブにして実際の通信を走らせないようにします。</p>
+
+<h1 id="外部サービスapiクラス">外部サービスAPIクラス</h1>
+
+<p>たとえば <strong>Zend_Http_Client</strong> を使って HTTP 通信をする以下の様なコードがあったとします。</p>
+
+<pre><code class="language-php">&lt;?php
+
+class ServiceApiClient
+{
+  public function methodA()
+  {
+    ...
+    $response = $this-&gt;request($paramsA);
+
+    return $response['result'] == 'OK';
+  }
+
+  public function methodB()
+  {
+    ...
+    $response = $this-&gt;request($paramsB);
+
+    if (isset($response['id'])) {
+      return $response['id'];
+    }
+    else {
+      return 0;
+    }
+  }
+
+  public function request($params)
+  {
+    $client = new Zend_Http_Client('http://...');
+    $client-&gt;setParameterPost($params);
+    $response = $client-&gt;request(Zend_Http_Client::POST);
+    return json_decode($response-&gt;getBody());
+  }
+}
+</code></pre>
+
+<p>少し説明すると</p>
+
+<ul>
+<li><code>request</code></li>
+</ul>
+
+<p><strong>Zend_Http_Client</strong> を使って外部サービスAPIへPOSTリクエストを投げているメソッドです。戻り値としてレスポンスを返しています。</p>
+
+<ul>
+<li><code>methodA</code></li>
+</ul>
+
+<p>外部サービスAPIを呼び出して結果が <strong>&lsquo;OK&rsquo;</strong> であれば true を返すメソッドです。</p>
+
+<ul>
+<li><code>methodB</code></li>
+</ul>
+
+<p>外部サービスAPIを呼び出して結果にIDが含まれていればそれを返してなければ 0 を返すメソッドです。</p>
+
+<p>さて、ここで <code>request</code> メソッドの中に HTTP 通信がありますので、ここをスタブ化します。</p>
+
+<h1 id="テスト用のアダプタ">テスト用のアダプタ</h1>
+
+<p>どうするのかというと、テスト用のアダプタを指定します。</p>
+
+<p><strong>Zend_Http_Client</strong> には、アダプタというものを指定することが出来ます。アダプタは <strong>Zend_Http_Client</strong> が通信する際の方式を決定するものです。以下の4種類が存在します。</p>
+
+<ul>
+<li><code>Zend_Http_Client_Adapter_Socket</code> (default)</li>
+<li><code>Zend_Http_Client_Adapter_Proxy</code></li>
+<li><code>Zend_Http_Client_Adapter_Curl</code></li>
+<li><code>Zend_Http_Client_Adapter_Test</code></li>
+</ul>
+
+<p>名前からなんとなく推測できますが、このアダプタを入れ替えることによって、ソケット通信をしたり、プロキシを使って通信をしたり、curl を使って通信したり出来ます。</p>
+
+<p>そして最後に <code>Zend_Http_Client_Adapter_Test</code> といういかにもな名前のアダプタがあります。そうです！これを使うのです。これは実際に HTTP 通信をせずに、こちらで指定したレスポンスを返してくれます。</p>
+
+<p>アダプタの入れ替えはこうやります。</p>
+
+<pre><code class="language-php">&lt;?php
+
+class ServiceApiClient
+{
+  ...
+  省略
+  ...
+
+  public function request($params)
+  {
+    $client = new Zend_Http_Client('http://...');
+    $client-&gt;setAdapter(new Zend_Http_Client_Adapter_Test()); // テストアダプタをセット
+    $client-&gt;setParameterPost($params);
+    $response = $client-&gt;request(Zend_Http_Client::POST); // ここは実際には通信に行かない
+    return json_decode($response-&gt;getBody());
+  }
+}
+</code></pre>
+
+<p>これで、テスト用のアダプタがセットされて <code>$client-&gt;request(...)</code> の部分は実際に HTTP 通信はしないようになりました。ただ、テストのためにテスト用のアダプタにしたのはいいけど、このまま本番にデプロイするわけにはいきません。本番でも通信してくれなくなります。</p>
+
+<h1 id="環境を判別してアダプタをセットする">環境を判別してアダプタをセットする</h1>
+
+<p>そこで <strong>Zend_Http_Client</strong> を生成する時に現在の環境を見て、それにあったアダプタをセットするようにします。そのために新しく以下のようなクラスを準備しました。</p>
+
+<pre><code class="language-php">&lt;?php
+
+class Zend_Http_Client_Factory
+{
+  // テスト環境用のZend_Http_Clientクラスのインスタンス
+  private static $_instance;
+
+  // テスト環境用のZend_Http_Clientクラスが利用するアダプタ
+  private static $_adapter;
+
+  public static function getHttpClient($url = '')
+  {
+    if (Environment::isTest()) {
+      if (empty(self::$_instance)) {
+        self::$_instance = new Zend_Http_Client($url);
+      }
+      if (!empty(self::$_adapter)) {
+        self::$_instance-&gt;setAdapter(self::$_adapter);
+      }
+      return self::$_instance;
+    }
+    else {
+      return new Zend_Http_Client($url);
+    }
+  }
+
+  public static function setAdapter($adapter)
+  {
+    self::$_adapter = $adapter;
+
+    if (!empty(self::$_instance)) {
+      self::$_instance-&gt;setAdapter(self::$_adapter);
+    }
+  }
+}
+</code></pre>
+
+<p>これは、本番環境の時は常に新しい <strong>Zend_Http_Client</strong> を生成して返しますが、テスト環境の時は単一の <strong>Zend_Http_Client</strong> を返します。そして <code>setAdapter</code> で指定されたアダプタがあればそのアダプタを使うようにします。</p>
+
+<p>これが出来れば、アプリケーション中の</p>
+
+<pre><code class="language-php">new Zend_Http_Client($url);
+</code></pre>
+
+<p>を全部</p>
+
+<pre><code class="language-php">Zend_Http_Client_Factory::getHttpClient($url);
+</code></pre>
+
+<p>に置き換えます。これで HTTP 通信をスタブ化する準備ができました。</p>
+
+<h1 id="テストコードを書く">テストコードを書く</h1>
+
+<p>テストコードは以下のようにします。PHPUnit を使っています。</p>
+
+<pre><code class="language-php">&lt;?php
+
+class ServiceApiClient_Test extends PHPUnit_Framework_TestCase
+{
+  private function createAndSetTestAdapter($body)
+  {
+    // Zend_Http_Client の request メソッドを呼び出した時に
+    // 期待するレスポンスをここで指定します
+    // 他にもセットしたいレスポンスヘッダがあればここでセットします
+    // サンプルでは面倒なのでとりあえず&quot;HTTP/1.1 200 OK&quot;だけセット
+    $response = &quot;HTTP/1.1 200 OK\r\n\r\n{$body}&quot;;
+
+    // テスト用のアダプタを生成して期待するレスポンスをセットします
+    $adapter = new Zend_Http_Client_Adapter_Test();
+    $adapter-&gt;setResponse($response);
+
+    // ここでテスト用アダプタをセットします
+    // これによって Zend_Http_Client の request メソッドの HTTP 通信部分が
+    // ダミーとなり、実際に通信は行われなくなります
+    Zend_Http_Client_Factory::setAdapter($adapter);
+  }
+
+  // methodA のテスト : レスポンスが OK の時に true を返すこと
+  public function testSuccessMethodA()
+  {
+    $this-&gt;createAndSetTestAdapter(json_encode('OK'));
+
+    $testObject = new ServiceApiClient();
+    $result = $testObject-&gt;methodA();
+    $this-&gt;assertTrue($result);
+  }
+
+  // methodA のテスト : レスポンスが OK 以外の時に false を返すこと
+  public function testFailedMethodA()
+  {
+    $this-&gt;createAndSetTestAdapter(json_encode('NG'));
+
+    $testObject = new ServiceApiClient();
+    $result = $testObject-&gt;methodA();
+    $this-&gt;assertFalse($result);
+  }
+
+  // methodB のテスト : レスポンスの配列に id が含まれていればその値を返すこと
+  public function testSuccessMethodB()
+  {
+    $id = 1;
+    $this-&gt;createAndSetTestAdapter(json_encode(array('id' =&gt; $id));
+
+    $testObject = new ServiceApiClient();
+    $result = $testObject-&gt;methodB();
+    $this-&gt;assertEquals($id, $result);
+  }
+
+  // methodB のテスト : レスポンスの配列に id が含まれていなければ 0 を返すこと
+  public function testFailedMethodB()
+  {
+    $this-&gt;createAndSetTestAdapter(json_encode(array('error' =&gt; 'not found'));
+
+    $testObject = new ServiceApiClient();
+    $result = $testObject-&gt;methodB();
+    $this-&gt;assertEquals(0, $result);
+  }
+}
+</code></pre>
+
+<p>これで HTTP 通信の部分をスタブアウトすることが出来ました。</p>
+
+<p>レスポンスを自分で設定するので、その設定したレスポンスが間違っていたらテストにならないので、そこは注意しないといけません。</p>
+
+<p>快適テストライフはじめましょう！</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/php">PHP</a>
+      
+        <a class="tag-link" href="tags/zendframework">ZendFramework</a>
+      
+        <a class="tag-link" href="tags/test">Test</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2013/06/02/zend-framework-http-stub/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2013/06/02/zend-framework-http-stub/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2013/06/02/zend-framework-http-stub/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

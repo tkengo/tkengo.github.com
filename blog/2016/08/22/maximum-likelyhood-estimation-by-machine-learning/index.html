@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>機械学習でパラメータ推定 - 最尤推定法 - &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2016-08-22</p>
+      <h1><a href="http://tkengo.github.io/blog/2016/08/22/maximum-likelyhood-estimation-by-machine-learning/">機械学習でパラメータ推定 - 最尤推定法 -</a></h1>
+    </header>
+    <article>
+      
+
+<p>最尤推定法 (<em>Maximum Likelyhood や Maximum Likelyhood Estimation と言われ、それぞれ頭文字を取って ML や MLE などとも言われる</em>) は機械学習やコンピュータービジョンなどの分野で良く使われる推定法で、次のような条件付き同時確率を最大化することでパラメータの推定を行います。</p>
+
+<p>$$
+\hat{\theta} = \mathop{\mathrm{argmax}}\limits_{\theta} \mathrm{P}(x_1, x_2, \cdots, x_N|\theta)
+$$</p>
+
+<p>これだけ見て「うん、アレね」と理解できる人はこの記事の対象読者ではなさそうですので、逆にいろいろ教えて下さい。この記事では理論の面から最尤推定法にアタックしてみます。数式成分が多めで、うっとなることもあるかもしれませんが、ゆっくり読んでいきましょう。</p>
+
+<p><em>※この記事を読むにあたっては、確率論と微分の基礎知識程度は必要です。</em></p>
+
+<h1 id="尤度">尤度</h1>
+
+<p>いきなり応用問題から始めると必ず挫折するので、まずは一番簡単な問題設定から始めます。Wikipedia に <a href="https://ja.wikipedia.org/wiki/%E6%9C%80%E5%B0%A4%E6%8E%A8%E5%AE%9A">最尤推定</a> のページがありますので、この中で使われている例を参考に話を進めていきましょう。</p>
+
+<hr />
+
+<p><em>見た目がまったく同じ 3 枚のコイン A, B, C があります。これらのコインはイカサマで、投げた時に表の出る確率がそれぞれ違います。</em></p>
+
+<ul>
+<li><em>コイン A は <sup>1</sup>&frasl;<sub>3</sub> の確率で表が出る</em></li>
+<li><em>コイン B は <sup>1</sup>&frasl;<sub>2</sub> の確率で表が出る</em></li>
+<li><em>コイン C は <sup>2</sup>&frasl;<sub>3</sub> の確率で表が出る</em></li>
+</ul>
+
+<p><em>この 3 枚のコインを箱の中に入れてシャッフルした後に 1 枚引きます。引いたコインを 10 回投げたら、表が 3 回、裏が 7 回出ました。あなたは A, B, C のどのコインを引いたでしょうか？</em></p>
+
+<hr />
+
+<p>この問題設定は極めて単純です。単純すぎて最尤推定法を使わなくても解けるくらい簡単ですが、ここでは敢えて最尤推定法を使って解いてみます。最尤推定法は次の条件付き同時確率を最大化するパラメータ $\hat{\theta}$ を求めることでした。</p>
+
+<p>$$
+\hat{\theta} = \mathop{\mathrm{argmax}}\limits_{\theta} \mathrm{P}(x_1, x_2, \cdots, x_N|\ \theta)
+$$</p>
+
+<p>$x_1$ は 1 回目に投げた時の結果、$x_2$ は 2 回目に投げた時の結果、$x_N$ は N 回目に投げた時の結果になります。コインは全部で 10 回投げることになっているので $N=10$ なのは自明ですよね？これらは、統計学や機械学習の文脈では観測データや学習データとも言われますが、先の問題設定では表が 3 回、裏が 7 回出たということなので、例えばですがこんな風に表せます。<em>(表、裏、みたいな単語だと扱いにくいので、今後は表 = 1、裏 = 0 という風に数値に変換して扱います)</em></p>
+
+<ul>
+<li>$x_1 = 0$ <em>(裏)</em></li>
+<li>$x_2 = 1$ <em><span style="color:red;">(表)</span></em></li>
+<li>$x_3 = 0$ <em>(裏)</em></li>
+<li>$x_4 = 0$ <em>(裏)</em></li>
+<li>$x_5 = 0$ <em>(裏)</em></li>
+<li>$x_6 = 0$ <em>(裏)</em></li>
+<li>$x_7 = 1$ <em><span style="color:red;">(表)</span></em></li>
+<li>$x_8 = 1$ <em><span style="color:red;">(表)</span></em></li>
+<li>$x_9 = 0$ <em>(裏)</em></li>
+<li>$x_{10} = 0$ <em>(裏)</em></li>
+</ul>
+
+<p>ここでちょっとコイントスについて考えます。問題ではコインを 10 回投げていますが、それぞれのコイントスは独立だと考えます。要するに 1 回目に表か裏かどちらが出ようが、2 回目のトスには何の影響も与えないと考えます <em>(3 回目以降も同様)</em> 。まあ普通そうですよね。各試行が独立だと考えると、同時確率は各試行の確率の積に分解できるので、こう書き換えることができます。</p>
+
+<p>$$
+\mathrm{P}(x_1, x_2, \cdots, x_{10}|\ \theta) = \prod_i^{10} \mathrm{P}(x_i|\ \theta)
+$$</p>
+
+<p>じゃあ $\mathrm{P}$ と $\theta$ は何かというと、確率分布とそのパラメータです。確率分布はそれぞれ固有のパラメータを持っていて、そのパラメータが決まれば分布の形が決まります。たとえば&hellip;</p>
+
+<ul>
+<li><strong>正規分布:</strong> 平均 $\mu$ と分散 $\sigma^2$ という 2 つのパラメータを持つ</li>
+<li><strong>t分布:</strong> 自由度 $\nu$ というパラメータを持つ</li>
+<li><strong>ベルヌーイ分布:</strong> $\lambda$ というパラメータを持つ</li>
+</ul>
+
+<p>式中ではパラメータのことを $\theta$ と書いてはいますが、これを見てわかるようにパラメータは確率分布によって全然違うのでそれを何か 1 つの文字にまとめているというだけで、確率分布によって様々に変わります。</p>
+
+<p>ここでは箱から引いたコインを投げた時にどれくらいの確率で表が出るのか、ということを知りたいので、確率 $\lambda$ で 1 が出て、確率 $1 - \lambda$ で 0 が出る、というベルヌーイ分布を考えます。たとえば $\lambda = 0.4$ だとすると、40% の確率で 1 が、60% の確率で 0 が出ることになります。ベルヌーイ分布はこのように数式で表すことができます。</p>
+
+<p>$$
+\mathrm{P}(x\ |\ \lambda) = \lambda^x (1-\lambda)^{1-x} \ \ \ \ (0 \le \lambda \le 1,\ \ x \in \{0,1\})
+$$</p>
+
+<p>これを最尤推定法の式に代入すると最終的にはこう書くことができます。</p>
+
+<p>$$
+\begin{eqnarray}
+\mathrm{P}(x_1, x_2, \cdots, x_{10}|\ \theta) &amp; = &amp; \prod_i^{10} \mathrm{P}(x_i|\ \theta) \<br />
+                                                  &amp; = &amp; \prod_i^{10} \lambda^{x_i} (1-\lambda)^{1-x_i}
+\end{eqnarray}
+$$</p>
+
+<p>この式がどういうことを意味しているのかをちょっと考えてみます。この式は <strong>尤度</strong> と呼ばれており、パラメータ $\lambda$ が与えられた時に、その $\lambda$ がどれくらい学習データを尤もらしく説明できているかという指標になります。尤度という概念はとてもわかりづらく、言葉だけでは少し理解しにくいので、実際に値を計算してみましょう。たとえば $\lambda$ を適当に 3 つ決めて、それぞれの $\lambda$ で式の値を求めてみます。</p>
+
+<ul>
+<li>$\lambda = 0.05$ (5% の確率で表が出るコイン) の場合</li>
+</ul>
+
+<p>$$
+\begin{eqnarray}
+\prod_i^{10} 0.05^{x_i} (1-0.05)^{1-x_i} &amp; = &amp; 0.95 \cdot 0.05 \cdot 0.95 \cdot 0.95 \cdot 0.95 \cdot 0.95 \cdot 0.05 \cdot 0.05 \cdot 0.95 \cdot 0.95 \<br />
+                                            &amp; = &amp; 0.00008729216
+\end{eqnarray}
+$$</p>
+
+<ul>
+<li>$\lambda = 0.33$ (33% の確率で表が出るコイン) の場合</li>
+</ul>
+
+<p>$$
+\begin{eqnarray}
+\prod_i^{10} 0.33^{x_i} (1-0.33)^{1-x_i} &amp; = &amp; 0.67 \cdot 0.33 \cdot 0.67 \cdot 0.67 \cdot 0.67 \cdot 0.67 \cdot 0.33 \cdot 0.33 \cdot 0.67 \cdot 0.67 \<br />
+                                            &amp; = &amp; 0.00217803792
+\end{eqnarray}
+$$</p>
+
+<ul>
+<li>$\lambda = 0.91$ (91% の確率で表が出るコイン) の場合</li>
+</ul>
+
+<p>$$
+\begin{eqnarray}
+\prod_i^{10} 0.91^{x_i} (1-0.91)^{1-x_i} &amp; = &amp; 0.09 \cdot 0.91 \cdot 0.09 \cdot 0.09 \cdot 0.09 \cdot 0.09 \cdot 0.91 \cdot 0.91 \cdot 0.09 \cdot 0.09 \<br />
+                                            &amp; = &amp; 0.00000003604
+\end{eqnarray}
+$$</p>
+
+<p>これは、最初に学習データとして得られた $x_1, x_2, \cdots, x_{10}$ が <strong>どういうコインから生成されたものか</strong> という指標をしめしています。10 回中 3 回だけ表が出るという結果が、$\lambda = 0.91$ のコインから生成されることは稀でしょう。$\lambda = 0.91$ ということは表が出る確率が 91% もあるので、3 回とは言わずもっと表が出るはずです。逆に $\lambda = 0.05$ の場合は、表が出る確率は 5% ということなので、10 回中 3 回も表が出ているという結果はあまり納得のいく結果ではありません。結局は $\lambda = 0.33$ というコインが、一番うまく結果を説明しています。</p>
+
+<p>これは、尤度の値を見てみれば一目瞭然です。3 つの尤度を比べてみると $\lambda = 0.33$ の尤度が最も大きく、続いて $\lambda = 0.05$、そして $\lambda = 0.91$ が最も小さくなっています。要するに尤度の値が大きければ大きいほど、うまくデータを説明してくれる尤もらしいパラメータであると言えます。</p>
+
+<p>この辺りまで理解できるとゴールが見えてきます。最初に示した最尤推定法の式を覚えていますか？これは今考えているコインの問題に対しては、最終的にこのように変形できます。</p>
+
+<p>$$
+\begin{eqnarray}
+\hat{\theta} &amp; = &amp; \mathop{\mathrm{argmax}}\limits_{\theta} \mathrm{P}(x_1, x_2, \cdots, x_{10}|\ \theta) \<br />
+             &amp; = &amp; \mathop{\mathrm{argmax}}\limits_{\theta} \prod_i^{10} \mathrm{P}(x_i|\ \theta) \<br />
+             &amp; = &amp; \mathop{\mathrm{argmax}}\limits_{\lambda} \prod_i^{10} \lambda^{x_i} (1-\lambda)^{1-x_i}
+\end{eqnarray}
+$$</p>
+
+<p>これは尤度を最大にする $\lambda$ を求める、という意味の式です。尤度が最大になる $\lambda$ がわかれば、観測された学習データ $x_1, x_2, \cdots, x_{10}$ がどういうコインを使って生成されたものなのか、言い換えればどういうコインを投げると $x_1, x_2, \cdots, x_{10}$ という結果が出てくるのか、ということがわかります。</p>
+
+<p>尤度を最大化するパラメータを推定する、これが最尤推定です。</p>
+
+<h1 id="最適化問題">最適化問題</h1>
+
+<p>尤度を最大化するという最適化問題なので、あとは最適化問題を解くためのアルゴリズムに従って解いていくだけです。ここでは最大化したい尤度を $L$ として、このように表します。</p>
+
+<p>$$
+L(\lambda) = \prod_i^{10} \lambda^{x_i} (1-\lambda)^{1-x_i}
+$$</p>
+
+<p>ただし、一般的にはこの $L$ をそのまま最大化するのではなく尤度の対数を取った対数尤度 $\log L$ を最大化します。</p>
+
+<p>$$
+\begin{eqnarray}
+\log L(\lambda) &amp; = &amp; \log \prod_i^{10} \lambda^{x_i} (1-\lambda)^{1-x_i} \<br />
+                &amp; = &amp; \sum_i^{10} \log \lambda^{x_i} (1-\lambda)^{1-x_i} \<br />
+                &amp; = &amp; \sum_i^{10} \left( x_i \log \lambda + (1 - x_i) \log (1 - \lambda) \right)
+\end{eqnarray}
+$$</p>
+
+<p>対数を取る理由は主には、計算を簡単にするためとアンダーフローを防ぐためです。今計算しようとしている尤度は要するに同時確率なので確率の積になっていますが、対数を取ると積を和に変換できます。また、さっき具体的にパラメータを代入して尤度を計算してみてわかったと思いますが、同時確率の計算は値が急激に小さくなっていきます。これも対数を取ることで積が和に変換されるので、値が小さくなることを防げます。</p>
+
+<p>さて、この $\log L(\lambda)$ が最大になるような $\lambda$ を探すことが目的でした。関数の最大値を探す時は微分した結果を = 0 と置いて、微分した変数について解けばよいですよね <em>(関数が単純な凸関数である場合に限られますが)</em> 。</p>
+
+<p>$$
+\begin{eqnarray}
+\frac{d \log L(\lambda)}{d \lambda} &amp; = &amp; \sum_i^{10} ( \frac{x_i}{\lambda} - \frac{1 - x_i}{1 - \lambda}) \<br />
+                                    &amp; = &amp; \frac{1}{\lambda(1 - \lambda)} \sum_i^{10} (x_i - \lambda)
+\end{eqnarray}
+$$</p>
+
+<p>微分結果が求まったので、これを = 0 と置いて $\lambda$ について解きます。</p>
+
+<p>$$
+\begin{eqnarray}
+\frac{1}{\lambda(1 - \lambda)} \sum_i^{10} (x_i - \lambda) &amp; = &amp; 0 \<br />
+\sum_i^{10} x_i - 10 \lambda &amp; = &amp; 0 \<br />
+\lambda &amp; = &amp; \frac{1}{10} \sum_i^{10} x_i
+\end{eqnarray}
+$$</p>
+
+<p>これで答えがでました。このような式で求めた $\lambda$ が尤度を最大にします。実際に $x_1, x_2, \cdots, x_{10}$ を代入して計算してみると</p>
+
+<p>$$
+\begin{eqnarray}
+\lambda &amp; = &amp; \frac{1}{10} \sum_i^{10} x_i \<br />
+        &amp; = &amp; \frac{1}{10} (0 + 1 + 0 + 0 + 0 + 0 + 1 + 1 + 0 + 0) \<br />
+        &amp; = &amp; \frac{3}{10}
+\end{eqnarray}
+$$</p>
+
+<p>これは <sup>3</sup>&frasl;<sub>10</sub> の確率で表が出るコインであれば尤度が最大になるということで、これに一番近いコインは A になり (A は <sup>1</sup>&frasl;<sub>3</sub> の確率で表が出るコイン)、観測された学習データから考えるとあなたが引いたコインは A だろうということが言えます。</p>
+
+<p>気付いた人もいるかもしれませんが、10 回中 3 回表が出るんだったら、そりゃあ <sup>3</sup>&frasl;<sub>10</sub> になるのは直感的に当然だろうって思いますよね。これは問題設定が単純ってこともあるかもしれませんが、$x_1, x_2, \cdots, x_{10}$ というデータだけから判断した結果なのでそうなるのも分かる気がしますね。</p>
+
+<h2 id="正規分布のパラメータ推定">正規分布のパラメータ推定</h2>
+
+<p>最後に正規分布についても例を見て終わりたいと思います。</p>
+
+<p>ベルヌーイ分布のパラメータは $\lambda$ ひとつだけでしたが、正規分布は平均 $\mu$ と分散 $\sigma^2$ の 2 つのパラメータを持っていますので、尤度を最大化するためにそれぞれ $\mu$ と $\sigma^2$ をそれぞれ求めます。今回は確率分布 $\mathrm{P}$ に正規分布を使うので尤度はこうなります。</p>
+
+<p>$$
+\begin{eqnarray}
+L &amp; = &amp; \mathrm{P}(x_1, x_2, \cdots, x_N|\ \theta) \<br />
+  &amp; = &amp; \prod_i^N \mathrm{P}(x_i|\ \theta) \<br />
+  &amp; = &amp; \prod_i^N \frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{(x_i - \mu)^2}{2\sigma^2} \right)
+\end{eqnarray}
+$$</p>
+
+<p>同じようにこの尤度を $L$ として対数を取ると、このように変形できます。</p>
+
+<p>$$
+\begin{eqnarray}
+\log L &amp; = &amp; \log \prod_i^N \frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{(x_i - \mu)^2}{2\sigma^2} \right) \<br />
+       &amp; = &amp; \sum_i^N \log \frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{(x_i - \mu)^2}{2\sigma^2} \right) \<br />
+       &amp; = &amp; \sum_i^N \left( -\log \sqrt{2 \pi} -\frac{1}{2}\log \sigma^2 - \frac{(x_i - \mu)^2}{2\sigma^2} \right)
+\end{eqnarray}
+$$</p>
+
+<p>ベルヌーイ分布を考えた時と同様に、この対数尤度関数を $\mu$ と $\sigma^2$ について微分して、それぞれ = 0 と置いて解いていきます。正規分布ではパラメータが 2 つある多変数関数なので偏微分になります。</p>
+
+<p>まずは $\mu$ で偏微分をするところから。</p>
+
+<p>$$
+\begin{eqnarray}
+\frac{\partial \log L}{\partial \mu} &amp; = &amp; \sum_i^N \left(0 + 0 + \frac{(x_i - \mu)}{\sigma^2} \right) \<br />
+                                     &amp; = &amp; \frac{1}{\sigma^2} \sum_i^N (x_i - \mu)
+\end{eqnarray}
+$$</p>
+
+<p>これを = 0 と置いて $\mu$ について解いていきます。</p>
+
+<p>$$
+\begin{eqnarray}
+\frac{1}{\sigma^2} \sum_i^N (x_i - \mu) &amp; = &amp; 0 \<br />
+\sum_i^N x_i - N\mu &amp; = &amp; 0 \<br />
+\mu &amp; = &amp; \frac{1}{N} \sum_i^N x_i
+\end{eqnarray}
+$$</p>
+
+<p>これでまずは尤度を最大にする $\mu$ が見つかりました。次は $\sigma^2$ について解いていきます。まずは偏微分から。</p>
+
+<p>$$
+\begin{eqnarray}
+\frac{\partial \log L}{\partial \sigma^2} &amp; = &amp; \sum_i^N \left(0 - \frac{1}{2\sigma^2} + \frac{(x_i - \mu)^2}{2\sigma^4} \right) \<br />
+                                          &amp; = &amp; -\frac{N}{2\sigma^2} + \frac{1}{2\sigma^4}\sum_i^{N}(x_i-\mu)^2
+\end{eqnarray}
+$$</p>
+
+<p>同じようにこれを = 0 と置いて $\sigma^2$ について解きます。</p>
+
+<p>$$
+\begin{eqnarray}
+-\frac{N}{2\sigma^2} + \frac{1}{2\sigma^4}\sum_i^{N}(x_i-\mu)^2 &amp; = &amp; 0 \<br />
+-N\sigma^2 + \sum_i^{N}(x_i-\mu)^2 &amp; = &amp; 0 \<br />
+\sigma^2 &amp; = &amp; \frac{1}{N}\sum_i^{N}(x_i-\mu)^2
+\end{eqnarray}
+$$</p>
+
+<p>これで尤度を最大にする正規分布のパラメータ $\mu$ と $\sigma^2$ がわかりました。</p>
+
+<p>$$
+\begin{eqnarray}
+\mu &amp; = &amp; \frac{1}{N} \sum_i^N x_i \<br />
+\sigma^2 &amp; = &amp; \frac{1}{N}\sum_i^{N}(x_i-\mu)^2
+\end{eqnarray}
+$$</p>
+
+<p>これは純粋なデータの平均と分散になっています。</p>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>尤度を最大化してパラメータを推定するための最尤推定法を紹介してきました。学習データからモデルのパラメータ $\theta$ を訓練することが目的ではなく、最終的にやりたいことは新しい未知データがどれだけモデルに適合しているのか推論することです。最尤推定は比較的簡単な手法だと思うので、試しに実装してみると面白いと思います。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92">機械学習</a>
+      
+        <a class="tag-link" href="tags/%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E6%8E%A8%E5%AE%9A">パラメータ推定</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2016/08/22/maximum-likelyhood-estimation-by-machine-learning/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2016/08/22/maximum-likelyhood-estimation-by-machine-learning/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2016/08/22/maximum-likelyhood-estimation-by-machine-learning/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Android on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/android/</link>
+    <description>Recent content in Android on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Wed, 05 Nov 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/android/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Serializable なクラスを Proguard で難読化する時の話</title>
+      <link>http://tkengo.github.io/blog/2014/11/05/serializable-class-on-proguard/</link>
+      <pubDate>Wed, 05 Nov 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/11/05/serializable-class-on-proguard/</guid>
+      <description>Android のアプリを開発する際にソースコードに難読化を施すために Proguard を使っていて Serializable なクラスが難読化対象になっている場合に、思いもよらないバグが発生してしまうことがあります。先日そのバグに遭遇してしまい、原因究明にほぼ丸1日かかってしまいました。
+発生事象  新機能を追加したアプリをバージョンを1つあげて Google Play ストアに登録した。 アプリをアップデートしてから起動する。 設定画面を開くと設定情報が消えてる。  こんな感じでした。アップデートに含まれる改修では、設定画面はまったくいじってなかったのでなんで突然こんなことが起きるのか謎。ちなみに設定ファイルは
+ 設定情報は Serializable を implements したクラスをシリアライズしてファイルシステムに書き出してある そのクラスは Eclipse の機能を使って serialVersionUID を自動生成している 読み込みは ObjectInputStream を使ってファイルを読み込んで元のクラスにキャストして使っている  という風にファイルに保存して管理していました。
+原因 結論としては Proguard で難読化された結果、マッピング先のクラスが変わっており serialVersionUID が正しく取得できておらず InvalidClassException が発生していたのが要因でした。
+以下では手順を追って説明していきます。
+設定クラスの定義 たとえば Configuration クラスがファイルの保存・読み込みを行うクラスとして、以下のように実装されています。(当然この他にも各値のゲッターの実装もあるとは思いますが、簡略化のためにここでは省略します)
+public class Configuration implements Serializable { private static final long serialVersionUID = -2203743867770177617L; private String mName; private int mAge; private int mSex; public LocalTargetProfile(String name, int age, int sex) { mName = name; mAge = age; mSex = sex; } }  そして Application クラスを継承した MainApplication クラスの中で、この Configuration クラスの読み書きを行うメソッドが以下のように実装されています。(簡略化のために例外処理やファイナライズ処理は省略します)</description>
+    </item>
+    
+    <item>
+      <title>謎の単位 &#34;dp&#34; (Density-independent Pixel) にせまる。あと drawable の話とか in Android</title>
+      <link>http://tkengo.github.io/blog/2014/10/18/android-dp/</link>
+      <pubDate>Sat, 18 Oct 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/10/18/android-dp/</guid>
+      <description>Android 端末のディスプレイってめちゃくちゃいろんなサイズがあって Android を始めたばかりの自分にはそれぞれに最適なレイアウトや画像をどうやって作ればいいのかって全然わかっていませんでした。それに Android ではサイズの単位に px (pixel) じゃなくて dp (density-independent pixel) を使うらしいってことは聞いたことあるけど、そもそも dp ってなんなの？という感じだし。わからないまま放置しておくのも良くないので色々調べてみたらだんだんとわかってきたので、忘れない内にまとめておこうかと思う。既にネットにある記事の二番煎じになるかもしれないけど、インプットしたものを体系的にまとめて知識を自分のものにするためにも再まとめ的なものを書く。
+用語定義 自分がこの話題について調べ始めた時、自分の中で Android 用の各用語の定義がはっきりしておらず意味もあまりわかってなかったので、いろんなサイトを見ても全然理解が進みませんでした。この辺の用語の意味がわかってきてからなんとなく理解が進み始めたので、まずは各用語がどういう意味なのかをはっきりさせておきます。
+解像度 画面のピクセル数のことを表します。例えば 480 x 800 とか 720 x 1280 とかいうやつですね。解像度の単位は px (pixel) です。いくつかの実際の機種の解像度をみてみると
+   デバイス名 解像度 備考     GALAXY S4 SC-04E 1080px x 1920px    Xperia Tablet Z SO-03E 1200px x 1920px タブレット   GALAXY S2 SC-02C 480px x 800px     てな感じで、各機種毎に解像度は違います。ただ、解像度は実際の画面の大きさが何インチあるかとは無関係にディスプレイのピクセル数を表していますので、単純に解像度が大きければ画面サイズも大きくなるのかというと、そうではありません。スマホよりタブレットの方が物理的に大きいのは直感的にわかると思いますが、GALAXY S4 より Xperia Tablet Z の解像度の方が劇的に大きいかというとそうでもなく、横幅が少し広いくらいの解像度になっています。</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Chrome on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/chrome/</link>
+    <description>Recent content in Chrome on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Mon, 03 Mar 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/chrome/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Chrome Extensionの話をしよう。ようこそ Hometype が創るマウスレスの世界へ。</title>
+      <link>http://tkengo.github.io/blog/2014/03/03/introduce-hometype/</link>
+      <pubDate>Mon, 03 Mar 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/03/03/introduce-hometype/</guid>
+      <description>vi のようなキー操作で Google Chrome を操作できるエクステンション Hometype の紹介をしたいと思います。元々はエクステンションの作り方の勉強をするために始めた Hometype でしたが github にソースコードを置いて自分が使いやすいようにいろいろ作ってるうちに、会社の同僚が何人か使い始めてたのでとりあえず公開しても良いかなと思って、先日バージョン 0.0.1 を Chrome ストアへ登録しました。ただ実際は、まだ実験的な機能も多く、バグも多く潜んでいると思いますし、テストもないし、最低限の機能しかないので、既存の同類のエクステンションに比べればまだまだ発展途上ではありますが、自分の中でやりたいことはいっぱいあるので開発はずっと続けていく予定です。
+Hometype とは 先にも紹介しましたが vi のようなキー操作で Google Chrome を操作できるエクステンションです。バージョン 0.0.1 では以下のキーバインドが定義されています。
+ j C-e 下スクロール k C-y 上スクロール C-d 半ページ下スクロール C-u 半ページ上スクロール C-f 1ページ下スクロール C-b 1ページ上スクロール gg 先頭へスクロール G 最後へスクロール H 前に戻る L 次に進む x 現在のタブを閉じる C-p 前のタブへ移動する C-n 次のタブへ移動する I 画面上の最初のテキストエリアにフォーカスする A 画面上の最後のテキストエリアにフォーカスする u 直前に閉じたタブを開き直す U 最近の閉じたタブを検索して開き直す C-h 最近の履歴を検索して戻る b ブックマークを検索して現在のタブで開く B ブックマークを検索して新しいタブで開く f リンクを現在のタブで開くヒントモードへ移行 F リンクを新しいタブで開くヒントモードへ移行 i a インサートモードへ移行 : コマンドモードへ移行 v ビジュアルモードへ移行  ※キーバインドは自分が使いやすい設定になっているので、他の人も使いやすいかというとわかりません。自分でキーバインドを設定できる機能はつけるつもり。</description>
+    </item>
+    
+  </channel>
+</rss>

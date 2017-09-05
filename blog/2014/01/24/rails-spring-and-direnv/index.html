@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>spring と direnv を使って Rails と rspec を高速起動。快適開発はじめる &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-01-24</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/01/24/rails-spring-and-direnv/">spring と direnv を使って Rails と rspec を高速起動。快適開発はじめる</a></h1>
+    </header>
+    <article>
+      
+
+<p>spring は最近流行ってるので、既に知ってる方もいると思いますが Rails のプリローダーです。</p>
+
+<p>Rails を使ってる人だったら <code>bundle exec rails console</code> とか <code>bundle exec rails generate model user</code> とか <code>bundle exec rake routes</code> とか、便利コマンドにお世話になることも多いと思います。</p>
+
+<p>でも Rails ってとても巨大なフレームワークなので、コマンド一つ起動するにも Rails の資産が全部ロードされて結構な時間がかかります。なので Rails をあらかじめバックグラウンドで起動しておくことによって、コマンドの起動時間を大幅に短縮してくれるのが spring です。</p>
+
+<p>前は Gemfile には書かずにシステムに gem コマンドでインストールして <code>spring rake routes</code> とかやってて、コマンドの前に <code>spring</code> と書かないといけないのダルかったのですが、公式のドキュメントを読んでいると最近はまた便利になってるみたいです。</p>
+
+<p>github の README では Rails 4 と Rail 3.2 が対象となっていますが、この記事は Rails 4 前提で書いています。</p>
+
+<h1 id="spring-のインストール">spring のインストール</h1>
+
+<p>最新の spring は Gemfile に書きます。</p>
+
+<pre><code class="language-ruby">group :development, :test do
+  gem 'spring'
+end
+</code></pre>
+
+<p>で</p>
+
+<pre><code class="language-console">$ bundle install
+$ bundle exec spring binstub --all
+</code></pre>
+
+<p>これで spring が使えるようになります。この時 <code>bin/spring</code> というファイルが出来ており、また <code>bin/rake</code> と <code>bin/rails</code> の先頭に以下のような行が追加されています。</p>
+
+<pre><code class="language-ruby">begin
+  load File.expand_path(&quot;../spring&quot;, __FILE__)
+rescue LoadError
+end
+</code></pre>
+
+<p>これで spring をロードするみたいで、ただし spring がない環境でも問題ないように spring が存在しなければ例外を握りつぶして本来のコマンド起動に進むようです。</p>
+
+<h1 id="spring-の使い方">spring の使い方</h1>
+
+<p><code>bundle exec</code> で実行せずに <code>bin/</code> 以下のコマンドから実行します。つまり</p>
+
+<pre><code class="language-console">$ bin/rake routes
+</code></pre>
+
+<p>とします。初回起動の時だけ Rails アプリケーションがロードされるのでいつもと同じように時間はかかりますが 2 回目以降はロードされたアプリケーションが利用されるので、起動時間が劇的に改善されています。</p>
+
+<h3 id="1-回目">1 回目</h3>
+
+<pre><code class="language-console">$ time bin/rake routes
+...
+bin/rake routes  0.11s user 0.06s system 3% cpu 5.009 total
+</code></pre>
+
+<h3 id="2-回目">2 回目</h3>
+
+<pre><code class="language-console">$ time bin/rake routes
+...
+bin/rake routes  0.11s user 0.05s system 26% cpu 0.599 total
+</code></pre>
+
+<p>1 回目は 5 秒かかっていますが 2 回目は 0.5 秒になっています。</p>
+
+<p>また <code>bin/spring status</code> を実行すると現在の spring の起動状況を確認できます。</p>
+
+<pre><code class="language-console">$ bin/spring status
+Spring is running:
+
+2507 spring server | web_app | started 8 mins ago
+2508 spring app    | web_app | started 8 mins ago | development mode
+</code></pre>
+
+<p>起動している spring は Rails に再起動が必要なファイル(例えば <code>config/application.rb</code> など)が変更されると、それを検知して自動的に再起動する仕組みになっています。起動ファイルの読み込みに関しては気にする必要はないので、とても便利です。</p>
+
+<h1 id="direnv-のインストール">direnv のインストール</h1>
+
+<p>これで各コマンドの起動が早くなって嬉しいのですが、どのコマンドも最初に <code>bin/</code> を入力しないといけないので、まだダルさは残ってます。Rails の <code>bin/</code> ディレクトリを <strong>PATH</strong> に追加すればいいのですが、その Rails のプロジェクト外ではそのパスは不要なのでむやみに追加するのもはばかられます。</p>
+
+<p>そこで spring の README でも推していますが <a href="https://github.com/zimbatm/direnv">direnv</a> の登場です。</p>
+
+<p>これは、パス毎に異なる環境変数をロードすることができるもので、これを使えば spring 入りの Rails プロジェクトのディレクトリに移動した時は <strong>PATH</strong> に Rails の <code>bin/</code> を追加して、そのディレクトリから出たら <strong>PATH</strong> は元の値に戻る、というような挙動をさせることが出来ます。</p>
+
+<p>Mac の場合 Homebrew を使えば簡単にインストールできます。</p>
+
+<pre><code class="language-console">$ brew install direnv
+</code></pre>
+
+<p>※Homebrew のバージョンが少し古いと、一見インストールがうまくいったように見えて実は足りないコマンドがあったりするので、インストールしてもうまく動かない場合は <code>brew update</code> をしてからもう一度インストールしてみるとよいかもしれません。</p>
+
+<p>インストールがうまくいったら <code>~/.bashrc</code> もしくは <code>~/.zshrc</code> に</p>
+
+<pre><code class="language-bash">eval &quot;$(direnv hook bash)&quot; # bash の場合
+eval &quot;$(direnv hook zsh)&quot;  # zsh  の場合
+</code></pre>
+
+<p>という行を追加してあげれば完了です。</p>
+
+<h1 id="direnv-の使い方">direnv の使い方</h1>
+
+<p>spring 入りの Rails プロジェクトのディレクトリ内で</p>
+
+<pre><code class="language-console">$ direnv edit .
+
+# ※EDITOR環境変数が指定されていない場合はエラーになります。
+#   以下のように環境変数を指定してコマンドを実行してもOK。
+$ EDITOR=vim direnv edit .
+</code></pre>
+
+<p>とします。すると <strong>EDITOR</strong> 環境変数に指定されたエディタが起動しますので、そこに</p>
+
+<pre><code class="language-bash">export PATH=$PWD/bin:$PATH
+</code></pre>
+
+<p>と入力して保存して終了すると、ディレクトリ内に <code>.envrc</code> というファイルができます。これで準備完了です。<code>.envrc</code> があるディレクトリに入ると自動的に Rails の <code>bin/</code> が <strong>PATH</strong> に追加されるので</p>
+
+<pre><code class="language-console">$ rake routes
+</code></pre>
+
+<p>だけでコマンドが起動します。高速に。</p>
+
+<h1 id="rspec-のテストも高速に起動させる">rspec のテストも高速に起動させる</h1>
+
+<p>rspec のテストも spring を使って高速に起動させることができます。そのためにはまず gem が必要で Gemfile に <code>spring-commands-rspec</code> を追加します。</p>
+
+<pre><code class="language-ruby">group :development, :test do
+  gem 'spring'
+  gem 'spring-commands-rspec'
+end
+</code></pre>
+
+<p>で</p>
+
+<pre><code class="language-console">$ bundle install
+$ spring binstub rspec
+</code></pre>
+
+<p>こうすることで <code>bin/</code> ディレクトリ以下に <code>rspec</code> というファイルができあがります。これで準備完了。テストを起動してみましょう。1 回目はいつもと同じように起動に時間がかかりますが 2 回目以降は起動が早くなっていると思います。</p>
+
+<pre><code class="language-console">$ rspec spec/
+</code></pre>
+
+<hr />
+
+<p>何度も実行するコマンドの実行時間がここまで減ると開発時のストレスはかなり減ります。spring 一度ためしてみてはどうでしょうか。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/ruby">ruby</a>
+      
+        <a class="tag-link" href="tags/rails">Rails</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/01/24/rails-spring-and-direnv/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/01/24/rails-spring-and-direnv/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/01/24/rails-spring-and-direnv/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

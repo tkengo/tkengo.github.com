@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>highway という高速検索ツールを作りました &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-10-19</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/10/19/release-highway/">highway という高速検索ツールを作りました</a></h1>
+    </header>
+    <article>
+      
+
+<p>いまや grep、ack、ag、pt、sift など様々な grep ツールが存在し、高速 grep ツール戦線が激化している昨今ですが、いかがお過ごしでしょう。私は普段から検索ツールには pt を使っていますが、ふとしたことから文字列探索アルゴリズムに興味がわいてきて highway という高速パターンマッチングツールを開発しました。pt や sift が流行りの Go 言語で実装されている中、我が道を行く highway は C 言語での実装にしました (単に Go 言語を知らないだけとも言う＼(^o^)／)。</p>
+
+<p><a href="https://github.com/tkengo/highway">highway (github)</a></p>
+
+<h1 id="highway-とは">highway とは</h1>
+
+<p>マルチスレッドで動作する高速パターンマッチングツールです。速そうな名前をつけたくて「高速」でググったら「高速道路」がたくさん出てきたのでこの名前になりました。そりゃそうだ。</p>
+
+<h2 id="機能">機能</h2>
+
+<p>基本的な機能としては pt とほぼ同じです。しかし速度については pt 以上かな、と。</p>
+
+<ul>
+<li>ag / pt / sift 相当(もしくはそれ以上) の速度でのパターンマッチング。</li>
+<li>正規表現での検索。</li>
+<li>UTF-8 以外に EUC-JP と Shift_JIS のサポート(だって日本人だもん)。</li>
+<li>デフォルトで <code>.gitignore</code> 内のパターンを検索対象から除外。</li>
+</ul>
+
+<h2 id="インストール">インストール</h2>
+
+<h3 id="mac-os-x">Mac OS X</h3>
+
+<p>homebrew で一発です。</p>
+
+<pre><code class="language-sh">$ brew tap tkengo/highway
+$ brew install highway
+</code></pre>
+
+<h3 id="fedora-core">Fedora Core</h3>
+
+<p>yum でインストールできます。その際にリポジトリを追加する必要があります。</p>
+
+<pre><code class="language-sh">$ sudo vi /etc/yum.repos.d/highway.repo
+[repos.highway]
+name=highway
+baseurl=http://tkengo.github.io/highway/fedora
+enabled=0
+gpgcheck=0
+
+$ sudo yum install highway --enablerepo=&quot;repos.highway&quot;
+</code></pre>
+
+<h3 id="centos-6-系">CentOS 6 系</h3>
+
+<p>同じく yum でインストールできます。こちらもリポジトリの追加は必要ですが、加えて EPEL も追加します。</p>
+
+<pre><code class="language-sh">$ wget http://ftp-srv2.kddilabs.jp/Linux/distributions/fedora/epel/6/x86_64/epel-release-6-8.noarch.rpm
+$ rpm -ivh epel-release-6-8.noarch.rpm
+$ sudo vi /etc/yum.repos.d/highway.repo
+[repos.highway]
+name=highway
+baseurl=http://tkengo.github.io/highway/centos/6
+enabled=0
+gpgcheck=0
+
+$ sudo yum install highway --enablerepo=&quot;repos.highway&quot;
+</code></pre>
+
+<h3 id="上記以外の環境またはソースからビルド">上記以外の環境またはソースからビルド</h3>
+
+<p>ビルドには <code>autoconf</code> <code>automake</code> <code>gperftools</code> が必要なので適宜インストールしておいてください。どれも OS のパッケージ管理ツールからインストールできると思います。(CentOS で yum を使う場合は EPEL リポジトリを追加しないと <code>gperftools</code> がインストールできない)</p>
+
+<pre><code class="language-sh">$ git clone https://github.com/tkengo/highway.git
+$ cd highway
+$ ./tools/build.sh
+</code></pre>
+
+<p>これでディレクトリ直下に <code>hw</code> というバイナリができます。</p>
+
+<h3 id="windows">Windows</h3>
+
+<p>ごめんなさい。現時点では Windows には対応していません。</p>
+
+<h2 id="使い方">使い方</h2>
+
+<p>ほぼ pt と同じ。コマンド名は <code>hw</code> です。</p>
+
+<p>コマンド名 + 検索パターン文字列とするだけでカレントディレクトリ以下を再帰的に検索してくれます。</p>
+
+<pre><code class="language-sh">$ hw PATTERN
+</code></pre>
+
+<p>指定したファイルやディレクトリ以下の検索もできます。ファイルやディレクトリは複数指定することができます。以下の例では <code>src</code> ディレクトリと <code>include</code> ディレクトリ以下を再帰的に検索します。</p>
+
+<pre><code class="language-sh">$ hw PATTERN src include
+</code></pre>
+
+<p>オプションがいくつかあるので、ヘルプを見てみてください。</p>
+
+<pre><code class="language-sh">$ hw -h
+</code></pre>
+
+<h2 id="開発動機">開発動機</h2>
+
+<p>私は普段から pt を使っていますが、別に pt が使いにくかったとかそういうのではなくて。</p>
+
+<p>高速な文字列探索のアルゴリズムと言えば grep でも使われている Boyer-Moore のアルゴリズムが有名です。その亜種としてさらに高速な Quick-Search というアルゴリズムも存在します。そして 2007 年に、より高速であるとして以下の論文がインターネットに公開されました。</p>
+
+<p><a href="http://www.sciencedirect.com/science/article/pii/S1570866706001067">A simple fast hybrid pattern-matching algorithm</a></p>
+
+<p>元々は全然関係のない論文を探してたんですがたまたまこの論文を見つけて、前からアルゴリズムとか好きな方だったのでちょっと実装してみようと思って作り始めたのが highway でした。最初は試験的に作ってみて ag と pt と速度比べをして遊んでいたのですが、意外と感触がよかったので体裁を整えて公開してみようと思い、本格的に開発に取り掛かったのが 9 月中旬。sift というベンチマーク結果だけ見ると超神速なツールがでてきたのが 9 月下旬でタイミング的に「うっ」となりつつも、約 1 ヶ月の開発期間を経てとりあえず公開に至りました。</p>
+
+<p>ただ、文字列探索アルゴリズムにおいては元々 Quick-Search でも十分な速度を出すことができます。上記論文の実験結果を見ても通常の検索は Quick-Search より少し速いだけでほとんど変わらない。例えば <em>a</em> が 10 万個続くテキストに対して <em>aaa</em> とか <em>aaaaaaa</em> とかで検索する (これを論文中では Pathological cases &ldquo;異常なケース&rdquo; と表現) という場合においては結構優位に立っていますが、そもそもそういう文字列って日常的には扱わない。</p>
+
+<p>なので highway の速さの秘密の全てがここに詰まっているわけでもなく、実装に当たり工夫している箇所はこのアルゴリズム以外にもいくつかあるため、速くできたのはそういうことの積み重ねかなと思っています。これは人類を救うスーパー万能アルゴリズムなんだ、という誤解がされないように補足しておきます。</p>
+
+<h1 id="パフォーマンス計測">パフォーマンス計測</h1>
+
+<p>せっかく作ったのであれば既存のツールと速度的にどのくらい差があるか気になるところ。ということでいくつかのパターンでベンチマークを取ってみました。なお、計測には OS のキャッシュが効いた状態の数値を利用しました。</p>
+
+<h2 id="ベンチマーク環境">ベンチマーク環境</h2>
+
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>端末</td>
+<td>MacBook Pro (Retina, 15-inch, Late 2013)</td>
+</tr>
+
+<tr>
+<td>OS</td>
+<td>OS X Yosemite 10.10.4</td>
+</tr>
+
+<tr>
+<td>CPU</td>
+<td>2.6 GHz Intel Core i7 (コア数4)</td>
+</tr>
+
+<tr>
+<td>メモリ</td>
+<td>16 GB 1600 MHz DDR3</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="ベンチマーク条件">ベンチマーク条件</h2>
+
+<p>sift には <code>.gitignore</code> 内のパターンを除外する機能がなく、pt には逆に全ファイルを検索対象にする機能がないため ag と hw においては <code>.gitignore</code> 内のパターンを無視するデフォルト検索、及び全ファイル対象での検索の 2 パターンを計測します。また各ツールでなるべく同じような条件でベンチマークをとれるように、以下のような条件を基本とします。</p>
+
+<ul>
+<li>大文字小文字は区別する</li>
+<li>行番号は表示する</li>
+<li>表示はグルーピングする</li>
+</ul>
+
+<table>
+<thead>
+<tr>
+<th>ツール</th>
+<th>大文字小文字の区別</th>
+<th>行番号の表示</th>
+<th>グルーピング</th>
+<th>全ファイル検索</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>hw</td>
+<td>デフォルト</td>
+<td>デフォルト</td>
+<td>デフォルト</td>
+<td><code>-a</code> オプション</td>
+</tr>
+
+<tr>
+<td>ag</td>
+<td><code>-s</code> オプション</td>
+<td>デフォルト</td>
+<td>デフォルト</td>
+<td><code>-u</code> オプション</td>
+</tr>
+
+<tr>
+<td>pt</td>
+<td>デフォルト</td>
+<td>デフォルト</td>
+<td>デフォルト</td>
+<td>なし</td>
+</tr>
+
+<tr>
+<td>sift</td>
+<td>デフォルト</td>
+<td><code>-n</code> オプション</td>
+<td><code>--group</code> オプション</td>
+<td>デフォルト</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="ベンチマーク方法">ベンチマーク方法</h2>
+
+<p>zsh のビルトインコマンドの <code>time</code> を使いました。出力結果がこういうやつですね。</p>
+
+<pre><code>hw include 0.02s user 0.02s system 160% cpu 0.021 total
+</code></pre>
+
+<p>この <code>time</code> コマンドを使って、各ツール毎に同じ条件で 10 回ずつ繰り返し実行して total の部分の値の平均値をとって、それをグラフにしました。</p>
+
+<h2 id="ベンチマーク結果">ベンチマーク結果</h2>
+
+<h3 id="highway-のソースコード">highway のソースコード</h3>
+
+<p>まずは highway のソースコード (<a href="https://github.com/tkengo/highway">https://github.com/tkengo/highway</a>) を <strong>include</strong> という文字列で検索しました。なお clone 後に <code>autoconf</code> や <code>automake</code>、<code>configure</code>、 <code>make</code> などを実行して、一時ファイルなどがたくさんできた状態での検索です。</p>
+
+<p><img src="/assets/img/2015-10-19-release-highway/highway-bench1.png" alt="highway のソース" /></p>
+
+<h3 id="linux-カーネルのソースコード">Linux カーネルのソースコード</h3>
+
+<p>次に Linux カーネルのソースコード (<a href="https://github.com/torvalds/linux">https://github.com/torvalds/linux</a>) (全体で約 1.8GB) を <strong>EXPORT_SYMBOL_GPL</strong> という文字列で検索しました。こちらは clone 後のソースをそのまま検索しています。</p>
+
+<p><img src="/assets/img/2015-10-19-release-highway/highway-bench2.png" alt="Linux カーネルのソース" /></p>
+
+<h3 id="巨大ファイル">巨大ファイル</h3>
+
+<p>次に 3.2G の 1 つの巨大ファイルを <strong>include</strong> という文字列で検索しました。この巨大ファイルは適当なソースコードを集めてきて全部 <code>cat</code> コマンドで 1 ファイルに結合したものです。1 ファイルなので hw と ag の全ファイル検索の結果は除外しています。</p>
+
+<p><img src="/assets/img/2015-10-19-release-highway/highway-bench3.png" alt="1.7G の巨大ファイル" /></p>
+
+<h3 id="巨大ファイルツリー">巨大ファイルツリー</h3>
+
+<p>さらにベンチマーク環境に使用した Mac のホームディレクトリ以下を <strong>include</strong> という文字列で検索してみます。普通こんな検索はしないと思いますが、ホームディレクトリ以下にはファイルとディレクトリを合わせて 100 万個以上のエントリーが存在していました。なお、検索結果の数があまりにも多すぎて画面に出力していたらかなり時間がかかるので、このベンチマークに限っては標準出力はすべて <code>/dev/null</code> へ捨てます。</p>
+
+<p><img src="/assets/img/2015-10-19-release-highway/highway-bench4.png" alt="100万個以上の巨大ファイルツリー" /></p>
+
+<p>ag (全ファイル) と sift のグラフがないのは 120 秒以上ターミナルに戻ってこなかったからです。</p>
+
+<h3 id="正規表現">正規表現</h3>
+
+<p>最後に Linux カーネルのソースコード (<a href="https://github.com/torvalds/linux">https://github.com/torvalds/linux</a>) を今度は正規表現 <strong>.*SYMBOL.*</strong> で検索してみます。行のどこかに <code>SYMBOL</code> という文字列があればマッチします。</p>
+
+<p><img src="/assets/img/2015-10-19-release-highway/highway-bench5.png" alt="正規表現" /></p>
+
+<p>sift のグラフがないのは前と同じく 120 秒以上ターミナルに戻ってこなかったからです。検索結果は随時ターミナルに出力されていたのですが、何度やっても最後の結果を出力した後に止まってしまいます。<code>top</code> コマンドで確認すると CPU を使ってるようなので動いてはいると思うのですが、なんでしょうね。後処理が重いのかな？</p>
+
+<p><em>※正規表現に関してはいろいろなパターンが考えられますし、各ツールで使用している正規表現エンジンも違いますので、他のパターンだとまた速度も変わってくると思います。ちなみに highway では <a href="https://github.com/k-takata/Onigmo">Onigmo</a> を使わせて頂いております。</em></p>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>ベンチマークについてはあくまで個人の端末での検証となりますので、参考程度に留めておいてもらうのが良いと思います。背後で動いている他のプロセスの影響、実行環境の違い、また検索ワードや正規表現のパターン、検索対象ファイルの総数など、実行時間は様々な要因によって結果が変わってくるので、気になる方は実際にインストールして体感してみるのが一番です。</p>
+
+<p>また、このベンチマークでは実行時間に焦点をあてて比較しましたが、プロセスのメモリ使用量に目を向けるとまた結果は変わってくるかと思います（やってないけど）。 この辺に関してはまだ改善の余地がありそうですが、最近のパソコンは潤沢なメモリを積んでいることが多いし、常駐するプロセスなわけでもないので、とりあえずは後回しです。</p>
+
+<p>もちろんバグもあると思いますし、落ちたりとか、マッチするはずのものにマッチしなかったとか、こういう場合におせーよハゲ、とかあったら、遠慮無くイシュー作ったりして声かけてください。</p>
+
+<p>ということで highway の紹介でした。暇な人がいたら是非使ってみてくださいね。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/highway">highway</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/10/19/release-highway/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/10/19/release-highway/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/10/19/release-highway/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

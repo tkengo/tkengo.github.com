@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ruby Gem Database_cleaner on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/ruby-gem-database_cleaner/</link>
+    <description>Recent content in Ruby Gem Database_cleaner on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Fri, 06 Sep 2013 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/ruby-gem-database_cleaner/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>database_cleaner v1.1.0 以上を SQLite で使うと落ちる</title>
+      <link>http://tkengo.github.io/blog/2013/09/06/database-cleaner-bugfix/</link>
+      <pubDate>Fri, 06 Sep 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/09/06/database-cleaner-bugfix/</guid>
+      <description>とある Rails の開発で database_cleaner という gem を使っていました。テストを走らせた後に DB を綺麗サッパリにしてくる便利 gem です。これの最新版を SQLite で使っていたのですが、どうもこんなエラーが出て落ちてしまいます。
+`db_version&#39;: undefined local variable or method `postgresql_version&#39; for #&amp;lt;ActiveRecord::ConnectionAdapters::SQLite3Adapter:0x007fa2cea3af48&amp;gt; (NameError)  おっと DB は SQLite を使ってるのに、なぜか postgresql_version というメソッドを呼びだそうとしてるようです。はて、なんでだ&amp;hellip;
+結論から言うと database_cleaner のバージョン 1.1.0 からあるバグのようです。ずっとソースを追いかけていって、バグの箇所は特定できたので修正しようと思ったら既に pull-request が出ていました。
+たぶんそのうち取り込まれると思うので、そうすれば SQLite でも使うことが出来るようになると思います。
+取り急ぎ SQLite で最新版の databse_cleaner を使いたければ、コメントにもあるように Gemfile に
+gem &#39;database_cleaner&#39;, &amp;quot;~&amp;gt; 1.1.1&amp;quot;, :git =&amp;gt; &#39;https://github.com/tommeier/database_cleaner&#39;, ref: &#39;b0c666e&#39;  とすればいけるようですね。</description>
+    </item>
+    
+  </channel>
+</rss>

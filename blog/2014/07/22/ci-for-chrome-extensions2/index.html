@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>Chrome Extension の CI が出来るようになるまで(準備編) &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-07-22</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/07/22/ci-for-chrome-extensions2/">Chrome Extension の CI が出来るようになるまで(準備編)</a></h1>
+    </header>
+    <article>
+      
+
+<p>個人的に趣味で Chrome Extension の開発をしていますが、最近いろいろとノウハウも溜まってきたので Chrome Extension の CI について少しまとめてみるシリーズです。</p>
+
+<p>前回の記事はこちら。</p>
+
+<p><a href="/blog/2014/06/22/ci-for-chrome-extensions1">Chrome Extension の CI が出来るようになるまで(導入編)</a></p>
+
+<h1 id="目次">目次</h1>
+
+<ol>
+<li><a href="/blog/2014/06/22/ci-for-chrome-extensions1#synopsis">はじめに</a></li>
+<li><a href="/blog/2014/06/22/ci-for-chrome-extensions1#write-a-test-for-chrome-extensions">Chrome Extension のテストを書く</a>
+
+<ul>
+<li><a href="/blog/2014/06/22/ci-for-chrome-extensions1#what-should-be-testing">何をテストするのか</a></li>
+<li><a href="/blog/2014/06/22/ci-for-chrome-extensions1#testing-framework">テストフレームワーク</a></li>
+<li><a href="/blog/2014/06/22/ci-for-chrome-extensions1#install-jasmine">Jasmine のインストール</a></li>
+<li><a href="/blog/2014/06/22/ci-for-chrome-extensions1#write-a-test-with-jasmine">Jasmine でテストを書いてみる</a></li>
+<li><a href="/blog/2014/06/22/ci-for-chrome-extensions1#api-mocking">JavaScript APIs をモックする</a></li>
+<li><a href="/blog/2014/06/22/ci-for-chrome-extensions1#load-fixtures">HTML Fixture を読み込む</a></li>
+</ul></li>
+<li><a href="#execute-tests">Chrome Extension のテストを実行する</a>
+
+<ul>
+<li><a href="#rest-runner-karma">テストランナー Karma</a></li>
+<li><a href="#install-karma">Karma のインストール</a></li>
+<li><a href="#execute-tests-with-karma">Karma でテストを実行する</a></li>
+<li><a href="#watching-file-modification">ファイルの変更を監視する</a></li>
+<li><a href="#output-code-coverage">コードカバレッジを出力する</a></li>
+<li><a href="#load-fixtures">HTML Fixture を読み込む</a></li>
+</ul></li>
+<li>Chrome Extension を CI する
+
+<ul>
+<li>CI サービス Wercker</li>
+<li>Wercker にリポジトリを登録する</li>
+<li>wercker.yml</li>
+<li>Step の作り方</li>
+<li>バッヂ</li>
+</ul></li>
+</ol>
+
+<h1 id="a-name-execute-tests-a-chrome-extension-のテストを実行する"><a name="execute-tests"></a>Chrome Extension のテストを実行する</h1>
+
+<p>Chrome Extension でテストを書くことにも慣れてくると、次はそのテストの実行をなんとか簡略化したくなってきます。前回も説明したように <code>SpecRunner.html</code> でテストを実行することも出来ますが、もっと良い方法がありますので、ここではそれについて紹介していきたいと思います。</p>
+
+<h2 id="a-name-test-runner-karma-a-テストランナー-karma"><a name="test-runner-karma"></a>テストランナー Karma</h2>
+
+<p>Jasmine を始めたての時は誰もが <code>SpecRunner.html</code> でテストを実行していくと思いますが <code>SpecRunner.html</code> での実行はいくつかのメリット・デメリットがあります。</p>
+
+<h3 id="メリット">メリット</h3>
+
+<ul>
+<li>デフォルトで入ってるし何も言わずに導入できる</li>
+<li>ブラウザで開くだけなので実行が簡単</li>
+<li>HTML で整形して結果を出力してくれるので見やすい</li>
+</ul>
+
+<h3 id="デメリット">デメリット</h3>
+
+<ul>
+<li>テスト規模が大きくなってくると縦スクロールが長くなってくる</li>
+<li>テストを更新する度にブラウザも更新しないといけない</li>
+<li>CI するには適していない</li>
+</ul>
+
+<p>メリットは一言でいうと簡単で使いやすいというところに尽きると思いますが Jasmine になれてくるとだんだんそのメリットの価値が下がってきます。そこで、慣れてきた頃にデメリットを解消するために、テスト実行を <code>SpecRunner.html</code> 以外のツールにまかせてみます。それが Hometype で使っている <a href="カルマへのリンク">Karma</a> です。</p>
+
+<p>Karma は Google が開発した JavaScript のテストランナー(テスト実行用のツール)で、以下のような特徴があります。</p>
+
+<ul>
+<li>コマンドラインからテストを実行できる</li>
+<li>ファイルの変更を監視して自動的にテストを再実行できる</li>
+<li>プリプロセッサの指定でコードカバレッジを出力することができる</li>
+<li>テストの実行に利用するブラウザを切り替えることが出来る</li>
+</ul>
+
+<p>プリプロセッサやブラウザについてはプラガブルになっており、いろいろなものを指定できます。プリプロセッサであればコードカバレッジ出力を一例として、CoffeeScriptの変換をしてくれるものや、AngularJSのテンプレートをJavaScriptに変換するもの、他にも<a href="https://www.npmjs.org/browse/keyword/karma-preprocessor">有志が作った多くのプリプロセッサ</a>があります。ブラウザについても Chrome はもちろんのこと FireFox や Safari、Opera、そして PhantomJS などがカバーされています。試したことはありませんがマニュアルには IE にも対応していると書かれています。</p>
+
+<h2 id="a-name-install-karma-a-karma-のインストール"><a name="install-karma"></a>Karma のインストール</h2>
+
+<p>Karma をインストールしてみましょう。Karma は Node.js 製なので、まずは Node.js のインストールが必要です。Mac を使っているのであれば Homebrew を使って一発でインストールできます。また、今回はテスト実行に PhantomJS を使いますので、そのインストールも一緒にやっておきます。</p>
+
+<pre><code class="language-sh">$ brew install node phantomjs
+</code></pre>
+
+<p>Node.js については、最近は <a href="nodebrewへのリンク">nodebrew</a> という Node.js のバージョン管理ツール(rbenv や phpenv、plenv のようなもの)があるようですのでこの辺を参考に nodebrew を使ってインストールしてもいいかもですね。</p>
+
+<ul>
+<li><a href="http://qiita.com/sinmetal/items/154e81823f386279b33c">node.js の version を管理するために nodebrew を利用する</a></li>
+<li><a href="http://5log.jp/blog/nodebrew/">node.js をインストール nodebrew を使って管理する</a></li>
+</ul>
+
+<p>Node.js のインストールが終われば次に Karma のインストールです。以下のコマンドで1発でインストールできます。</p>
+
+<pre><code class="language-sh">$ cd path/to/extension
+$ npm install karma karma-jasmine@0.2.2 karma-coverage karma-phantomjs-launcher --save-dev
+</code></pre>
+
+<p>インストールするものは Karma 本体に加えて Karma で Jasmine を使うためのアダプタ、コードカバレッジを出力するためのプリプロセッサプラグイン、PhantomJS でテストを実行するためのプラグインをそれぞれ一緒にインストールしておきます。これらのパッケージは、カレントディレクトリに <code>node_modules</code> というディレクトリが作られて、そこ以下にインストールされます。なお <code>node_modules</code> ディレクトリについては <code>.gitignore</code> で無視してよいと思います。</p>
+
+<pre><code class="language-sh">[kengo@tkengo-mac] $ ls node_modules
+karma/  karma-coverage/  karma-jasmine/  karma-phantomjs-launcher/
+</code></pre>
+
+<p>パッケージをインストールする際に最後に <code>--save-dev</code> をつけると、自動的に <code>package.json</code> を作ってくれてその中に以下の様な依存関係を書き出してくれます。</p>
+
+<pre><code class="language-json">{
+  &quot;devDependencies&quot;: {
+    &quot;karma-jasmine&quot;: &quot;^0.2.2&quot;,
+    &quot;karma-coverage&quot;: &quot;^0.2.1&quot;,
+    &quot;karma-phantomjs-launcher&quot;: &quot;^0.1.4&quot;,
+    &quot;karma&quot;: &quot;^0.12.3&quot;
+  }
+}
+</code></pre>
+
+<p>このファイルをリポジトリに含めておけば、パッケージをインストールする際にパッケージ名を指定しなくても</p>
+
+<pre><code class="language-sh">$ npm install
+</code></pre>
+
+<p>とだけ書けば <code>package.json</code> の依存関係を参照してパッケージをインストールしてくれるようになります。</p>
+
+<h2 id="a-name-execute-tests-with-karma-a-karma-でテストを実行する"><a name="execute-tests-with-karma"></a>Karma でテストを実行する</h2>
+
+<p>Karma がインストールできたら早速 Karma を使ってテストを実行してみましょう。ただ、その前に Karma を実行するためには設定ファイルが必要になるため、設定ファイルを準備します。ひな形を準備してくれるコマンドがあるので実行してみましょう。<code>karma init</code> コマンドを実行すると対話的に設定ファイルのひな形を作ることが出来ます。</p>
+
+<pre><code class="language-sh">$ ./node_modules/karma/bin/karma init
+
+# Karma で利用するテストフレームワーク
+Which testing framework do you want to use ?
+Press tab to list possible options. Enter to move to the next question.
+&gt; jasmine
+
+# Require.js を使うかどうか
+Do you want to use Require.js ?
+This will add Require.js plugin.
+Press tab to list possible options. Enter to move to the next question.
+&gt; no
+
+# どのブラウザを使ってテストするのか
+Do you want to capture any browsers automatically ?
+Press tab to list possible options. Enter empty string to move to the next question.
+&gt;
+
+# テスト実行に必要な JavaScript ファイルのパス
+What is the location of your source and test files ?
+You can use glob patterns, eg. &quot;js/*.js&quot; or &quot;test/**/*Spec.js&quot;.
+Enter empty string to move to the next question.
+&gt;
+
+# テスト実行に不必要な、読み込みたくないファイルのパス
+Should any of the files included by the previous patterns be excluded ?
+You can use glob patterns, eg. &quot;**/*.swp&quot;.
+Enter empty string to move to the next question.
+&gt;
+
+# ファイルの変更を監視して自動的にテストを再実行するかどうか
+Do you want Karma to watch all the files and run the tests on change ?
+Press tab to list possible options.
+&gt; yes
+
+Config file generated at &quot;karma.conf.js&quot;.
+</code></pre>
+
+<p>という風に質問に答えていけば <code>karma.conf.js</code> にひな形が出来上がります。途中で空でエンターを押して進んだ箇所については、直接そのファイルを編集します。</p>
+
+<pre><code class="language-js">module.exports = function(config) {
+  config.set({
+    // ......
+    // 省略
+    // ......
+
+    // テストに必要なファイルの読み込み
+    files: [
+      &quot;lib/jquery-2.0.1.min.js&quot;,
+      'spec/lib/jasmine-jquery.js',
+      'spec/lib/mocking.js',
+      &quot;js/executer.js&quot;,
+      &quot;spec/js/**/*.js&quot;
+    ],
+    exclude: [ ],
+
+    // ......
+    // 省略
+    // ......
+
+    // テスト実行に PhantomJS を使う
+    browsers: ['PhantomJS'],
+
+    // テストを実行したら Karma を終了させる。
+    // Jenkins や Travis、Wercker などを使って CI する際は
+    // Karma が実行されっぱなしだと処理が次に進まないので
+    // テストが終わったら Karma も終了させるようにします。
+    singleRun: true,
+  });
+};
+</code></pre>
+
+<p>これでテスト実行の準備は完了です。以下のコマンドを実行してテストを走らせてみましょう。</p>
+
+<pre><code class="language-sh">$ ./node_modules/karma/bin/karma start
+INFO [karma]: Karma v0.12.17 server started at http://localhost:9876/
+INFO [launcher]: Starting browser PhantomJS
+INFO [PhantomJS 1.9.7 (Mac OS X)]: Connected on socket zJcVpRem8HOkR0GkcaH9 with id 34963439
+PhantomJS 1.9.7 (Mac OS X): Executed 2 of 2 SUCCESS (0.074 secs / 0.083 secs)
+</code></pre>
+
+<p>テスト実行が成功しました。</p>
+
+<h2 id="a-name-watching-file-modification-a-ファイルの変更を監視する"><a name="watching-file-modification"></a>ファイルの変更を監視する</h2>
+
+<p>Karma でテスト実行が出来るようになりましたが、今の所はファイル変更の度に</p>
+
+<pre><code class="language-sh">$ ./node_modules/karma/bin/karma start
+</code></pre>
+
+<p>を実行しなきゃいけないので、次は <code>--no-single-run</code> オプションをつけて常時起動にしておきます。そしてファイルの変更を監視する設定はデフォルトで <code>yes</code> になっているので、あとは何もすることはありません。</p>
+
+<pre><code class="language-sh">$ ./node_modules/karma/bin/karma start --no-single-run
+INFO [karma]: Karma v0.12.17 server started at http://localhost:9876/
+INFO [launcher]: Starting browser PhantomJS
+INFO [PhantomJS 1.9.7 (Mac OS X)]: Connected on socket 9S8jNMSy-SplLao8eDvW with id 8548867
+PhantomJS 1.9.7 (Mac OS X): Executed 2 of 2 SUCCESS (0.034 secs / 0.073 secs)
+INFO [watcher]: Changed file &quot;js/executer.js&quot;.
+PhantomJS 1.9.7 (Mac OS X): Executed 2 of 2 SUCCESS (0.124 secs / 0.102 secs)
+INFO [watcher]: Changed file &quot;spec/js/executer_spec.js&quot;.
+PhantomJS 1.9.7 (Mac OS X): Executed 2 of 2 SUCCESS (0.024 secs / 0.042 secs)
+</code></pre>
+
+<p><code>INFO [watcher]</code> でファイルの変更を検知して、その次の行でテストが再実行されているのがわかります。</p>
+
+<h2 id="a-name-output-code-coverage-a-コードカバレッジを出力する"><a name="output-code-coverage"></a>コードカバレッジを出力する</h2>
+
+<p>Karma を使ってコードカバレッジを出力してみます。<code>karma.conf.js</code> に次のような設定を追記してます。</p>
+
+<pre><code class="language-js">preprocessors: {
+ 'js/**/*.js': [ 'coverage' ]
+},
+reporters: [
+  'progress',
+  'coverage'
+],
+coverageReporter: {
+  type: 'html',
+  dir : 'coverage/'
+},
+</code></pre>
+
+<p>そして Karma を再起動します。<code>C-c</code> で終了させて、もう一度起動させれば OK です。テストが実行されると <code>karma.conf.js</code> と同じ場所に <code>coverage/</code> というディレクトリができていると思います。その中に、テスト実行に利用したブラウザ毎のディレクトリがあって、さらにその中にカバレッジレポートの出力があります。</p>
+
+<pre><code class="language-sh">$ ls coverage
+PhantomJS 1.9.7 (Mac OS X)/
+$ ls coverage/PhantomJS\ 1.9.7\ \(Mac\ OS\ X\)
+index.html  js/  prettify.css  prettify.js
+</code></pre>
+
+<p><code>coverage/PhantomJS 1.9.7 (Mac OS X)/index.html</code> を開いてみるとカバレッジを見ることが出来ます。</p>
+
+<p>これは Hometype のカバレッジです。赤い。</p>
+
+<p><img src="/assets/img/2014-07-22-ci-for-chrome-extensions2/coverage.png" alt="" /></p>
+
+<h2 id="a-name-load-fixtures-a-html-fixture-を読み込む"><a name="load-fixtures""></a>HTML Fixture を読み込む</h2>
+
+<p>Karma は自前で Web サーバーを立ち上げており、そこに対してアクセスしてテストを実行しています。Karma 起動時に <code>INFO [karma]: Karma v0.12.17 server started at http://localhost:9876/</code> というログが表示されている通り、私達も <a href="http://localhost:9876">http://localhost:9876</a> にアクセスすれば画面を表示することができます。</p>
+
+<p>前回 <a href="/blog/2014/06/22/ci-for-chrome-extensions1#load-fixtures">HTML Fixture を読み込む</a> で、テスト用に Ajax で HTML Fixture を読み込むという処理がありましたが Karma でこれを実行する際には <a href="http://localhost:9876">http://localhost:9876</a> に対して Ajax のアクセスがいくので Karma のサーバーで HTML Fixture のファイルをホストしてあげる必要があります。</p>
+
+<p>幸いこれは以下のように設定を追加するだけでアクセスできるようになります。</p>
+
+<pre><code class="language-js">files: [
+  &quot;lib/jquery-2.0.1.min.js&quot;,
+  'spec/lib/jasmine-jquery.js',
+  'spec/lib/mocking.js',
+  &quot;js/executer.js&quot;,
+  &quot;spec/js/**/*.js&quot;,
+  // spec/fixtures 以下の .html ファイルを読み込む
+  // watched: true   はファイルの変更を監視してテストの再実行を行う
+  // included: false はテスト実行時にファイルを読み込まない
+  // served: true    は Karma 自前サーバーからアクセスできるようにする
+  {
+    pattern: 'spec/fixtures/**/*.html',
+    watched: true,
+    included: false,
+    served: true
+  }
+]
+</code></pre>
+
+<p>これで、たとえば前回の <code>spec/fixtures/hoge_fixture.html</code> については <a href="http://localhost:9876/base/spec/fixtures/spec/fixtures/hoge_fixture.html">http://localhost:9876/base/spec/fixtures/spec/fixtures/hoge_fixture.html</a> でアクセスできるようになります。ただし URL を見てもらってわかる通り Karma がホストするファイルには <code>base/</code> の下にフィクスチャのパスが来ています。なので、テストを1箇所だけ、フィクスチャを読み込むパスを設定しているところを修正する必要があります。</p>
+
+<pre><code class="language-diff">describe('dom fixture', function() {
+  var element;
+
+  beforeEach(function() {
+    // フィクスチャが配置されているディレクトリを指定
+-   jasmine.getFixtures().fixturesPath = 'fixtures';
++   jasmine.getFixtures().fixturesPath = 'base/spec/fixtures';
+    // フィクスチャを読み込む
+    loadFixture('hoge_fixture.html');
+
+    // テスト対象のメソッドを呼び出す
+    fuga('dom fixture test');
+    element = document.getElementById('hoge');
+  });
+
+  it('should have a text', function() {
+    expect(element.innerText).toBe('dom fixture test');
+  });
+});
+</code></pre>
+
+<hr />
+
+<p>今回も長くなってきたので続きは次回。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/ci">CI</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/07/22/ci-for-chrome-extensions2/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/07/22/ci-for-chrome-extensions2/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/07/22/ci-for-chrome-extensions2/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

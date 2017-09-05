@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>パラメータ推定 on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E6%8E%A8%E5%AE%9A/</link>
+    <description>Recent content in パラメータ推定 on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Mon, 22 Aug 2016 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E6%8E%A8%E5%AE%9A/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>機械学習でパラメータ推定 - 最尤推定法 -</title>
+      <link>http://tkengo.github.io/blog/2016/08/22/maximum-likelyhood-estimation-by-machine-learning/</link>
+      <pubDate>Mon, 22 Aug 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2016/08/22/maximum-likelyhood-estimation-by-machine-learning/</guid>
+      <description>最尤推定法 (Maximum Likelyhood や Maximum Likelyhood Estimation と言われ、それぞれ頭文字を取って ML や MLE などとも言われる) は機械学習やコンピュータービジョンなどの分野で良く使われる推定法で、次のような条件付き同時確率を最大化することでパラメータの推定を行います。
+$$ \hat{\theta} = \mathop{\mathrm{argmax}}\limits_{\theta} \mathrm{P}(x_1, x_2, \cdots, x_N|\theta) $$
+これだけ見て「うん、アレね」と理解できる人はこの記事の対象読者ではなさそうですので、逆にいろいろ教えて下さい。この記事では理論の面から最尤推定法にアタックしてみます。数式成分が多めで、うっとなることもあるかもしれませんが、ゆっくり読んでいきましょう。
+※この記事を読むにあたっては、確率論と微分の基礎知識程度は必要です。
+尤度 いきなり応用問題から始めると必ず挫折するので、まずは一番簡単な問題設定から始めます。Wikipedia に 最尤推定 のページがありますので、この中で使われている例を参考に話を進めていきましょう。
+見た目がまったく同じ 3 枚のコイン A, B, C があります。これらのコインはイカサマで、投げた時に表の出る確率がそれぞれ違います。
+ コイン A は 1&amp;frasl;3 の確率で表が出る コイン B は 1&amp;frasl;2 の確率で表が出る コイン C は 2&amp;frasl;3 の確率で表が出る  この 3 枚のコインを箱の中に入れてシャッフルした後に 1 枚引きます。引いたコインを 10 回投げたら、表が 3 回、裏が 7 回出ました。あなたは A, B, C のどのコインを引いたでしょうか？
+この問題設定は極めて単純です。単純すぎて最尤推定法を使わなくても解けるくらい簡単ですが、ここでは敢えて最尤推定法を使って解いてみます。最尤推定法は次の条件付き同時確率を最大化するパラメータ $\hat{\theta}$ を求めることでした。</description>
+    </item>
+    
+  </channel>
+</rss>

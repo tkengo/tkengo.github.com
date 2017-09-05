@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>文字列検索ツール highway は &#34;高速&#34; を謳うために何をやってきたのか &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-12-11</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/12/11/architecture-of-highway/">文字列検索ツール highway は &#34;高速&#34; を謳うために何をやってきたのか</a></h1>
+    </header>
+    <article>
+      
+
+<p>先日、社内で highway のアーキテクチャの話をする機会があったので、スライドを作って話しました。秘密情報というわけでもないので、せっかくなので公開したいと思います。ということで、この記事では highway のアーキテクチャを簡単に紹介します。C で実装されており、実装にあたっては既存のツールよりも高速に動作させるためにいくつもの工夫をしたので highway の内部がどうなっているのか興味がある方は読んでみると面白いかもしれません。</p>
+
+<p>highway についての詳細はこちら。</p>
+
+<p><a href="/blog/2015/10/13/release-highway/">highway という高速検索ツールを作ってみました</a></p>
+
+<h1 id="資料">資料</h1>
+
+<div style="width:65%;">
+<script async class="speakerdeck-embed" data-id="ddd5bcdc5c98437ca7d08cf55c753585" data-ratio="1.33333333333333" src="//speakerdeck.com/assets/embed.js"></script>
+</div>
+
+<p>以下、補足や簡単な説明などをつらつらと。</p>
+
+<h1 id="文字列探索アルゴリズム">文字列探索アルゴリズム</h1>
+
+<p>highway ではリテラルによる検索は、以下の論文を参考に実装しています。</p>
+
+<p><a href="http://www.sciencedirect.com/science/article/pii/S1570866706001067">A simple fast hybrid pattern-matching algorithm</a></p>
+
+<p>通称 FJS 法と呼ばれるこのアルゴリズムは Boyer-Moore と Knuth–Morris–Pratt をベースにしています。Boyer-Moore と Knuth-Morris-Pratt についてはスライド内で解説していますが、FJS についてはアルゴリズム開発者の一人である Jennings さんの Web サイトで Java アプレットを使ったデモを公開しており、実際にどのように検索が進んでいくのかがとてもわかりやすく可視化されていますので、動作の解説はそちらにおまかせしました。是非以下の URL から覗いてみてください。</p>
+
+<p><a href="http://www.cgjennings.ca/fjs/">http://www.cgjennings.ca/fjs/</a></p>
+
+<p>また、スライドには書いてありませんが highway は正規表現による検索もサポートしており、その部分には OSS の正規表現ライブラリである Onigmo(鬼雲) を利用しています。</p>
+
+<p><a href="https://github.com/k-takata/Onigmo">Onigmo</a></p>
+
+<h1 id="マルチスレッド">マルチスレッド</h1>
+
+<p>highway はマルチスレッドで動作し、内部は以下の要素で構成されます。</p>
+
+<ul>
+<li><p>メインスレッド</p>
+
+<p>検索対象ファイルを再帰的に探索し、<code>.gitignore</code> の無視パターンを加味しつつ、対象ファイルをキューに追加していくのが仕事です。</p></li>
+
+<li><p>ファイルキュー</p>
+
+<p>検索対象ファイルが溜まっていくキューです。他の全てのスレッドからアクセスされるため、キューへのアクセスは排他制御されています。</p></li>
+
+<li><p>検索スレッド</p>
+
+<p>1 ファイルの検索処理が 1 スレッドに割り当てられます。スレッドはキューの先頭にあるファイルを取り出して検索し、処理がが完了するとキューのアイテムに対して探索済みのフラグを付与します。</p></li>
+
+<li><p>出力スレッド</p>
+
+<p>キューの先頭からアイテムを取り出し、そのアイテムが探索済みであれば結果を出力します。キューの先頭のアイテムに探索済みフラグがついていなければ、そのアイテムにフラグがつくまで待ち状態となります。</p></li>
+</ul>
+
+<p>また highway では探索済みフラグによって、マルチスレッドでありながら検索結果の出力順が実行毎に変わらないように制御されています。</p>
+
+<h1 id="ファイルのスキップ">ファイルのスキップ</h1>
+
+<p>ファイルの先頭から 512 バイトを見て、ヌルバイトがあったり存在しない文字コードが 1 割以上あるとバイナリと判定します。各文字エンコーディングでは、それぞれ以下のようなテーブルを持っているのでそれを元に判定します。</p>
+
+<ul>
+<li><a href="https://ja.wikipedia.org/wiki/UTF-8#.E3.82.A8.E3.83.B3.E3.82.B3.E3.83.BC.E3.83.89.E4.BD.93.E7.B3.BB">UTF-8 エンコード体系</a></li>
+<li><a href="http://charset.7jp.net/euc.html">EUC-JP 文字コード表</a></li>
+<li><a href="http://charset.7jp.net/sjis.html">Shift_JIS 文字コード表</a></li>
+</ul>
+
+<p>また <code>.gitignore</code> の無視パターンは検索対象に含めないようになっています。この辺りはハッシュテーブルと単方向リストを使った実装になっており、なるべく高速に処理できるよう工夫しています。ちなみに、git 自体はどうやって <code>.gitignore</code> をチェックしているんだろうと思ってソースを読んでみたのですが、たぶん普通にリストに保持して全パターンチェックしてます。</p>
+
+<h1 id="ディスク-i-o">ディスク I/O</h1>
+
+<p>通常、ファイル中のパターン検索といえば行毎に結果を出力するので、ファイルから 1 行ずつ読み込んでその中にパターンがあるかどうかを調べてあれば出力、という風に作るのが最も簡単です。ただ 1 行毎にファイルから読み込むのは都度 IO が発生してしまうのでそれなりに遅くなってしまいます。改行は気にせずに大きなバッファを用意してそのバッファのサイズ分ずつ読み込んで検索処理を進めていき、改行の検索や行番号の計算はメモリ上でやるようにすれば IO が減ってより高速になります。実装レベルの話だと <code>fgets(3)</code> などは使わずにシステムコールの <code>open(2)</code> と <code>read(2)</code> を使ってファイル内容を読み込んでいきます。</p>
+
+<h1 id="その他">その他</h1>
+
+<p>スライドには書いていませんが、他に細かい工夫をいくつかやっています。</p>
+
+<p>まず、検索結果を出力する際にはマッチ位置がわかりやすいようにエスケープシーケンスによるカラーリングを行いますが、背景色をつける場合はつけない場合に比べて出力が遅くなるので hw では背景色を使わないようにしました。</p>
+
+<p><img src="/assets/img/2015-10-13-architecture-of-highway/coloring_hw.png" alt="highway のカラーリング" /></p>
+
+<p>また highway では出力に <code>printf(3)</code> を使いますが、その都度出力するよりもある程度バッファに溜め込んでおき、一気に出力するようにした方が速くなります。ご存知の通り <code>printf(3)</code> はデフォルトでバッファリングをやってくれますがそのサイズが 1KB と少し小さいのでこれを <code>setvbuf(3)</code> を使ってもっと大きなバッファを設定してあげます。検索結果の量が多い場合などはより速くなります。</p>
+
+<p>それともうひとつ、メモリ確保には通常 glibc の <code>malloc(3)</code> や <code>calloc(3)</code> を利用しますが、より高速でマルチスレッドフレンドリーな <strong>tcmalloc</strong> というライブラリが Google によって開発されています。highway ではメモリ確保に tcmalloc を利用することで高速化を図っています。ただし、標準ではないのでコンパイル時に tcmalloc のライブラリが必要になります。</p>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>スライドでは文字列探索アルゴリズムを一番最初に紹介して、それが highway を開発するきっかけになったと説明していますが、実際には文字列探索は複雑なアルゴリズムを使わない力技でも十分に高速です。なので文字列探索アルゴリズムが全体的なスピードアップに寄与している割合は実はそんなに高くなかったりします。高速化は地道な努力の積み重ねで実現されています。</p>
+
+<p>いかがでしたでしょうか。特別に変なことはやってないので、そんなに難しくはなく、誰もが実装できるような内容だと思います。OSS が活発な現在、公開されているソースコードから色々なノウハウを自分のために取り込むことが当たり前のようにできます。実際に highway も ag や pt、sift、ack などのコードを参考にしました。</p>
+
+<p>活発に OSS 活動していこう。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/highway">highway</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/12/11/architecture-of-highway/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/12/11/architecture-of-highway/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/12/11/architecture-of-highway/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

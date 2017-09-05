@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>Chrome Extensionの話をしよう。ようこそ Hometype が創るマウスレスの世界へ。 &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-03-03</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/03/03/introduce-hometype/">Chrome Extensionの話をしよう。ようこそ Hometype が創るマウスレスの世界へ。</a></h1>
+    </header>
+    <article>
+      
+
+<p>vi のようなキー操作で Google Chrome を操作できるエクステンション <a href="https://chrome.google.com/webstore/detail/hometype/fngmcejiekfcoflogkfnmhableinjmln">Hometype</a> の紹介をしたいと思います。元々はエクステンションの作り方の勉強をするために始めた Hometype でしたが github にソースコードを置いて自分が使いやすいようにいろいろ作ってるうちに、会社の同僚が何人か使い始めてたのでとりあえず公開しても良いかなと思って、先日バージョン 0.0.1 を Chrome ストアへ登録しました。ただ実際は、まだ実験的な機能も多く、バグも多く潜んでいると思いますし、テストもないし、最低限の機能しかないので、既存の同類のエクステンションに比べればまだまだ発展途上ではありますが、自分の中でやりたいことはいっぱいあるので開発はずっと続けていく予定です。</p>
+
+<h1 id="hometype-とは">Hometype とは</h1>
+
+<p>先にも紹介しましたが vi のようなキー操作で Google Chrome を操作できるエクステンションです。バージョン 0.0.1 では以下のキーバインドが定義されています。</p>
+
+<ul>
+<li><code>j</code> <code>C-e</code> 下スクロール</li>
+<li><code>k</code> <code>C-y</code> 上スクロール</li>
+<li><code>C-d</code> 半ページ下スクロール</li>
+<li><code>C-u</code> 半ページ上スクロール</li>
+<li><code>C-f</code> 1ページ下スクロール</li>
+<li><code>C-b</code> 1ページ上スクロール</li>
+<li><code>gg</code> 先頭へスクロール</li>
+<li><code>G</code> 最後へスクロール</li>
+<li><code>H</code> 前に戻る</li>
+<li><code>L</code> 次に進む</li>
+<li><code>x</code> 現在のタブを閉じる</li>
+<li><code>C-p</code> 前のタブへ移動する</li>
+<li><code>C-n</code> 次のタブへ移動する</li>
+<li><code>I</code> 画面上の最初のテキストエリアにフォーカスする</li>
+<li><code>A</code> 画面上の最後のテキストエリアにフォーカスする</li>
+<li><code>u</code> 直前に閉じたタブを開き直す</li>
+<li><code>U</code> 最近の閉じたタブを検索して開き直す</li>
+<li><code>C-h</code> 最近の履歴を検索して戻る</li>
+<li><code>b</code> ブックマークを検索して現在のタブで開く</li>
+<li><code>B</code> ブックマークを検索して新しいタブで開く</li>
+<li><code>f</code> リンクを現在のタブで開くヒントモードへ移行</li>
+<li><code>F</code> リンクを新しいタブで開くヒントモードへ移行</li>
+<li><code>i</code> <code>a</code> インサートモードへ移行</li>
+<li><code>:</code> コマンドモードへ移行</li>
+<li><code>v</code> ビジュアルモードへ移行</li>
+</ul>
+
+<p>※キーバインドは自分が使いやすい設定になっているので、他の人も使いやすいかというとわかりません。自分でキーバインドを設定できる機能はつけるつもり。</p>
+
+<h1 id="便利な機能">便利な機能</h1>
+
+<p>Hometype の機能の中でも、他の人に便利かどうかは置いといて自分が欲しいなあと思ってつけた機能がいくつかあるのでその辺も紹介したいと思います。ただし、どれもまだ Experimental な機能で、きちんと動作しない場合もあります。</p>
+
+<h2 id="ヒントモードセレクトボックス">ヒントモードセレクトボックス</h2>
+
+<p>以下は Facebook の新規ユーザー登録フォームでヒントモードに入ったキャプチャです。</p>
+
+<p><img src="/assets/img/2014-03-03-introduce-hometype/01-hint-mode.png" alt="" /></p>
+
+<p>ここで <strong><code>t j</code></strong> を押下してセレクトボックスを選んだ時に、以下のようにセレクトボックスの要素がポップアップされてヒントモードが継続します。</p>
+
+<p><img src="/assets/img/2014-03-03-introduce-hometype/02-select-box.png" alt="" /></p>
+
+<p>ここで <strong><code>f</code></strong> を押下すると <strong>Jan</strong> が選択された状態になります。</p>
+
+<p><img src="/assets/img/2014-03-03-introduce-hometype/03-selected-jan.png" alt="" /></p>
+
+<h2 id="ビジュアルモード">ビジュアルモード</h2>
+
+<p>v を押下することでビジュアルモードへ移行することができます。たとえば以下のキャプチャは PHP のマニュアルのサイトです。</p>
+
+<p><img src="/assets/img/2014-03-03-introduce-hometype/04-php-net.png" alt="" /></p>
+
+<p>ここで <strong><code>v</code></strong> を押すと</p>
+
+<p><img src="/assets/img/2014-03-03-introduce-hometype/05-visual-mode.png" alt="" /></p>
+
+<p>このようにヒントチップが表示されます。そして <strong><code>e</code></strong> を押下すると</p>
+
+<p><img src="/assets/img/2014-03-03-introduce-hometype/06-content-editable.png" alt="" /></p>
+
+<p>このように該当要素に対してフォーカスがあたって、選択・コピーできるようになります。FireFoxのキャレットブラウズモードのようなものです。キャプチャのようにコードスニペットなどがあってそれをコピーしたい時によく使います。</p>
+
+<h2 id="ブックマーク-履歴-閉じたタブの検索">ブックマーク・履歴・閉じたタブの検索</h2>
+
+<p><code>b</code> <code>B</code> を押すとブックマークを <code>C-h</code> を押すと履歴を <code>U</code> を押すと閉じたタブを、それぞれ検索できるようになっています。たとえば <strong><code>B</code></strong> を押下すると画面下部に灰色のバーが表示されます。そこでなにかテキストを入力すると</p>
+
+<p><img src="/assets/img/2014-03-03-introduce-hometype/07-bookmark-mode.png" alt="" /></p>
+
+<p>このようにテキストにマッチする候補が表示されます。候補間の移動は <code>C-n</code> 及び <code>C-p</code> で出来ます。候補から開きたいブックマークを選択して <code>Enter</code> を押下すればそのページが開かれます。履歴と閉じたタブの検索も同様の操作でページを開くことができます。</p>
+
+<h1 id="既知の問題点">既知の問題点</h1>
+
+<p>Hometype バージョン 0.0.1 では以下のような問題点があることがわかっています。</p>
+
+<h2 id="インサートモードへの自動移行">インサートモードへの自動移行</h2>
+
+<p>Hometype は vi のように内部で現在のモードを保持しています。通常はノーマルモードなのですが、テキストフォームにフォーカスした時はそれを認識して自動的にインサートモードへ移行します。インサートモードの時は基本的にキーバインドは無効になり、文字の入力ができるようになります。ただし、テキストフォームにフォーカスしているということを Hometype が認識しきれずにノーマルモードのままになる場合があります。そうなると、文字を入力したいのにノーマルモードでコマンドが実行されてしまうことになって、コマンドがバインドされているキーは、入力ができなくなってしまいます。</p>
+
+<p>このような場合の対処として <code>i</code> または <code>a</code> で強制的にインサートモードへの移行を行えます。</p>
+
+<p>テキストフォームにフォーカスしてもインサートモードとして認識してくれない場合は強制的にインサートモードへ移行すれば問題なく文字を入力することができます。ノーマルモードには <code>Esc</code> もしくは <code>C-c</code> で戻れます。</p>
+
+<h2 id="ヒントモードセレクトボックス-1">ヒントモードセレクトボックス</h2>
+
+<p>セレクトボックスの要素がポップアップされてヒントチップから選択できる機能ですが、セレクトボックスの要素数が多すぎると枠からはみ出してしまい、はみ出した部分は見えなくなってしまいます。現時点での対処法はあきらめてマウスで選択するしかありません。</p>
+
+<h1 id="終わりに">終わりに</h1>
+
+<p>まだ発展途上の拡張機能ですが、これから良くなります。たぶん。そしたら使ってくれる人も増えるかもしれない。Hometype は github のパブリックリポジトリでオープンに開発していますので、最後にそこへのリンクを貼って終わります。</p>
+
+<p><a href="https://github.com/tkengo/hometype">https://github.com/tkengo/hometype</a></p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/chrome">Chrome</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/03/03/introduce-hometype/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/03/03/introduce-hometype/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/03/03/introduce-hometype/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

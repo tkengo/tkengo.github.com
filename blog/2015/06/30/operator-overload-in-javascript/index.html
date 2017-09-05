@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>果たして JavaScript で演算子オーバーロードは可能なのか &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2015-06-30</p>
+      <h1><a href="http://tkengo.github.io/blog/2015/06/30/operator-overload-in-javascript/">果たして JavaScript で演算子オーバーロードは可能なのか</a></h1>
+    </header>
+    <article>
+      
+
+<p>果たして僕の他に誰が JavaScript で演算子オーバーロードをやりたいと思っている人がいるだろうか。</p>
+
+<p>世の中のニーズは置いといて、少なくとも自分の中では欲しいと思うことがあった。JavaScript で自作のオブジェクトを作った際に、それらのオブジェクト同士の演算を定義したいことがある。Ruby や C# のもつ演算子オーバーロードの言語機能を羨ましく思いながら JavaScript でもそんなことができないのか調べて試行錯誤した結果をまとめてみようと思う。</p>
+
+<h1 id="はじまり">はじまり</h1>
+
+<p>完全な趣味で JavaScript で行列やベクトルの演算ができる <a href="http://tkengo.github.io/mx.js/">mx.js</a> というものを作っている。mx.js では <code>Matrix</code> と <code>Vector</code> というオブジェクトが出てくるが、それら同士の足し算や引き算、掛け算を演算子を使ってやりたい、というところがモチベーションとなる。</p>
+
+<p>JavaScript は言語機能として演算子オーバーロードを持っていないので、行列やベクトルのオブジェクト同士の演算を定義しようとすると普通はメソッドを定義することになる。そう、こういう風に。</p>
+
+<pre><code class="language-javascript">var m1 = Matrix.create([ ... ]);
+var m2 = Matrix.create([ ... ]);
+
+// m1とm2の各要素を足し合わせる
+m1.add(m2);
+</code></pre>
+
+<p>これは一般的な、誰にでも思いつく実装でしょう。そうではなくて、もっと直感的に、まるで数値を扱うかのようにこんな風に書ければとても嬉しい。</p>
+
+<pre><code class="language-javascript">// m1とm2の各要素を足し合わせる
+var m3 = m1 + m2;
+</code></pre>
+
+<p>これを目指して試行錯誤を繰り返していく。</p>
+
+<h1 id="オブジェクトからプリミティブへの変換">オブジェクトからプリミティブへの変換</h1>
+
+<p>とはいえ、演算子オーバーロードがない JavaScript において、そんなことどうやって実現すればいいのか。実は JavaScript ではオブジェクトに対して <code>+</code> や <code>-</code> のような二項演算子を適用した場合、左オペランドから右オペランドの順に <code>valueOf</code> というオブジェクトをプリミティブ型に変換するためのメソッドが暗黙的に呼び出される。つまりはこういうこと。</p>
+
+<pre><code class="language-javascript">Matrix.prototype.valueOf = function() {
+  return this.rows + &quot; x &quot; + this.cols + &quot;のMatrix。&quot;;
+};
+
+var m1 = Matrix.eye(3); // 3x3の単位行列
+var m2 = Matrix.eye(4); // 4x4の単位行列
+
+var m3 = m1 + m2;
+</code></pre>
+
+<p>これを実行すると <code>m3</code> には以下のテキストが入っている。</p>
+
+<pre>
+"3 x 3のMatrix。4 x 4のMatrix。"
+</pre>
+
+<p>m1 と m2 が <code>valueOf</code> によって一旦文字列に変換された後に <code>+</code> 演算子が適用されて、各文字列が連結されたものが返るようになっている。なるほど、これを応用すればなんとなく演算子オーバーロードのようなことができそうな気がする。ちょっと考えてみよう。</p>
+
+<p>つまり、演算子の左側にあるオペランドの <code>valueOf</code> が最初に呼ばれて、その次に右側にあるオペランドの <code>valueOf</code> が呼ばれるのだった。ということは</p>
+
+<ol>
+<li>1 回目に呼ばれる <code>valueOf</code> で this の値をどこか外部の変数に保存する。</li>
+<li>2 回目に呼ばれた <code>valueOf</code> で this と、前に保存していた値とで足し算をしてその結果を返す。</li>
+</ol>
+
+<p>という風にすれば少なくとも足し算においてはなんとなく実現できそうな気がする。<code>valueOf</code> の実装をこんな風にしてみたらどうだろう？</p>
+
+<pre><code class="language-javascript">var tmp;
+Matrix.prototype.valueOf = function() {
+  if (tmp === undefined) {
+    // 左側オペランドの呼び出し。
+    // 後で参照するために外部の変数に値を保存して、戻り値は適当な値を返す。
+    tmp = this;
+    return 0;
+  } else {
+    // 右側オペランドの呼び出し。
+    // thisの値と外部変数の値を足し算してそれを返す。
+    var result = this.add(tmp);
+    tmp = undefined;
+    return result;
+  }
+};
+</code></pre>
+
+<p>なんとなくイケそうな気がするけど、実際はこの実装ではやりたいことを実現できない。たとえばこの実装で <code>m1 + m2</code> を計算するということは、以下のような式を計算するということになる。</p>
+
+<pre><code class="language-javascript">var m3 = 0 + m2.add(m1);
+</code></pre>
+
+<p>m1 での valueOf が 0 を、m2 での valueOf が this.add(tmp) を返しているので、こういう式になる。この式だけみると結局また <code>+</code> 演算子が登場しているので、うまく計算できるはずがない。さらに、valueOf はプリミティブ型への変換のためのメソッドなので、戻り値はプリミティブしか返せないことになっている。オブジェクトを返してはいけない。先の実装では右側のオペランドで Matrix オブジェクトを返すようにしているけど、そもそも Matrix オブジェクトは返ってこない。</p>
+
+<p>ここまできて、盛大なちゃぶ台返しだ。</p>
+
+<h1 id="関数でラップしてみる">関数でラップしてみる</h1>
+
+<p>しかし <code>valueOf</code> を使って、外部変数にオペランドの値を保存しておくというアイデアは捨てがたい。もう少しなにか工夫すればできるようになる気がする。そこで、関数を使って実現できないかどうかを試してみる。どういうことかというと</p>
+
+<pre><code class="language-javascript">var tmp = [];
+Matrix.prototype.valueOf = function() {
+  tmp[tmp.length] = this;
+  return 0;
+};
+
+function add(v) {
+  var result = tmp[0].add(tmp[1]);
+  tmp = [];
+  return result;
+}
+
+var m3 = add(m1 + m2);
+</code></pre>
+
+<p>やった！これだとうまくいく！</p>
+
+<p>少し掘り下げて説明すると、JavaScript での関数呼び出しはまず最初に引数の部分から評価される。つまり <code>add(m1 + m2)</code> という式は <code>m1 + m2</code> から評価されることになり、まずは <code>valueOf</code> が呼び出される。<code>valueOf</code> では Matrix のオブジェクトを外部の変数に保存して、戻り値は使われることがないので適当な値を返している。左オペランドと右オペランドでそれぞれ呼び出されるので結果的には <code>tmp</code> には 2 つの Matrix オブジェクトが入っていることになる。その後に <code>add</code> メソッドが呼び出され <code>tmp</code> の中身を参照して足し算の結果を返す、というやり方になっている。</p>
+
+<p>うーん、でもこんなものでは到底満足できない。</p>
+
+<ol>
+<li>そもそも書き方を簡素化したいために演算子オーバーロードを実装しているのに、これだととても冗長である。足し算をするのに <code>add</code> と <code>+</code> という同じような意味のものが 2 回も出てくる。</li>
+<li>足し算以外のものが実装できていない。引き算、掛け算（掛け算の場合は要素同士の掛け算と行列の積の 2 種類）、割り算も実装したい。</li>
+</ol>
+
+<p>もう少し工夫してみよう。</p>
+
+<p>1 の問題についてはとりあえず関数を 1 文字にすれば短くできそうだ。2 の問題については、さっきは捨てていた <code>valueOf</code> の戻り値を使ってやってみる。0 を返すのではなくて、演算子の種類を特定できるような何かの値を返してあげればよいということになる。たとえば 3 を返してみるとどうなるだろう。</p>
+
+<pre><code class="language-javascript">Matrix.prototype.valueOf = function() {
+  tmp[tmp.length] = this;
+  return 3;
+};
+
+var m3 = A(m1 + m2); // A(3 + 3)
+var m4 = A(m1 - m2); // A(3 - 3)
+var m5 = A(m1 * m2); // A(3 * 3)
+var m6 = A(m1 / m2); // A(3 / 3)
+</code></pre>
+
+<p>関数 <code>A</code> に渡される引数部分は上記のコメントのように、それぞれ</p>
+
+<ul>
+<li>足し算の場合は 3 + 3 となり 6 が渡される</li>
+<li>足し算の場合は 3 - 3 となり 0 が渡される</li>
+<li>足し算の場合は 3 * 3 となり 9 が渡される</li>
+<li>足し算の場合は 3 / 3 となり 1 が渡される</li>
+</ul>
+
+<p>となるので、これを元に <code>A</code> を以下のように実装すればよい。</p>
+
+<pre><code class="language-javascript">function A(v) {
+  var result;
+  switch (v) {
+    case: 6 // 足し算
+      result = tmp[0].add(tmp[1]); break;
+    case: 0 // 引き算
+      result = tmp[0].sub(tmp[1]); break;
+    case: 9 // 掛け算
+      result = tmp[0].mul(tmp[1]); break;
+    case: 1 // 割り算
+      result = tmp[0].div(tmp[1]); break;
+  }
+  tmp = [];
+  return result;
+}
+</code></pre>
+
+<p>これで、足し算、引き算、掛け算、割り算、を <code>A</code> というラップ関数の力を借りて演算子を定義することができた！</p>
+
+<h1 id="構文解析する">構文解析する</h1>
+
+<p>でも、理想を言うとまだ足りない点がある。あ、行列の積の演算子が定義できてない？残念、演算子の種類の問題ではない。問題なのは <code>A</code> を使っての演算子による計算は最大 2 つしか項を取れないことにある。つまり、こういうことができない。</p>
+
+<pre><code class="language-javascript">var mx = A(m1 * (m2 + m3) - m4);
+</code></pre>
+
+<p>項が 2 つ以上に増えるだけではなく、カッコによる優先順位の変更まである。こうなってくると <code>A</code> に渡ってくる引数の値から演算子の種類を推測することはもはや不可能になる。ここまで来ると JavaScript 標準の機能だけだとどうにもできない気がする。じゃぁどうすればいいんだろう。</p>
+
+<p>実は最終手段として <strong>構文解析する</strong> という方法が残っている。</p>
+
+<p>少し話がそれるが <a href="http://paperjs.org/">paper.js</a> というものを知っているだろうか。これは HTML5 の Canvas 上で動作する JavaScript で書かれたベクターグラフィックスライブラリである。この paper.js では、オリジナルの PaperScript という JavaScript ライクな言語を使って書いていくことになるが、その中で完全な演算子のオーバーロードを実現している。どうやっているのだろうと中身を覗いてみれば、なんと JavaScript の構文解析器を使ってソースコードを構文解析して AST を生成し、その中でカッコの優先順位や演算子の種類を特定して、計算を実行している。</p>
+
+<p>なるほど、そこまですればもう何でもできそうだ。話を戻して <code>m1 * (m2 + m3) - m4</code> という式も、いったん JavaScript の構文解析器に通して AST を取得できれば、なんとかできそうな気がする。ではさっそくやってみよう。と、思ったものの、構文解析をするためには <code>m1 * (m2 + m3) - m4</code> という部分を文字列として取得できている必要がある。さて、困った。どうやってこの式を <strong>文字列として</strong> 取得したものか。</p>
+
+<p>少し考えてみよう。JavaScript では関数オブジェクトに対して <code>toString</code> メソッドを呼び出した場合、その関数の中身を文字列として返してくれる。たとえば</p>
+
+<pre><code class="language-javascript">function X() {
+  return m1 * (m2 + m3) - m4;
+}
+var string = X.toString();
+</code></pre>
+
+<p>とすると、上記の string 変数には以下のような <strong>文字列</strong> が返ってくる。ちなみに無名関数であっても同じように文字列として取り出せる。</p>
+
+<pre>
+"function X() {
+  return m1 * (m2 + m3) - m4;
+}"
+</pre>
+
+<p>なんとなくゴールに近づいてきている。つまり <code>A</code> に無名関数を渡してその中に式を記述すれば <code>A</code> 内で文字列表現として取得できる。これでどうだろう？</p>
+
+<pre><code class="language-javascript">var mx = A(function() { m1 * (m2 + m3) - m4 });
+
+function A(v) {
+  if (typeof v === 'function') {
+    var string = v.toString();
+
+    // 構文解析してASTを取得後に適切な計算をして値を返す
+    ...
+  } else {
+    // vの値によって足し算、引き算、掛け算、割り算を実装
+    ...
+  }
+}
+</code></pre>
+
+<p>JavaScript で書かれた JavaScript の構文解析器に <a href="https://github.com/marijnh/acorn">acorn</a> というものがあるので、構文解析にはそれを使うと良い。詳細な実装を書くと長くなるのでここでは割愛するが、このように実装することで 3 つ以上の項があっても、カッコで優先順位が変更されていても、正しく計算結果を戻してあげることができる。すごい！できた！</p>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>本当に理想を求めるのであれば、もちろん単純にこんな風に書けるのが一番いい。</p>
+
+<pre><code class="language-javascript">var mx = m1 * (m2 + m3) - m4;
+</code></pre>
+
+<p>でもこんなことはできないので、なんとか頑張って以下のように記述すれば演算子のオーバーロードのようなことができるようになった。</p>
+
+<pre><code class="language-javascript">// 項が2つの場合
+var mx = A(m1 + m2);
+
+// 項が3つ以上の場合
+var mx = A(function() { m1 * (m2 + m3) - m4 });
+</code></pre>
+
+<p>それでも <code>A</code> という余計なワードがついてしまうのは避けられないし、おまけに 3 項以上の計算に関しては <code>function</code> という長いキーワードまでついてくるし、構文解析を間に挟んでいるのですごく重い。この手法を使うかどうかはケースバイケースで、処理速度が問題になるような箇所では使えないと思う。しかしそうじゃない場合は、全部メソッドで記述するよりかはいくらか書きやすくなってるのではないかな。全部メソッドで書くとするとこんな感じだろうか。</p>
+
+<pre><code class="language-javascript">var mx = m1.add(m2);
+var mx = m1.mul(m2.add(m3)).sub(m4);
+</code></pre>
+
+<p>なんだ、やっぱり演算子を使って書けたほうが断然わかりやすいじゃん！</p>
+
+<p>というわけで、自分が試行錯誤してきた JavaScript による演算子のオーバーロード手法をまとめてみた。理想にはたどり着けなかったけど、それに近いところまでは辿りつけたので、ヨシとしよう。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/javascript">JavaScript</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2015/06/30/operator-overload-in-javascript/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2015/06/30/operator-overload-in-javascript/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2015/06/30/operator-overload-in-javascript/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

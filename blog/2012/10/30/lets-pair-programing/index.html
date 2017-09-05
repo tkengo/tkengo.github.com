@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>ペアプロをやってみよう &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2012-10-30</p>
+      <h1><a href="http://tkengo.github.io/blog/2012/10/30/lets-pair-programing/">ペアプロをやってみよう</a></h1>
+    </header>
+    <article>
+      
+
+<p>ペアプロですよ。ペアプロ。ペアプロっていうとあれですよ、2人1組みでペアになって1人がコーディング、1人が観察。
+観察してる人はコーディングしてる人に対してあーだこーだ言って、より良いコードを作り上げていきます。</p>
+
+<p>ペアプロについてのメリット/デメリットは各所でいろいろと説明されてるのでここでは省くとして、
+僕は今、実際に業務でペアプロをやってるのでせっかくなのでそのやり方を紹介します。</p>
+
+<h1 id="準備するもの">準備するもの</h1>
+
+<ul>
+<li>tmux</li>
+<li>vim(ターミナル上で動くテキストエディタであれば何でも&hellip;)</li>
+</ul>
+
+<p>えっ、これだけ？んーこれだけです&hellip;</p>
+
+<p>ペアプロのやり方としては、1つの画面と1つのキーボードに対して2人が張り付くという形式がよくあるかと思いますが、
+僕らはtmuxのセッション共有を利用してペアプロしてます。</p>
+
+<h1 id="tmuxを使って画面を共有する">tmuxを使って画面を共有する</h1>
+
+<p>ボブとアリスで話を進めます。ボブがコーダーでアリスがナビゲーターとしましょう。</p>
+
+<p>ボブの端末でtmux用ユーザーを作っておく</p>
+
+<pre><code class="language-bash">[bob@bobs_pc] $ adduser tmux
+[bob@bobs_pc] $ passwd tmux
+</code></pre>
+
+<p>ボブの端末でセッションファイルを指定してtmuxを起動する。
+セッションファイルはパーミッションを <strong>777</strong> にしておきます。</p>
+
+<pre><code class="language-bash">[bob@bobs_pc] $ tmux -S /tmp/tmux.shared_sock
+[bob@bobs_pc] $ chmod 777 /tmp/tmux.shared_sock
+</code></pre>
+
+<p>アリスはボブの端末にsshでログインする</p>
+
+<pre><code class="language-bash">[alice@alices_pc] $ ssh tmux@bobの端末
+</code></pre>
+
+<p>アリスはボブの端末でセッションファイルを指定してtmuxを起動する</p>
+
+<pre><code class="language-bash">[tmux@bobs_pc] $ tmux -S /tmp/tmux.shared_sock attach
+</code></pre>
+
+<p>これでボブとアリスはキーボードとディスプレイは自分の目の前にあるものを使うことができ、
+かつ画面はボブの画面を共有することができました！ペアプロをはじめます！</p>
+
+<h1 id="ペアプロをやるにあたって">ペアプロをやるにあたって</h1>
+
+<p>僕らがペアプロをやる時はこんなことに注意したりしてます。</p>
+
+<h2 id="コーダーの人は">コーダーの人は</h2>
+
+<ol>
+<li>自分の頭の中を口に出しながらコーディングする</li>
+<li>一人でもくもくと先に進まない</li>
+</ol>
+
+<p>これを意識してやります。せっかくペアプロしてても、しゃべらずに黙ってもくもくと先に進めるのはもったいないです。
+「どこどこをどういう風に実装していこうとしているのか」はコーダーの人が黙ってては、ナビゲータの人に全然伝わりません。
+ナビゲータの人もぼけーっと画面を見つめるだけになってしまって、本当のメリットが見いだせない。。。</p>
+
+<h2 id="ナビゲータの人は">ナビゲータの人は</h2>
+
+<ol>
+<li>恐れずにヤジをいれる</li>
+<li>たまにキーボード奪って「こうやった方がいいよ！」ってするｗ</li>
+</ol>
+
+<p>まぁ程度によりますが、ちゃんとツッコミいれましょう！見てるだけじゃ意味ないですもんね。</p>
+
+<h1 id="実際にペアプロをやってみて">実際にペアプロをやってみて</h1>
+
+<p>ペアプロをやってきて約2ヶ月程度たってますが、僕が感じたことは</p>
+
+<ul>
+<li>1人じゃない</li>
+<li>楽しい</li>
+<li>一人よがりなコードじゃなくなる</li>
+<li>なんか達成感</li>
+</ul>
+
+<p>まず1人じゃないというのはとても心強いですね。
+実装に迷って「ここはこうしたほうがいいかな、でもこっちの方がいいかも&hellip;」と、
+まぁそんな重要でもないところで結構時間が過ぎたりします。あと変数とか関数の名前とかでも。
+こういう時に、そばにナビゲータがいてくれて同意してくれたり、アドバイスをくれたりすることが、
+どんなに心の支えになるか(笑)</p>
+
+<p>全体的によく言われるペアプロの良い所を感じることができています。</p>
+
+<p>楽しいことは間違いないので、機会があれば一度やってみては！？</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2012/10/30/lets-pair-programing/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2012/10/30/lets-pair-programing/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2012/10/30/lets-pair-programing/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

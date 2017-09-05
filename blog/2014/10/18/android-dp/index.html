@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>謎の単位 &#34;dp&#34; (Density-independent Pixel) にせまる。あと drawable の話とか in Android &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-10-18</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/10/18/android-dp/">謎の単位 &#34;dp&#34; (Density-independent Pixel) にせまる。あと drawable の話とか in Android</a></h1>
+    </header>
+    <article>
+      
+
+<p>Android 端末のディスプレイってめちゃくちゃいろんなサイズがあって Android を始めたばかりの自分にはそれぞれに最適なレイアウトや画像をどうやって作ればいいのかって全然わかっていませんでした。それに Android ではサイズの単位に px (<strong>p</strong>i<strong>x</strong>el) じゃなくて dp (<strong>d</strong>ensity-independent <strong>p</strong>ixel) を使うらしいってことは聞いたことあるけど、そもそも dp ってなんなの？という感じだし。わからないまま放置しておくのも良くないので色々調べてみたらだんだんとわかってきたので、忘れない内にまとめておこうかと思う。既にネットにある記事の二番煎じになるかもしれないけど、インプットしたものを体系的にまとめて知識を自分のものにするためにも再まとめ的なものを書く。</p>
+
+<h1 id="用語定義">用語定義</h1>
+
+<p>自分がこの話題について調べ始めた時、自分の中で Android 用の各用語の定義がはっきりしておらず意味もあまりわかってなかったので、いろんなサイトを見ても全然理解が進みませんでした。この辺の用語の意味がわかってきてからなんとなく理解が進み始めたので、まずは各用語がどういう意味なのかをはっきりさせておきます。</p>
+
+<h2 id="解像度">解像度</h2>
+
+<p><img src="/assets/img/2014-10-18-android-dp/display_resolution.png" style="float:right;margin-left:20px;"/></p>
+
+<p>画面のピクセル数のことを表します。例えば 480 x 800 とか 720 x 1280 とかいうやつですね。解像度の単位は px (<strong>p</strong>i<strong>x</strong>el) です。いくつかの実際の機種の解像度をみてみると</p>
+
+<table>
+<thead>
+<tr>
+<th>デバイス名</th>
+<th>解像度</th>
+<th>備考</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>GALAXY S4 SC-04E</td>
+<td>1080px x 1920px</td>
+<td></td>
+</tr>
+
+<tr>
+<td>Xperia Tablet Z SO-03E</td>
+<td>1200px x 1920px</td>
+<td>タブレット</td>
+</tr>
+
+<tr>
+<td>GALAXY S2 SC-02C</td>
+<td>480px x 800px</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+<p>てな感じで、各機種毎に解像度は違います。ただ、解像度は実際の画面の大きさが何インチあるかとは無関係にディスプレイのピクセル数を表していますので、単純に解像度が大きければ画面サイズも大きくなるのかというと、そうではありません。スマホよりタブレットの方が物理的に大きいのは直感的にわかると思いますが、GALAXY S4 より Xperia Tablet Z の解像度の方が劇的に大きいかというとそうでもなく、横幅が少し広いくらいの解像度になっています。</p>
+
+<h2 id="画面サイズ">画面サイズ</h2>
+
+<p><img src="/assets/img/2014-10-18-android-dp/display_size.png" style="float:right;margin-left:20px;"/></p>
+
+<p>では、実際の画面の物理的なサイズはというと画面サイズで表されます。ディスプレイサイズとも言いますね。単位はインチ (inch) です。画面のサイズを表す時は画面の対角線上の長さを表記します。つまり画面サイズ 4 インチという表記の場合、縦や横の長さが 4 インチではなく、画面の左上から右下までの対角線の長さが 4 インチということです。ちなみに 1 インチは 2.54 cm。</p>
+
+<p>解像度と同じように各機種の画面サイズをみてみると</p>
+
+<table>
+<thead>
+<tr>
+<th>デバイス名</th>
+<th>解像度</th>
+<th>画面サイズ</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>GALAXY S4 SC-04E</td>
+<td>1080px x 1920px</td>
+<td>5.0インチ</td>
+</tr>
+
+<tr>
+<td>Xperia Tablet Z SO-03E</td>
+<td>1200px x 1920px</td>
+<td>10.1インチ</td>
+</tr>
+
+<tr>
+<td>GALAXY S2 SC-02C</td>
+<td>480px x 800px</td>
+<td>4.3 インチ</td>
+</tr>
+</tbody>
+</table>
+
+<p>タブレットはやっぱり大きいですね。GALAXY S4 と Xperia Tablet Z は解像度はほぼ同じなのですが画面サイズが 2 倍違いますし、GALAXY S4 と GALAXY S2 を見てみると画面サイズはあまり変わらないけど解像度は 2 倍近く違います。ここが次の画面密度の話につながっていきます。</p>
+
+<h2 id="ピクセル密度">ピクセル密度</h2>
+
+<p><img src="/assets/img/2014-10-18-android-dp/low_density.png" style="float:right;margin-left:10px;"/>
+<img src="/assets/img/2014-10-18-android-dp/high_density.png" style="float:right;margin-left:20px;"/></p>
+
+<p>さて、解像度と画面サイズが比例しないのは、このピクセル密度というものがあるからです。画面密度と言う場合もあるようです。</p>
+
+<p>ピクセル密度は 1 インチの中にいくつのピクセルが詰まっているかを表します。単位は dpi (<strong>d</strong>ot <strong>p</strong>er <strong>i</strong>nch) です。この値が大きければ大きいほど綺麗な画面になります。各端末のピクセル密度を見てみるとこのようになっています。</p>
+
+<table>
+<thead>
+<tr>
+<th>デバイス名</th>
+<th>解像度</th>
+<th>画面サイズ</th>
+<th>ピクセル密度</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>GALAXY S4 SC-04E</td>
+<td>1080px x 1920px</td>
+<td>5.0インチ</td>
+<td>約440dpi</td>
+</tr>
+
+<tr>
+<td>Xperia Tablet Z SO-03E</td>
+<td>1200px x 1920px</td>
+<td>10.1インチ</td>
+<td>約220dpi</td>
+</tr>
+
+<tr>
+<td>GALAXY S2 SC-02C</td>
+<td>480px x 800px</td>
+<td>4.3 インチ</td>
+<td>約210dpi</td>
+</tr>
+</tbody>
+</table>
+
+<p>要するに GALAXY S4 は 1 インチの中に約 440 個のピクセルが詰まってますよ、Xperia Tablet Z は約 220 個のピクセルが詰まってるし GALAXY S2 は約 210 個のピクセルが詰まってますよ、ということです。当然 1 インチの中にたくさんのピクセルが詰まってる方が、ピクセル 1 つ 1 つのサイズは小さくなって、その分たくさんの表現が可能になって画面が綺麗になるということです。</p>
+
+<p>GALAXY S4 と Xperia Tablet Z のピクセル密度を比べると 2 倍違います。また GALAXY S4 と GALAXY S2 を比べてみても約 2 倍違います。これは各端末の解像度と画面サイズの大きさを比べて少し考えてみれば、中に詰まってるピクセル数も変わってくるのは自明なことではないでしょうか。ちなみに勘の良い人はわかるかもしれませんが、解像度と画面サイズがわかってればそこからピクセル密度を計算できます。</p>
+
+<h2 id="ピクセル密度グループ">ピクセル密度グループ</h2>
+
+<p>ピクセル密度グループという名前か正しいかどうかはわかりませんが、ピクセル密度はその数値によってグループ分けされています。具体的には</p>
+
+<table>
+<thead>
+<tr>
+<th>グループ名称</th>
+<th>ピクセル密度の範囲</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ldpi (low)</td>
+<td>~ 120dpi</td>
+</tr>
+
+<tr>
+<td>mdpi (medium)</td>
+<td>~ 160dpi</td>
+</tr>
+
+<tr>
+<td>hdpi (high)</td>
+<td>~ 240dpi</td>
+</tr>
+
+<tr>
+<td>xhdpi (extra-high)</td>
+<td>~ 320dpi</td>
+</tr>
+
+<tr>
+<td>xxhdpi (extra-extra-high)</td>
+<td>~ 480dpi</td>
+</tr>
+
+<tr>
+<td>xxxhdpi (extra-extra-extra-high)</td>
+<td>~ 640dpi</td>
+</tr>
+</tbody>
+</table>
+
+<p>このようにピクセル密度によって名前がついています。この名前、Android 開発の際にもちらっと出てくるので覚えておくと吉です。各端末がどのグループに属するのかを照らしあわせてみると</p>
+
+<table>
+<thead>
+<tr>
+<th>デバイス名</th>
+<th>解像度</th>
+<th>画面サイズ</th>
+<th>ピクセル密度</th>
+<th>ピクセル密度グループ</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>GALAXY S4 SC-04E</td>
+<td>1080px x 1920px</td>
+<td>5.0インチ</td>
+<td>約440dpi</td>
+<td>xxhdpi</td>
+</tr>
+
+<tr>
+<td>Xperia Tablet Z SO-03E</td>
+<td>1200px x 1920px</td>
+<td>10.1インチ</td>
+<td>約220dpi</td>
+<td>hdpi</td>
+</tr>
+
+<tr>
+<td>GALAXY S2 SC-02C</td>
+<td>480px x 800px</td>
+<td>4.3 インチ</td>
+<td>約210dpi</td>
+<td>hdpi</td>
+</tr>
+</tbody>
+</table>
+
+<p>こんな感じですね。</p>
+
+<h1 id="密度非依存ピクセル">密度非依存ピクセル</h1>
+
+<p>やっとここから dp の話です。</p>
+
+<p>dp は冒頭にもあるように Density-independent Pixel の略で、日本語だと密度非依存ピクセル。これまで説明してきたように Android にはいろんなピクセル密度を持つ数多くの端末があります。これはつまり各端末によって 1 ピクセルの大きさが違うということです。どういうことかイメージするために画像をまじえて説明してみます。</p>
+
+<h2 id="ピクセル指定">ピクセル指定</h2>
+
+<p>まず最初に px で指定した場合のことを考えてみます。</p>
+
+<p><img src="/assets/img/2014-10-18-android-dp/high_density.png" style="float:left;margin-left:10px;"/>
+<img src="/assets/img/2014-10-18-android-dp/low_density.png" style="float:left;margin-left:10px;"/>
+<div style="clear:both;"></div></p>
+
+<p>この画像の格子 1 つ 1 つをピクセルと考えます。左側がより高密度、右側がより低密度なディスプレイです。このそれぞれのディスプレイの真ん中辺りに 1 ピクセルの赤い点を描画するとします。するとそれぞれ以下のようになるのはすぐに想像できるでしょう。</p>
+
+<p><img src="/assets/img/2014-10-18-android-dp/high_density_dot.png" style="float:left;margin-left:10px;"/>
+<img src="/assets/img/2014-10-18-android-dp/low_density_dot.png" style="float:left;margin-left:10px;"/>
+<div style="clear:both;"></div></p>
+
+<p>密度によって 1 ピクセルの大きさが違うので、高密度なディスプレイの方が低密度なディスプレイより小さくなってます。つまり同じ 1 ピクセルでも、ディスプレイによっては表示される時の大きさが違います。通常、単位をピクセルで指定すると先に見たとおり、ディスプレイによって(つまり端末によって)表示される大きさが異なります。Android 開発者達はそれでは困るため、密度に依存しない単位が必要になります。これが密度非依存ピクセルです。</p>
+
+<h2 id="密度非依存ピクセル指定">密度非依存ピクセル指定</h2>
+
+<p>では dp で指定するとどうなるのでしょうか。dp は mdpi を 1px (ベースライン) として、それぞれのピクセル密度グループで拡大・縮小を行います。表を見たほうがわかりやすいと思います。</p>
+
+<table>
+<thead>
+<tr>
+<th>ldpi</th>
+<th>mdpi</th>
+<th>hdpi</th>
+<th>xhdpi</th>
+<th>xxhdpi</th>
+<th>xxxhdpi</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>0.75倍</td>
+<td><strong>1(基準)</strong></td>
+<td>1.5倍</td>
+<td>2倍</td>
+<td>3倍</td>
+<td>4倍</td>
+</tr>
+</tbody>
+</table>
+
+<p>たとえば 100dp を指定した場合</p>
+
+<table>
+<thead>
+<tr>
+<th>ldpi</th>
+<th>mdpi</th>
+<th>hdpi</th>
+<th>xhdpi</th>
+<th>xxhdpi</th>
+<th>xxxhdpi</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>75px</td>
+<td><strong>100px(基準)</strong></td>
+<td>150px</td>
+<td>200px</td>
+<td>300px</td>
+<td>400px</td>
+</tr>
+</tbody>
+</table>
+
+<p>という風に、端末の属するピクセル密度グループによって拡大・縮小をしたピクセルで表示してくれます。dp を指定することで各端末間でのピクセルの大きさの違いを吸収して、同じような大きさで表示することができるようになります。先ほどの真ん中に 1 ピクセルの赤い点を描画する例で dp を使った場合を例えるとこんな感じになります。</p>
+
+<p><img src="/assets/img/2014-10-18-android-dp/high_density_dp.png" style="float:left;margin-left:10px;"/>
+<img src="/assets/img/2014-10-18-android-dp/low_density_dot.png" style="float:left;margin-left:10px;"/>
+<div style="clear:both;"></div></p>
+
+<h1 id="drawableリソース">drawableリソース</h1>
+
+<p>Android には画像ファイルをおける <code>res/drawable</code> ディレクトリがあります。この中の画像達もピクセル密度グループによって自動的に拡大・縮小されることになります。ただし drawable ディレクトリの名前を適切につけることでピクセル密度グループ毎に画像を準備して読み込ませることができます。</p>
+
+<table>
+<thead>
+<tr>
+<th>画像を表示する端末の密度グループ</th>
+<th>ディレクトリ名</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ldpi</td>
+<td>drawable-ldpi</td>
+</tr>
+
+<tr>
+<td>mdpi</td>
+<td>drawable-mdpi</td>
+</tr>
+
+<tr>
+<td>hdpi</td>
+<td>drawable-hdpi</td>
+</tr>
+
+<tr>
+<td>xhdpi</td>
+<td>drawable-xhdpi</td>
+</tr>
+
+<tr>
+<td>xxhdpi</td>
+<td>drawable-xxhdpi</td>
+</tr>
+
+<tr>
+<td>xxxhdpi</td>
+<td>drawable-xxxhdpi</td>
+</tr>
+</tbody>
+</table>
+
+<p><code>drawable</code> の後ろにハイフンつきでピクセル密度グループの名前がついただけです。各ディレクトリにピクセル密度グループ毎のサイズの画像を用意しておけば、自動的に自分のピクセル密度に適した画像ファイルを読み込んでくれます。ただし、全てのピクセル密度グループ用に画像を用意しなければならないかというとそうではなく、端末が属するピクセル密度グループのディレクトリ内に画像ファイルがなければ自動的に他のディレクトリから画像を読み込んで、拡大・縮小をして表示されることになります。拡大・縮小の倍率は dp で説明した時の表と同じ比率になります。</p>
+
+<h2 id="具体例を考えてみる">具体例を考えてみる</h2>
+
+<p>とはいえよくわからないとは思うので具体例として 100px x 100px の画像を画面に表示することを考えてみます。</p>
+
+<h3 id="drawable-ディレクトリに画像を用意した場合">drawable ディレクトリに画像を用意した場合</h3>
+
+<p><code>res/drawable</code> ディレクトリに画像を用意すると <code>res/drawable-mdpi</code> に画像を用意したのと同じことになります。要するに mdpi が基準になるので</p>
+
+<table>
+<thead>
+<tr>
+<th>画像を表示する端末の密度グループ</th>
+<th>実際に表示される画像のサイズ</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ldpi</td>
+<td>75px x 75px</td>
+</tr>
+
+<tr>
+<td>mdpi</td>
+<td><strong>100px x 100px (基準)</strong></td>
+</tr>
+
+<tr>
+<td>hdpi</td>
+<td>150px x 150px</td>
+</tr>
+
+<tr>
+<td>xhdpi</td>
+<td>200px x 200px</td>
+</tr>
+
+<tr>
+<td>xxhdpi</td>
+<td>300px x 300px</td>
+</tr>
+
+<tr>
+<td>xxxhdpi</td>
+<td>400px x 400px</td>
+</tr>
+</tbody>
+</table>
+
+<p>という風に各ピクセル密度グループ毎に拡大・縮小されます。</p>
+
+<h3 id="drawable-xhdpi-ディレクトリに画像を用意した場合">drawable-xhdpi ディレクトリに画像を用意した場合</h3>
+
+<p>この場合は xhdpi が基準になるので</p>
+
+<table>
+<thead>
+<tr>
+<th>画像を表示する端末の密度グループ</th>
+<th>実際に表示される画像のサイズ</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ldpi</td>
+<td>37.5px x 37.5px</td>
+</tr>
+
+<tr>
+<td>mdpi</td>
+<td>50px x 50px</td>
+</tr>
+
+<tr>
+<td>hdpi</td>
+<td>75px x 75px</td>
+</tr>
+
+<tr>
+<td>xhdpi</td>
+<td><strong>100px x 100px (基準)</strong></td>
+</tr>
+
+<tr>
+<td>xxhdpi</td>
+<td>150px x 150px</td>
+</tr>
+
+<tr>
+<td>xxxhdpi</td>
+<td>200px x 200px</td>
+</tr>
+</tbody>
+</table>
+
+<p>という風に各ピクセル密度グループ毎に拡大・縮小されます。ldpi で端数が出ています。たぶんこの場合はぼやけたりするんじゃないでしょうか。</p>
+
+<h1 id="実験">実験</h1>
+
+<p>論より証拠。ということで、こんなアプリケーションを作ってエミュレーターで実行してみました。</p>
+
+<h2 id="ボタン">ボタン</h2>
+
+<p>まずはボタンのサイズを px と dp で指定して比べてみます。</p>
+
+<h4 id="mainactivity-java">MainActivity.java</h4>
+
+<pre><code class="language-java">public class MainActivity extends Activity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        setContentView(R.layout.activity_main);
+    }
+}
+</code></pre>
+
+<h4 id="activity-main-xml">activity_main.xml</h4>
+
+<pre><code class="language-xml">&lt;LinearLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:orientation=&quot;vertical&quot;
+    android:layout_width=&quot;match_parent&quot;
+    android:layout_height=&quot;match_parent&quot; &gt;
+
+    &lt;Button
+        android:text=&quot;Hello World&quot;
+        android:width=&quot;100dp&quot;
+        android:height=&quot;100dp&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot; /&gt;
+
+    &lt;Button
+        android:text=&quot;Hello World&quot;
+        android:width=&quot;100px&quot;
+        android:height=&quot;100px&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot; /&gt;
+
+&lt;/LinearLayout&gt;
+</code></pre>
+
+<h2 id="結果">結果</h2>
+
+<p><img src="/assets/img/2014-10-18-android-dp/galaxy_s4.png" style="float:left;margin-left:10px;"/>
+<img src="/assets/img/2014-10-18-android-dp/xperia_tablet_z.png" style="float:left;margin-left:10px;"/>
+<img src="/assets/img/2014-10-18-android-dp/galaxy_s2.png" style="float:left;margin-left:10px;"/>
+<div style="clear:both;"></div></p>
+
+<p>左から</p>
+
+<ul>
+<li>GALAXY S4</li>
+<li>Xperia Tablet Z</li>
+<li>GALAXY S2</li>
+</ul>
+
+<p>です。GALAXY S4 だけ画像が大きいのはピクセル密度が高いからです。</p>
+
+<h2 id="画像">画像</h2>
+
+<p>Android Studio で新しくプロジェクトを作ると最初から drawable ディレクトリに用意されているあの ic_launcher.png の 144px の画像を使って実験してみます。</p>
+
+<p>画像ファイルを以下のように配置してみます。</p>
+
+<ul>
+<li><code>drawable-xxhdpi/a144_in_xxhdpi.png</code> 中身は 144px の ic_launcher.png です</li>
+<li><code>drawable-mdpi/a144_in_xxhdpi.png</code> 中身は上と同じ 144px の ic_launcher.png です</li>
+</ul>
+
+<p>どちらとも同じ画像ですが配置しているディレクトリが違います。これをそれぞれ ImageView を使って読み込んでみます。</p>
+
+<h4 id="mainactivity-java-1">MainActivity.java</h4>
+
+<p>ボタンの時と同じ</p>
+
+<h4 id="activity-main-xml-1">activity_main.xml</h4>
+
+<pre><code class="language-xml">&lt;LinearLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:orientation=&quot;vertical&quot;
+    android:layout_width=&quot;match_parent&quot;
+    android:layout_height=&quot;match_parent&quot; &gt;
+
+    &lt;ImageView
+        android:contentDescription=&quot;@string/hello_world&quot;
+        android:src=&quot;@drawable/a144_in_xxhdpi&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot; /&gt;
+
+    &lt;ImageView
+        android:contentDescription=&quot;@string/hello_world&quot;
+        android:src=&quot;@drawable/a144_in_mdpi&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot; /&gt;
+
+&lt;/LinearLayout&gt;
+</code></pre>
+
+<h2 id="結果-1">結果</h2>
+
+<p><img src="/assets/img/2014-10-18-android-dp/image_view.png" alt="" /></p>
+
+<p>GALAXY S4 (xxhdpi) で表示しています。</p>
+
+<p>上の方に表示されている画像は <code>drawable-xxhdpi</code> に入っているのでそのまま 144px で表示されていますが、下の方に表示されている画像は <code>drawable-mdpi</code> に入ってるので mdpi を基準として xxhdpi で表示されており、大きさが 3 倍になっています。</p>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>まあまあ長文になってしまいました。Android 界隈に飛び込んで間もないので、もし何か間違っていたら指摘ください！</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/android">Android</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/10/18/android-dp/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/10/18/android-dp/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/10/18/android-dp/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

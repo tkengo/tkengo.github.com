@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Php on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/php/</link>
+    <description>Recent content in Php on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Tue, 28 Jan 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/php/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>レガシープロジェクトで ruby の capybara を使って仕様化テストをやってみる</title>
+      <link>http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/</link>
+      <pubDate>Tue, 28 Jan 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/</guid>
+      <description>レガシーでテストのないプロジェクトのメンテナンスはつらいものです。テストを書こうにもそもそもテストできるような設計になっておらず、ビューとロジックが分離されていない古い PHP なんかは、なかなかテストを書き始め辛いところもあります。そこで実際にブラウザを起動して自動テストを進めることが出来る capybara を使って仕様化テストをやってみようという試みです。実際に会社では PHP で出来たレガシーなシステムに対して capybara でテストを作ってまわしています。
+capybara というと ruby で開発されている有名なウェブアプリケーションテストフレームワークですが ruby でできているからといって ruby のプロジェクトにしか使えないわけではありません。capybara にはテストを実行する際に利用するドライバを指定できて、それには selenium や poltergeist も対応しています。これらのドライバを使ってブラウザを起動して (polgergeist の場合はヘッドレスなので実際にブラウザは起動せずにオンメモリで) 本当にウェブアプリケーションにアクセスしてテストを実行することができます。
+この記事では Rails 以外のたとえば PHP や JSP などで出来てるウェブアプリケーションに対して selenium ドライバを使って capybara をやってみたいと思います。
+※仕様化テストとは 現在の仕様を元にテストが通るようにテストを書いていきます。これを書いておくことによって、ある箇所のソースコードの変更によって全然別の箇所で影響があって意図しない動作をして不具合になってしまった、なんてことを未然に防ぐことができます。レガシーなプロジェクトのメンテナンスでも心に余裕がもてます。
+ruby をインストールする 普段から ruby を使ってる人は既に ruby はインストールされていると思うので、その場合はこのステップは飛ばしましょう。
+ruby 以外のプロジェクトで使うにしても capybara 自身が ruby がないと動かないので何はともあれ ruby のインストールから始めます。ruby のインストールは rbenv を使うと楽でね。元々 ruby のバージョン切り替えのためのツールなのですが、別に ruby を複数バージョンいれないとしてもこのツール自体シンプルで使いやすいし、今後 ruby のバージョンが上がってもバージョンアップが簡単なのでとりあえず入れておくといいと思います。
+この辺を見れば簡単に ruby のインストールまでできます。
+ rbenvリポジトリのREADME(英語) rbenvを使って3分でRubyをインストールする方法まとめ  ruby がインストールできたら、あとで使うので bundler という gem をインストールしておきます。</description>
+    </item>
+    
+    <item>
+      <title>ZendFramework で HTTP 通信部分をスタブ化してテストする</title>
+      <link>http://tkengo.github.io/blog/2013/06/02/zend-framework-http-stub/</link>
+      <pubDate>Sun, 02 Jun 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/06/02/zend-framework-http-stub/</guid>
+      <description>テストしてますか？
+こないだ業務で ZendFramework を使ったアプリケーションで HTTP 通信の部分をスタブアウトしてテストしたかったので、実際にやってみました。そんなに難しくなかったので、是非やってみると幸せになれるかも！
+前提  ZendFramework バージョン1系 Zend_Http_Client を使って HTTP 通信をしている  ZendFramework のバージョン2がリリースされてからもうしばらく経ちますが、業務ではバージョン1を使ってる所は結構あるんじゃないでしょうか。
+それから ZendFramework を使って HTTP 通信をしようとする場合 Zend_Http_Client というクラスがあります。名前からもわかりますが HTTP 通信のためのクライアントで、通信部分の面倒を見てくれるクラスです。今回のアプリケーションは HTTP 通信部分に Zend_Http_Client を使っていたので、それ前提で話を進めます。
+目標 最初にスタブアウトとか言いましたが、テストの世界ではスタブとかモックとかいった単語が良く出てきますよね。今回はスタブなのですが、言葉の定義や、それがどういうものなのかは、詳しいサイトがいっぱいあると思うのでそっちに任せるとして、今回やりたかったことは
+ 外部サービスのAPIと通信するクラスがある そのクラスのテストを書く ただしネットワークに繋がっていなかったり、外部サービスが落ちてる時もテストが成功するようにしたい  ということです。HTTP 通信の部分をスタブにして実際の通信を走らせないようにします。
+外部サービスAPIクラス たとえば Zend_Http_Client を使って HTTP 通信をする以下の様なコードがあったとします。
+&amp;lt;?php class ServiceApiClient { public function methodA() { ... $response = $this-&amp;gt;request($paramsA); return $response[&#39;result&#39;] == &#39;OK&#39;; } public function methodB() { ... $response = $this-&amp;gt;request($paramsB); if (isset($response[&#39;id&#39;])) { return $response[&#39;id&#39;]; } else { return 0; } } public function request($params) { $client = new Zend_Http_Client(&#39;http://.</description>
+    </item>
+    
+    <item>
+      <title>webistranoを使ってたとえばZendFrameworkをデプロイしてみる</title>
+      <link>http://tkengo.github.io/blog/2012/11/30/cap-and-webi/</link>
+      <pubDate>Fri, 30 Nov 2012 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2012/11/30/cap-and-webi/</guid>
+      <description>Ruby on Rails のデプロイ自動化でよく使われる capistrano と、そのGUI環境の webistrano ですが、もちろん Ruby on Rails 以外にも使うことができます。 今回は ZendFramework のデプロイをしてみようと思います。
+ゴール ここでは、以下のような状況のもと本番環境にデプロイする準備をします。
+ github 上の master ブランチにあるソースコードをデプロイする。 リポジトリでは ZendFramework 本体やログディレクトリなどは管理していない。  インストール capistrano は ruby 製です。まずは ruby がないと始まらないので最初に ruby をインストールします。1.8.6 以上が必要です。それから webistrano は DB として mysql を利用しますので、こちらもインストールしておきます。ruby と mysql のインストールは他に詳しい記事がいっぱいあるので割愛。
+ruby と mysql が準備できたら capistrano と webistrano をインストールします。といっても webistrano をインストールするときに一緒に capistrano も入るので webistrano をインストールするだけです。
+$ cd path/to/webistrano // git から clone $ git clone git@github.</description>
+    </item>
+    
+    <item>
+      <title>PHP Matsuriの本番は夜遅くから</title>
+      <link>http://tkengo.github.io/blog/2012/11/11/php_matsuri/</link>
+      <pubDate>Sun, 11 Nov 2012 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2012/11/11/php_matsuri/</guid>
+      <description>11月の3日、4日に福岡の福岡Ruby・コンテンツ産業振興センターで PHP Matsuri 2012が開催されました。
+初参加のPHP Matsuri 今回は僕もこれに参加してきました。初参加です。
+ただし、一般参加者枠ではなくて、スポンサー枠でしかもスピーカーとして！
+もともとPHP Matsuriは初回から参加したいな〜とは思っていたけど、開催地が東京や大阪でとても行ける場所じゃ なかったので参加したことがありませんでした。今回は開催地が 福岡 だったので、これはもう参加するしかない！ と思ってたところ、ペパボがスポンサーになってスポンサー枠で参加することになりました。
+スポンサーには発表枠がついてて、もちろん僕がそこで発表することに。 ペパボの福岡支社ではちょうど環境改善の取り組みをやっていたので、迷いなくそれについて紹介することにしました。
+PHP Matsuriの本番は夜遅くから ところでPHP Matsuri 2012のタイムテーブル を見てみると23時頃が 闇？？ となっています。
+これはなんだろう？？と思っていましたが、、、アン・リーダブルコード選手権というイベントでした。 俺の知ってるこのクソコードこそ、一番読みにくいんだ！ というクソコードを紹介して 一番のクソコードを紹介した人には景品が当たるという。
+ゲストセッションやスポンサーセッションも終わり、夜も更けてきた23時頃に謎の盛り上がりと共に始まりました。 これまでで一番もりあがっとるｗｗ
+缶ビールとかで乾杯をするの図 なんかもうこの闇PHP Matsuriがメインで今までのは全部前置きみたいな感じがしてきた。 とても楽しいイベントでした。
+ペパボのスポンサーセッション 僕はスポンサー枠で参加して、当日は恐れ多くも発表者としてペパボ内でやってる環境改善の取り組みについて お話をさせてもらいました。環境改善の取り組みはまだまだやることはいっぱいなのですが、 以前に比べると比べ物にならないほどよくなってきています。PHP Matsuriでも紹介しましたが、 当日しゃべり切れなかった部分や、復習もかねてここでもう一度紹介したいと思います。
+発表に使った資料はここにあります。
+開発環境の改善 福岡支社ではロリポップ！やムームードメインの開発・運用を行なっています。 これらの開発サーバーはもともと1台でした。この共用サーバーにApacheやPHPなど必要なものをインストールし、 そしてSambaを入れて 共通のディレクトリに開発者全員が接続してファイルを編集 していました。これだと
+ 他の開発者と同じファイルを編集しようとしたらファイルがロックされてる 自分の開発してる部分とは全然関係ないところでバグっている 気軽にvar_dumpでデバッグできない  という問題がありました。
+現在はmondrescueというツールを使って本番環境をVMイメージ化して、 それを各個人がクローンしてそこで開発をするように移行を進めています。 これで上記の問題はすっぱりすべて解決してくれます。
+VMのクローンにはMaglicaというオープンソースを社内で使っています(ペパボのmizzyさん作)。
+バージョン管理ツールの乗り換え ロリポップ！とムームードメインはバージョン管理をsvnからgitへ移行しました。 そして中央リポジトリとしてgithubを使っています。 今ではペパボのほぼ全サービスがgithubへの移行が完了しており、誰でもどのサービスのコードでも見ることができます。
+githubには pull-request という機能があり、これのお陰でとてもコードレビューがしやすくなりました。
+それにペパボは福岡と東京にオフィスをかまえているのですが、福岡東京間のエンジニアの交流も githubのおかげでできています。東京のエンジニアが福岡で開発しているムームードメインの ソースコードにツッコミをいれる、なんて光景もよく見られます。
+ちょっと苦労した話 ムームードメインではgithubへの移行にあたってソースコード中のパスワードを外部ファイルへ分離し、 その外部ファイルを .</description>
+    </item>
+    
+    <item>
+      <title>日本人ならではのCakePHPへの貢献(CakePHP Advent Calendar 2011)</title>
+      <link>http://tkengo.github.io/blog/2011/12/12/cakephp-advent-calender/</link>
+      <pubDate>Mon, 12 Dec 2011 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2011/12/12/cakephp-advent-calender/</guid>
+      <description>この記事はCakePHP Advent Calendar 2011に参加しています。13日目です。
+前日は@slumbers99さんのPrefixルーティングとthemeのススメでした。 3キャリア対応サイトをCakePHPで作った時に利用されたというPrefixルーティングとテーマのお話ですね。 テーマは僕も使ったことがありますが、とても便利な機能だと思います！便利なものはどんどん使って楽していきたいですね。
+まえおき みなさん素晴らしい記事を次々と公開されていく中、なにを書こうかとずっと迷っていましたが、 今回はタイトルの通りCakePHPへの貢献について少し書きたいと思います。自分自身の経験によるものです。
+CakePHPへの貢献しているでしょうか？僕は全然やってません。 やってませんが、CakePHPが1.1の頃からずっと使っていて、なにかしら役に立ちたいなぁと思って今まで過ごしてきました。 でも、ド田舎に住む1利用者に過ぎない僕みたいな技術者が、何が出来るだろうとも感じていました。 そういう人って実際に多いんじゃないかな。 CakePHP利用者で僕が昔から知ってる人達の日記を読みながら「勉強会とか楽しそうだな」と羨ましく思ったものです。
+でも、最近ちょっと考えが変わってきました。 自分が出来ること をすればいいんです。 コアデベロッパでもないのに開発に携わろうとしたり、無理に遠くでやってるイベントに参加しようとしたり、そういうことがダメでした。 大事なので2回言いますが、 自分が出来ること をすればいいんです。僕の場合は2つありました。
+ ブログでアウトプットする CakePHPのドキュメントの翻訳  です。ブログでのアウトプットの重要性は、もう既に多くの人が声高に叫んでいます。 アウトプットを頑張るようにしました。
+それから、僕は英語が好きです。英語力はある方とはいえないけど、読み書きはある程度できます。 なので、それをCakePHPと結びつけて役立てるにはどうしたらいいのか、っていうことを考えた時にドキュメントの翻訳にたどり着きました。
+さて今回はこのドキュメントの翻訳について少し書いていきたいと思います。
+最初にやること これがCakePHP2.0のドキュメントです。Cookbook。 既にいくらか日本語化されている部分もあります。 翻訳に参加したければまずはCakePHPドキュメントチームに挨拶ぐらいしておきましょう （しなくてもいいかもしれませんが、僕はメールを送りました）。 一応ここにも「翻訳に参加する場合はメールください」とありますし。 簡単な自己紹介と翻訳に参加したい旨のメールです。こんな感じ
+Dear CakePHP docs team. My name is Kengo Tateishi. I&#39;m a programmer in Japan. I have developed a web application with CakePHP since its version was 1.1.x. I love CakePHP. I would like to participate in translating the CakePHP 2.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>OpenGL が世界を描画する仕組み &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-12-27</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/12/27/opengl-es-2-2d-knowledge-1/">OpenGL が世界を描画する仕組み</a></h1>
+    </header>
+    <article>
+      
+
+<p><a href="/blog/2014/12/20/opengl-es-2-2d-knowledge-0">OpenGL 基礎シリーズ</a>の第 1 回です。</p>
+
+<h1 id="ビューイングパイプライン">ビューイングパイプライン</h1>
+
+<p>OpenGL が世界を描画するっていうタイトルだけでワクワクするなら、あなたはもう OpenGL の、いや、このブログの虜です。というのはおいといて、OpenGL で描画すると一言で言ってもその描画フローの中には大量の計算処理が含まれおり、そのフローをひと通り全て通り超えてこそ初めて画面に何か描画される。いわゆるパイプラインと呼ばれる処理の流れがあり、それはおおまかには以下のようになっている。細かくは他にもやってることはあるし厳密には実際と異なる部分もあるけど、これくらい抑えておけば基本はわかると思う。</p>
+
+<p>ちなみに赤い部分は自分でプログラミングする必要がある。青い部分は設定値さえこちらから与えてやれば後は OpenGL が内部でよろしくやってくれる。</p>
+
+<div id="viewing-pipeline"></div>
+
+<p><img src="/assets/img/2014-12-27-opengl-es-2-2d-knowledge-1/viewing-pipeline.png" alt="ビューイングパイプライン" /></p>
+
+<p>ふー、ただ単に 1 枚の画像を描画するだけでもこれだけのフローがあって、そして突然わけもわからない単語が大量に出てくるもんだからブラウザを「そっと閉じる」人がいるかもしれないけど、まあ正しい反応かもしれない。そういう人達は素直に Cocos2d-x とか Unity とかでゲームを作るほうが幸せを感じられると思う。Cocos2d-x や Unity などの便利ツールは実は中でこんなことをやってるのだ。恩恵は計り知れない。ありがとう Cocos2d-x！ありがとう Unity！</p>
+
+<p>さて、フローの各部分の詳細は別途記事にするとして大事な部分だけの簡単な概要だけをまずはどうぞ。</p>
+
+<h1 id="アプリ側でデータの準備">アプリ側でデータの準備</h1>
+
+<p>OpenGL では、どこに何を描画するかは頂点座標によって決まるので、頂点座標は必須で準備する必要がある。そして、描画する物体に対して移動・回転・拡大・縮小などの操作を加える場合には変換行列も必要になる。さらに、画像を表示したい場合はテクスチャの ID と UV 座標も必要になる。私達開発者は、こういった各種データをアプリケーション側で準備して、OpenGL が提供している API を介してデータを GPU に転送する。</p>
+
+<p>いやしかし、頂点座標とか変換行列とか UV 座標とかわけのわからない単語がまた出てきて、突然のウルトラヴァイオレット！イミフ！！！ですが、でも大丈夫！ちゃんと別の記事で詳しく触れていくので。ちなみに UV はウルトラヴァイオレットじゃないよ。</p>
+
+<h1 id="シェーダ">シェーダ</h1>
+
+<p>そしてまたすぐにわけのわからないシェーダとかいう単語が出てくる。シェーダって何だろう？Wikipedia によると</p>
+
+<p style="border:solid;border-width:1px;border-color:#ccc;color:#888;padding:3px 10px;margin-top:8px;">
+シェーダ（英: shader）とは、3次元コンピュータグラフィックスにおいて、シェーディング（陰影処理）を行うコンピュータプログラムのこと。「shade」とは「次第に変化させる」「陰影・グラデーションを付ける」という意味で、「shader」は頂点色やピクセル色などを次々に変化させるもの（より具体的に、狭義の意味で言えば関数）を意味する。
+</p>
+
+<p>「はいはい、イミフイミフ」</p>
+
+<p>いつも思うけど Wikipedia ってわざと難しく書いてない？さて、まず 2D だったら x 座標と y 座標を指定して描画するメソッドを呼び出せば簡単に画像でも線でも表示できた。できたんだけど、じゃぁ 3D はどうかっていうとそう簡単にはいかなくって、別途 3D 空間を描画するためのプログラムが必要になってくる。その描画するプログラムのことをシェーダと言って、シェーダにはいくつか種類があるんだけどとにかく OpenGL の場合、このシェーダプログラムがないといくら描画メソッドを呼び出しても画面には何も表示されない。</p>
+
+<p>さて、そしてここから重要。OpenGL ES 1.x の頃は OpenGL に組み込みのシェーダが存在しており固定機能パイプラインとかって呼ばれてたけど、それに対して OpenGL ES 2.0 以降では組み込みのシェーダがなくなってしまった。つまり <strong><span style="color:red;">自分でシェーダを作らないといけなくなった</span></strong>。聞いたことあるかもしれないけど、こういう自分で作るシェーダのことを <strong>プログラマブル(プログラム可能な)シェーダ</strong> と呼ぶ。ちなみに OpenGL のシェーダプログラムは GLSL (OpenGL Shading Language) という言語を使って開発する。</p>
+
+<p><a href="https://www.opengl.org/documentation/glsl/">OpenGL Shading Language</a></p>
+
+<p>新しい言語まで勉強しないといけないの！もうダメだ、私のライフはゼロよ！</p>
+
+<p>いえ、(この記事では) そんなことはありません。ここでは最低限 2D 描画の解説が目標なので 2D 描画に必要最低限のコード程度しか取り扱わない。むしろ GLSL という言語自体よりも、シェーダが何をするのか、どういう仕組みなのか、を主とするので GLSL をバリバリ使って 3D を華麗に扱う技術の紹介は他サイトに譲る。</p>
+
+<p>では OpenGL で扱うことのできるシェーダとはどんなものだろうか？バーテックスシェーダとフラグメントシェーダの概要をみてみよう。</p>
+
+<h2 id="バーテックスシェーダ">バーテックスシェーダ</h2>
+
+<p>最初に書いた通り OpenGL では 3D 空間の頂点情報 <code>(x, y, z)</code> を GPU に渡して処理をするけれど、実際に描画するディスプレイは 2D なので、渡した頂点情報が最終的にディスプレイのどこに位置することになるのかを計算してあげる必要がある。その計算をしてくれるのがバーテックスシェーダで、GPU に渡した頂点の数だけバーテックスシェーダが実行されることになる。</p>
+
+<p>それぞれの座標変換の過程は別の記事で詳しく触れていくので、心配せずに。</p>
+
+<p><img src="/assets/img/2014-12-27-opengl-es-2-2d-knowledge-1/vertex-shader.png" alt="バーテックスシェーダの座標変換" /></p>
+
+<h2 id="フラグメントシェーダ">フラグメントシェーダ</h2>
+
+<p>バーテックスシェーダは頂点情報の計算だったけど、フラグメントシェーダは色情報の計算をする。フラグメントシェーダは、バーテックスシェーダによって計算された最終的な頂点座標で構成される図形のピクセル数だけ実行され、各ピクセルにどういう色を付けるのかを求める。各ピクセル毎ということでお分かりのように毎フレーム大量に実行される。</p>
+
+<p>たとえば画像を表示する場合、画像のディスプレイ上での表示位置はバーテックスシェーダが決めることになるけど、画像の色情報を元にディスプレイのどのピクセルにどの色を描画したらいいのかをフラグメントシェーダが計算して、そのピクセル位置のデプス値やアルファ値を元に最終的に出力される色が決定する。</p>
+
+<p><img src="/assets/img/2014-12-27-opengl-es-2-2d-knowledge-1/fragment-shader.png" alt="フラグメントシェーダでの色の計算" /></p>
+
+<h1 id="ラスタライズ">ラスタライズ</h1>
+
+<p>先にシェーダをまとめて説明してしまった都合で順番が逆になってしまったけど、頂点情報がバーテックスシェーダによって変換された後 (正確にはその後にビューポート変換という処理がはさまる)、次にラスタライザというプログラムに処理が渡ってくる。ラスタライザは渡された頂点情報を元に、ディスプレイ上のどのピクセルに描画すればよいのかを計算して画素を生成する。この処理のことをラスタライズと言って、ラスタライズによって生成された画素のことをフラグメントと言う。フラグメントシェーダはラスタライズによって生成されたフラグメントの情報を入力として、各フラグメントの色の出力を決定していく。(図はわかりやすいように画素のサイズを目に見える大きさにしてるけど、実際のディスプレイの 1 画素はもっと細かいのでこんなギザギザにはならずもっと綺麗になる)</p>
+
+<p>ラスタライズ処理についても別の記事で詳しく触れていく。</p>
+
+<p><img src="/assets/img/2014-12-27-opengl-es-2-2d-knowledge-1/rasterization.png" alt="ラスタライズの概要" /></p>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>OpenGL の描画までのフローをおおまかに見てみた。各セクションの詳しい話はこの後の記事で 1 ずつ触れていく。</p>
+
+<p>次回 <a href="/blog/2015/01/03/opengl-es-2-2d-knowledge-2">頂点情報とプリミティブ</a> に続く。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/opengl">OpenGL</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/12/27/opengl-es-2-2d-knowledge-1/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/12/27/opengl-es-2-2d-knowledge-1/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/12/27/opengl-es-2-2d-knowledge-1/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>やる夫で学ぶ機械学習 - ロジスティック回帰 - &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2016-06-04</p>
+      <h1><a href="http://tkengo.github.io/blog/2016/06/04/yaruo-machine-learning5/">やる夫で学ぶ機械学習 - ロジスティック回帰 -</a></h1>
+    </header>
+    <article>
+      
+
+<p>やる夫で学ぶ機械学習シリーズの第 5 回です。分類問題を解くためのロジスティック回帰を見ていきます。</p>
+
+<p>第 4 回はこちら。<a href="/blog/2016/06/03/yaruo-machine-learning4/">やる夫で学ぶ機械学習 - パーセプトロン -</a></p>
+
+<p>目次はこちら。<a href="/blog/2016/06/06/yaruo-machine-learning0/">やる夫で学ぶ機械学習シリーズ</a></p>
+
+<h1 id="ロジスティック回帰">ロジスティック回帰</h1>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+分類問題を解くための素晴らしいアルゴリズムがあると聞きましたお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+今日は展開が早いな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+回りくどいのは終わりだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では、今日はロジスティック回帰の話をしていこう。ロジスティック回帰は、パーセプトロンのように基本的には二値分類の分類器を構築するためのものだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+パーセプトロンよりは使い物になるのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+もちろんさ。ロジスティック回帰はいろんなところで使われているし、線形分離不可能な問題も解ける。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+それはナイスだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+いつものように最初は簡単な具体例を示して概要を見ていこうか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+よろしくお願いしますお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+問題設定はパーセプトロンの時と同じものを使おう。つまり、色を暖色か寒色に分類することを考えるんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+それ、線形分離可能な問題だお？線形分離不可能な問題やらないのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+物事には順序ってものがあるだろう。先に基礎からやるんだよ。ロジスティック回帰も、もちろん線形分離可能な問題は解ける。まずそこから入って、その応用で最後に線形分離不可能な問題を見ていこう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+基礎力つけるの面倒くさいけど、わかったお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ロジスティック回帰は分類を確率として考えるんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+確率？暖色である確率が 80%、寒色である確率が 20%、みたいな話ってことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだ、いつもとぼけた顔してる割には冴えてるじゃないか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+顔は生まれつきだお。文句いうなお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+暖色、寒色のままでは扱いにくいのはパーセプトロンと同じだから、ここでは暖色を $1$、寒色を $0$ と置くとしよう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あれ、寒色は $-1$ じゃないのかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+クラス毎の値が異なっていれば別になんでもいいんだが、パーセプトロンの時に暖色が $1$ で寒色が $-1$ にしたのは、そうした方が重みの更新式が簡潔に書けるからだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+なるほど。ロジスティック回帰の場合は暖色を $1$ で寒色を $0$ にした方が、重みの更新式が簡潔に書き表せるってことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そういうことだな。話を進めよう。回帰の時に、未知のデータ $\boldsymbol{x}$ に対応する値を求めるためにこういう関数を定義したのを覚えているか？</p>
+
+<p>$$
+f_{\boldsymbol{\theta}}(\boldsymbol{x}) = \boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+覚えてるお。学習用データに最も良くフィットするパラメータ $\boldsymbol{\theta}$ を求めた時だお。あの時は最急降下法か確率的勾配降下法を使ってパラメータ $\boldsymbol{\theta}$ の更新式を導出したんだったお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ロジスティック回帰でも考え方は同じだ。未知のデータがどのクラスに分類されるかを求めたい時に、それを分類してくれるための関数が必要になるな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+パーセプトロンでやった時の識別関数 $f_{\boldsymbol{w}}$ みたいなもんかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。今回も回帰の時と同じように $\boldsymbol{\theta}$ を使うことにして、ロジスティック回帰の関数をこのように定義しよう。</p>
+
+<p>$$
+f_{\boldsymbol{\theta}}(\boldsymbol{x}) = \frac{1}{1 + \exp(-\boldsymbol{\theta}^{\mathrm{T}}\boldsymbol{x})}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+急に難易度が上がるのは、このシリーズのセオリーかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ぱっと見て難しそうだと感じるのはわかるが、落ち着いて考えるんだ。第一印象で無理かどうかを決めるのは良くないぞ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$\exp(x)$ ってのは $\mathrm{e}^x$ ってことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだ。この関数は一般的にシグモイド関数と呼ばれるんだが、$\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x}$ を横軸、$f_{\boldsymbol{\theta}}$ を縦軸だとすると、グラフの形はこんな風になっている。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/logistic-regression1.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+お、ものすごくなめらかな形をしているお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+特徴としては、$\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x} = 0$ の時に $f_{\boldsymbol{\theta}} = 0.5$ になっている。それから、グラフを見ればすぐわかると思うが $0 \le f_{\boldsymbol{\theta}} \le 1$ だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+グラフの形なんか示してどうするんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+目に見えるように表現すると見えないモノが見えてくる。今は、分類を確率で考えようとしているんだ。覚えているか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+覚えてるお。あ&hellip;そうか、シグモイド関数は $0 \le f_{\boldsymbol{\theta}} \le 1$ だから確率として扱える、ってことかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その通りだ。ここからは、未知のデータ $\boldsymbol{x}$ が暖色、つまり $y=1$ である確率を $f_{\boldsymbol{\theta}}$ とするんだ。</p>
+
+<p>$$
+P(y=1|\boldsymbol{x}) = f_{\boldsymbol{\theta}}(\boldsymbol{x})
+$$</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+具体例を見てみようか。そうだな、$f_{\boldsymbol{\theta}}(\boldsymbol{x})$ を計算すると $0.7$ になったとしよう。これはどういう状態だ？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あ、えーっと&hellip;$f_{\boldsymbol{\theta}}(\boldsymbol{x}) = 0.7$ ってことは、暖色である確率が 70% ってことかお？逆に寒色である確率は 30%。普通に考えて $\boldsymbol{x}$ は暖色ってことになるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では今度は、$f_{\boldsymbol{\theta}}(\boldsymbol{x}) = 0.2$ の時はどうだろう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+暖色が 20% で、寒色が 80% だから $\boldsymbol{x}$ は寒色だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+やる夫は今おそらく、$f_{\boldsymbol{\theta}}(\boldsymbol{x})$ の閾値を $0.5$ としてクラスを振り分けているはずだ。</p>
+
+<p>\begin{eqnarray}
+y =
+  \begin{cases}
+    1 &amp; (f_{\boldsymbol{\theta}}(\boldsymbol{x}) \ge 0.5) \\[5pt]
+    0 &amp; (f_{\boldsymbol{\theta}}(\boldsymbol{x}) &lt; 0.5)
+  \end{cases}
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あぁ、別に意識はしてなかったけど、確かにそうだお。$f_{\boldsymbol{\theta}}(\boldsymbol{x}) \ge 0.5$ なら暖色だと思うし、逆は寒色だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+$f_{\boldsymbol{\theta}}(\boldsymbol{x}) \ge 0.5$ というのは、もっと詳しく見るとどういう状態だ？シグモイド関数のグラフを思い出して考えてみるんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+んー&hellip;？シグモイド関数は $\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x} = 0$ の時に $f_{\boldsymbol{\theta}}(\boldsymbol{x}) = 0.5$ だったお&hellip;あっ、要するに $f_{\boldsymbol{\theta}}(\boldsymbol{x}) \ge 0.5$ ってことは $\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x} \ge 0$ ってことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+正解だ。さっきの場合分けの条件式の部分を書き直すとこうだな。</p>
+
+<p>\begin{eqnarray}
+y =
+  \begin{cases}
+    1 &amp; (\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x} \ge 0) \\[5pt]
+    0 &amp; (\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x} &lt; 0)
+  \end{cases}
+\end{eqnarray}</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+シグモイド関数のグラフをみると、こんな風に分類される感じだな。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/logistic-regression2.png">
+</div>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+なるほど、わかりやすいお。でも、条件式の部分って $f_{\boldsymbol{\theta}}(\boldsymbol{x}) \ge 0.5$ でも $\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x} \ge 0$ でも同じ意味ならなんでわざわざ書き直すんだお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では、今度はパーセプトロンの時に見たような、横軸が赤($x_1$)、縦軸が青($x_2$) のグラフを考えてみようか。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あぁ、色をプロットしていたアレかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+今回の問題、素性としては赤 ($x_1$) と青 ($x_2$) の 2 次元だが、回帰の時と同じように $\theta_0$ と $x_0$ も含めて、全体としては 3 次元ベクトルで考えるぞ。いいか？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+大丈夫だお。$x_0 = 1$ は固定だったお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+具体的に考えるために、適当にパラメータ $\boldsymbol{\theta}$ を決めよう。そうだな、こういう $\boldsymbol{\theta}$ があった時、暖色である場合の条件式 $\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x} \ge 0$ をグラフに表すとどうなる？</p>
+
+<p>$$
+\boldsymbol{\theta} = \left[
+  \begin{array}{c}
+    \theta_0 \\ \theta_1 \\ \theta_2
+  \end{array}
+\right] = \left[
+  \begin{array}{c}
+    -100 \\ 2 \\ 1
+  \end{array}
+\right]
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ん、条件式をグラフに&hellip;とりあえず $\boldsymbol{\theta}$ を代入して、わかりやすいように変形してみるお&hellip;</p>
+
+<p>$$
+\begin{eqnarray}
+\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x} = -100 + 2 x_1 + x_2 &amp; \ge &amp; 0 \<br />
+x_2 &amp; \ge &amp; - 2 x_1 + 100
+\end{eqnarray}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+これをグラフに&hellip;こうかお？</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/logistic-regression3.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+ここまでくれば $\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x} &lt; 0$ の場合がどうなるかも想像できるな？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+今度はさっきの反対側ってことかお。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/yaruo/machine-learning/logistic-regression4.png">
+</div>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+つまり $\boldsymbol{\theta}^{\mathrm{T}} \boldsymbol{x} = 0$ という直線を境界線として、一方が暖色($y=1$)、もう一方が寒色($y=0$)、とクラス分けできるというわけだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+これは直感的でわかりやすいお！パーセプトロンの時にも $\boldsymbol{w} \cdot \boldsymbol{x} = 0$ というクラスを分類するための線が出てきたけど、それと同じものってことかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。このようなクラスを分割する線を決定境界、英語では Decision Boundary と呼ぶ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+この決定境界、暖色と寒色を分類する線としては全く正しくなさそうだけど、それはやらない夫が適当にパラメータの $\boldsymbol{\theta}$ を決めたから、ってことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そういうことだ。ということは、これから何をやっていくのかは、想像つくだろう？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+正しいパラメータ $\boldsymbol{\theta}$ を求めるために、目的関数を定義して、微分して、パラメータの更新式を求める、であってるかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+よくわかってるじゃないか。</p>
+
+<h1 id="尤度関数">尤度関数</h1>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あとは回帰と同じなら楽勝だお。今日はもう帰ってオンラインゲームでもやるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだったら良かったんだが、世の中そんなに甘くないぞ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+はっ&hellip;そういえば今日は週 1 のメンテナンス日だったお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+お前、そういうことじゃないだろ、常識的に考えて&hellip;。ロジスティック回帰は、二乗誤差の目的関数だとうまくいかないから別の目的関数を定義するんだ。最初にやった回帰と同じ手法ではやらない。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+そうなのかお&hellip;帰ってもやることないから、やらない夫の講義に付き合ってやるお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+その上から目線、癪に障るが&hellip;ロジスティック回帰の目的関数を考えよう。パーセプトロンの時に準備した学習用データについて、さっき俺が適当に決めたパラメータ $\boldsymbol{\theta}$ を使って、実際に $f_{\boldsymbol{\theta}}(\boldsymbol{x})$ を計算してみよう。ここで示す $f_{\boldsymbol{\theta}}(\boldsymbol{x})$ の計算結果は全く厳密ではないが、イメージをつかむにはそれで十分だろう。</p>
+
+<table>
+<thead>
+<tr>
+<th>色</th>
+<th>クラス</th>
+<th>$y$</th>
+<th>$f_{\boldsymbol{\theta}}(\boldsymbol{x})$</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><span style="width:100px;height:20px;background-color:#d80055;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #d80055</td>
+<td>暖色</td>
+<td>1</td>
+<td>0.00005</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#c80027;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #c80027</td>
+<td>暖色</td>
+<td>1</td>
+<td>0.00004</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#9c0019;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #9c0019</td>
+<td>暖色</td>
+<td>1</td>
+<td>0.00002</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#2c00c8;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #2c00c8</td>
+<td>寒色</td>
+<td>0</td>
+<td>0.99991</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#120078;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #120078</td>
+<td>寒色</td>
+<td>0</td>
+<td>0.99971</td>
+</tr>
+
+<tr>
+<td><span style="width:100px;height:20px;background-color:#40009f;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> #40009f</td>
+<td>寒色</td>
+<td>0</td>
+<td>0.99953</td>
+</tr>
+</tbody>
+</table>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+$f_{\boldsymbol{\theta}}(\boldsymbol{x})$ は $\boldsymbol{x}$ が暖色である確率だと定義した。これは覚えているな。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+大丈夫だお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+では、それを踏まえた上で、$y$ と $f_{\boldsymbol{\theta}}(\boldsymbol{x})$ はどういう関係にあるのが理想的だと思う？</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+えっ、えーっと&hellip; $f_{\boldsymbol{\theta}}(\boldsymbol{x})$ は $\boldsymbol{x}$ が暖色である確率なんだから&hellip;正しく分類されるためには、$y=1$ の時に $f_{\boldsymbol{\theta}}(\boldsymbol{x})$ が $1$ に近くて、$y=0$ の時に $f_{\boldsymbol{\theta}}(\boldsymbol{x})$ が $0$ に近い方がいい、ってことかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。理想の状態はやる夫の言った通りで正解だが、以下のようにも言い換えることができる。</p>
+
+<ul>
+<li>$y=1$ の時は $P(y=1|\boldsymbol{x})$ が最大になって欲しい</li>
+<li>$y=0$ の時は $P(y=0|\boldsymbol{x})$ が最大になって欲しい</li>
+</ul>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+$P(y=1|\boldsymbol{x})$ は $\boldsymbol{x}$ が暖色である確率、逆に $P(y=0|\boldsymbol{x})$ が $\boldsymbol{x}$ が寒色である確率、という理解であってるかお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+それでいい。これを全ての学習用データについて考えるんだ。すると目的関数は以下のような同時確率として考えることができる。これを最大化する $\boldsymbol{\theta}$ を見つけることが目的だ。</p>
+
+<p>$$
+L(\boldsymbol{\theta}) = \prod_{i=1}^n P(y^{(i)}=1|\boldsymbol{x})^{y^{(i)}} P(y^{(i)}=0|\boldsymbol{x})^{1-y^{(i)}}
+$$</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+さて、帰るお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+期待通りの反応をありがとう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+どうやったらこんな意味不明な式が思いつくんだお&hellip;。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+確かに、式を簡潔にするために多少トリックを使ってはいるが、やる夫でも理解できるはずだ。1 つずつ考えよう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やらない夫の丁寧な説明をお待ちしておりますお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+$y^{(i)}$ が $1$ と $0$ の場合をそれぞれ考えてみよう。$y^{(i)}=1$ のデータの場合は後ろ側の $P(y^{(i)}=0|\boldsymbol{x})^{1-y^{(i)}}$ が $1$ になる。逆に $y^{(i)}=0$ のデータの場合は前の $P(y^{(i)}=1|\boldsymbol{x})^{y^{(i)}}$ が $1$ になる。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+ん、なんでだお？</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+両方とも 0 乗になるだろう。$P(y^{(i)}=1|\boldsymbol{x})$ や $P(y^{(i)}=0|\boldsymbol{x})$ がどんな数だったとしても、べき乗のところが 0 になるからだ。$P(y^{(i)}=1|\boldsymbol{x})^0$ も $P(y^{(i)}=0|\boldsymbol{x})^0$ も両方とも 0 乗なんだから、1 になるのは明確だ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+あ、なるほど。確かに、言われてみればそうだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+まとめるとこうだ。</p>
+
+<ul>
+<li>$y^{(i)}=1$ の時は $P(y^{(i)}=1|\boldsymbol{x})$ の項が残る</li>
+<li>$y^{(i)}=0$ の時は $P(y^{(i)}=0|\boldsymbol{x})$ の項が残る</li>
+</ul>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+つまり全ての学習用データにおいて、正解ラベルと同じラベルに分類される確率が最大になるような同時確率を考えているということだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+うーん、わかったようなわかってないような&hellip;前の回帰の時は目的関数の最小化だったけど、今回は最大化するのかお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。二乗誤差はその名の通り &ldquo;誤差&rdquo; なので小さいほうが理想的だ。だが、今回は同時確率だ。その同時確率が最も高くなるようなパラメータ $\boldsymbol{\theta}$ こそ、学習用データにフィットしていると言える。そういった、尤もらしいパラメータを求めたいんだ。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+国語のお勉強も足りてないお&hellip;それなんて読むんだお。</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+&ldquo;尤もらしい&rdquo; は &ldquo;もっともらしい&rdquo; と読む。さっき定義した関数も、尤度関数とも呼ばれる。これは &ldquo;ゆうどかんすう&rdquo; だな。目的関数に使った文字 $L$ も、尤度を英語で表した時の $Likelihood$ の頭文字から取った。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+やっぱり、ここにきて難易度あがってるお。面倒くさいけど、あとで復習するお&hellip;</p>
+
+<p><img src="/assets/img/icon/yaranaio.gif" style="border-width:0;"> <strong>やらない夫</strong><br/>
+そうだな。どうせ家に帰ってやることがないんだろう。</p>
+
+<p><img src="/assets/img/icon/yaruo.gif" style="border-width:0;"> <strong>やる夫</strong><br/>
+バカにするなお&hellip;</p>
+
+<hr />
+
+<p><a href="/blog/2016/06/16/yaruo-machine-learning6/">やる夫で学ぶ機械学習 - 対数尤度関数 -</a> へ続く。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92">機械学習</a>
+      
+        <a class="tag-link" href="tags/%E3%82%84%E3%82%8B%E5%A4%AB%E3%81%A7%E5%AD%A6%E3%81%B6">やる夫で学ぶ</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2016/06/04/yaruo-machine-learning5/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2016/06/04/yaruo-machine-learning5/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2016/06/04/yaruo-machine-learning5/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

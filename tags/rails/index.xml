@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Rails on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/rails/</link>
+    <description>Recent content in Rails on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Mon, 17 Feb 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/rails/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>環境変数を使って capybara のドライバの poltergeist と Selenium を使い分ける</title>
+      <link>http://tkengo.github.io/blog/2014/02/17/switch-poltergeist-or-selenium-on-capybara/</link>
+      <pubDate>Mon, 17 Feb 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/02/17/switch-poltergeist-or-selenium-on-capybara/</guid>
+      <description>capybara を使ってテストを実行する時は、自分の好きなようにドライバを切り替えることができます。デフォルトでは Rack アプリケーションをテストするための rack-test というドライバが使われていますが spec_helper.rb で
+require &#39;capybara/rspec&#39; Capybara.javascript_driver = :selenium  という風に指定すると Selenium 用のドライバを利用して、テスト時は指定したブラウザ(デフォルトでは Firefox)が立ち上がるようになります。
+poltergeist について capybara には他に poltergeist というドライバを利用することもできて、これは phantomjs というヘッドレスで動作するブラウザのようなものを利用したドライバです。Selenium の場合はブラウザが立ち上がりましたが poltergeist の場合はメモリ上で動作するため高速です。poltergeist の導入については
+ Rails4 + Capybara + PhantomJS (poltergeist) なテスト環境  このあたりを読んでおけば、簡単に導入できると思います。
+poltergeist と slenium を使い分ける poltergeist はヘッドレスなので実際にはブラウザは起動せずにメモリ上で実行されていきます。なので画面を見ながらテストを進めることはできません。それ故に高速なのですが、たまにデバッグ用途などで実際に画面を見ながらテストを実行したい時があるので、その場合は
+ ドライバを Selenium から poltergeist に一時的に変更 その状態で該当箇所のテストを実行 確認が終わればまた poltergeist に戻す  というようなことをやっていました。が、面倒なので 1 と 3 を飛ばせるように環境変数でドライバを切り替えれるようにしてみた。
+自分がよく遣う spec_helper.rp はこうです。
+require &#39;capybara/rspec&#39; unless ENV[&#39;POLTERGEIST&#39;] == &#39;off&#39; require &#39;capybara/poltergeist&#39; Capybara.</description>
+    </item>
+    
+    <item>
+      <title>spring と direnv を使って Rails と rspec を高速起動。快適開発はじめる</title>
+      <link>http://tkengo.github.io/blog/2014/01/24/rails-spring-and-direnv/</link>
+      <pubDate>Fri, 24 Jan 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/01/24/rails-spring-and-direnv/</guid>
+      <description>spring は最近流行ってるので、既に知ってる方もいると思いますが Rails のプリローダーです。
+Rails を使ってる人だったら bundle exec rails console とか bundle exec rails generate model user とか bundle exec rake routes とか、便利コマンドにお世話になることも多いと思います。
+でも Rails ってとても巨大なフレームワークなので、コマンド一つ起動するにも Rails の資産が全部ロードされて結構な時間がかかります。なので Rails をあらかじめバックグラウンドで起動しておくことによって、コマンドの起動時間を大幅に短縮してくれるのが spring です。
+前は Gemfile には書かずにシステムに gem コマンドでインストールして spring rake routes とかやってて、コマンドの前に spring と書かないといけないのダルかったのですが、公式のドキュメントを読んでいると最近はまた便利になってるみたいです。
+github の README では Rails 4 と Rail 3.2 が対象となっていますが、この記事は Rails 4 前提で書いています。
+spring のインストール 最新の spring は Gemfile に書きます。
+group :development, :test do gem &#39;spring&#39; end  で</description>
+    </item>
+    
+    <item>
+      <title>RailsプロジェクトでJenkinsを使ってCIしてみる</title>
+      <link>http://tkengo.github.io/blog/2012/10/04/rails-jenkins-ci/</link>
+      <pubDate>Thu, 04 Oct 2012 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2012/10/04/rails-jenkins-ci/</guid>
+      <description>会社のプロジェクトでRuby on Railsを使っていて、Jenkinsを使ってCI環境を整えたくって ずっと試行錯誤していたのですが、最近ようやく出来上がったのでその全貌を明らかにします！
+ちなみに全部Linuxでの話なので、Windowsの人は残念ながら役に立ちません&amp;hellip;
+目標 今回Jenkinsを使って以下のようなことがやりたかった。
+ githubにあるリポジトリのRSpecのテストを自動的に実行したい Capybaraを使ったテストもやってるので、ブラウザが起動する環境で自動テストを実行したい。 これは別途デスクトップ環境(今回の場合はUbuntuデスクトップ)を準備してそこでテストさせたい。 コードカバレッジを出力してるのでJenkinsから見れるようにしたい テストケース一覧もJenkinsから見れるようにしたい  この目標に向かっていろいろと設定をしていきます。
+Javaのインストール Jenkinsを動作させるにはJavaが必要ですのでJDKをインストールします。 この記事執筆時点ではこちらから 最新のJDKがダウンロードできます。JDKのダウンロードボタンをクリックして Accept License Agreement の ラジオボタンにチェックを入れてからLinux用のJDKをダウンロードしてインストールします。
+$ cd /usr/local/src $ wget http://download.oracle.com/otn-pub/java/jdk/7u7-b10/jdk-7u7-linux-x64.rpm $ rpm -ivh jdk-7u7-linux-x64.rpm  これでインストール完了。
+$ java -version  と打って、Javaのバージョン番号が表示されれば成功。
+Jenkinsのインストール yumで簡単にインストールできます。以下rootユーザーで作業します。
+$ wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat/jenkins.repo $ rpm --import http://pkg.jenkins-ci.org/redhat/jenkins-ci.org.key $ yum install jenkins  これだけです。そして以下のコマンドで起動できます。
+$ /etc/init.d/jenkins start  この状態でhttp://hostname:8080/にアクセスするとJenkinsの画面が開きます。
+プラグインのインストール Jenkinsには豊富なプラグインが存在します。 今回の目標としていることも、プラグインなしには実現出来ないので、まず最初にプラグインをインストールします。 Jenkinsの管理 ＞ プラグインの管理 とたどっていき、 利用可能 のタブをクリックします。 今回使うプラグインは以下の3つです。</description>
+    </item>
+    
+    <item>
+      <title>Asset Pipeline について勉強した</title>
+      <link>http://tkengo.github.io/blog/2012/09/08/rails-asset-pipeline/</link>
+      <pubDate>Sat, 08 Sep 2012 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2012/09/08/rails-asset-pipeline/</guid>
+      <description>ペパボは今、開発言語をRubyに切り替え始めています。
+僕も今、Ruby on Railsを使って開発をしているので、本格的にRuby周りの勉強をし始めているのですが、未だにAsset Pipelineがよくわかってないので、この機会にドキュメントを読んできちんと調べてみました。
+参考にしたのはここ。 http://guides.rubyonrails.org/asset_pipeline.html
+やっぱり公式のドキュメントが一番わかりやすいかな？自分自身がちゃんと覚えるように読みながらまとめてみました。
+Asset Pipelineってなに？ Rails3.1より実装された仕組みで、大きくわけて以下の3つの機能があるようです。
+ CSSやJavaScriptなどの、いわゆるasset(資源)と呼ばれるファイルを1つにまとめてくれます。普通cssやjsなどのファイルは、開発しやすいように機能毎や画面毎に分けて作業すると思いますが、これはブラウザにとってはファイルの分だけサーバーへのリクエストが発生して効率が悪いです。ブラウザにとっては、ファイルが1つにまとまっていたほうが効率がいいのです。 まとめられたファイルは、同時にミニファイ(圧縮)されます。スペースやタブ、改行などを取り除き、コンパクトに圧縮してくれます。jsファイルに限っては、それだけではなくもう少し複雑なアルゴリズムで圧縮されるようです。 CSSはSASS、JavaScriptはCoffeeScript、を使って記述できます。もちろんSASSやCoffeeScriptを使わずにそのままCSSやJavaScriptで記述することもできます。また、ERB(Embedded Ruby)でも記述できます。  こういった機能がそなわっています。
+コードの結合 - マニフェストファイル まず1つ目の機能の資源の結合について、これはSprocketというgemがあって、そいつがいろいろとよしなにしてくれるわけですが、そのためにマニフェストファイルというものを使います。これは、どのファイルを読みこんで、1ファイルにまとめればいいのかをSprocketが把握するためのものです。Railsでアプリケーションを新しく作った時、app/assets/javascripts/application.jsというファイルがデフォルトであると思います。このファイルを開いて中身を見てみると
+//= require jquery //= require jquery_ujs //= require_tree .  といった行があります。//=で始まる行はSprocketのディレクティブで、この例では、requireとrequire_treeというコマンドが使われています。名前でなんとなくわかると思いますが、requireは1つのファイルを、require_treeは再帰的にディレクトリ以下の全ファイルを、読み込もうとします。この場合、jquery.js、jquery_ujs.js、それとapp/assets/javascripts/以下にあるすべての.jsファイルを1つのファイルにまとめてくれます。
+同じようにapp/assets/stylesheets/applications.cssというファイルもデフォルトであると思いますので、このファイルの中身を覗いてみると
+/** * * *= require_self *= require_tree . */  こういう行があるのがわかります。cssの場合は*=で始まるんですね。
+それから、各ディレクトリのindexという名前のファイルもマニフェストファイルとして読み込んでくれるようです。 例えば、lib/assets/library_name/というディレクトリに何かしらのJavaScriptのライブラリがあったとすると、 lib/assets/library_name/index.jsというファイルに
+//= require_tree .  と書いておけば、そのライブラリに関するファイルを1ファイルにまとめてくれるとのことです。
+コードの圧縮 - コンプレッサー 2つ目の機能でコードのミニファイをあげましたが、これは特になにも指定しなくても勝手にやってくれます。ただ、デフォルトの圧縮以外にもCSSやJavaScriptの圧縮機構を自分で指定することができます。app/config/application.rbで
+config.assets.css_compressor = :yui  と指定すると、YUI CSS compressorのアルゴリズムを使ってCSSを圧縮します。JavaScriptの場合は
+config.assets.js_compressor = :uglifier  と指定すると、uglifierを使ってJavaScriptを圧縮します。また、外部ライブラリではなく自分が開発した独自の圧縮アルゴリズムを指定することもできるみたいです。compressというメソッドを持つクラスを定義して、そのインスタンスを指定します。</description>
+    </item>
+    
+  </channel>
+</rss>

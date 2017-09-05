@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>capistrano をバージョン 3 にアップデートして時代の流れに乗る &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2013-12-12</p>
+      <h1><a href="http://tkengo.github.io/blog/2013/12/12/version-up-capistrano-v3/">capistrano をバージョン 3 にアップデートして時代の流れに乗る</a></h1>
+    </header>
+    <article>
+      
+
+<p>2013 年 6 月頃に capistrano のバージョン 3 がリリースされました。かなり久しぶりのメジャーバージョンアップで色々変わっているようです。</p>
+
+<p><a href="https://intobox.in">Intobox</a> でもデプロイには capistrano を使っていて、今回 capistrano のバージョンアップをしましたので手順の紹介とハマったことなどをまとめたいと思います。</p>
+
+<h1 id="capistrano-v3">capistrano v3</h1>
+
+<p>capistrano v3 は、より良いモジュール化、より簡単なデバッグ、より高速なデプロイ、などを設計目標として掲げています。</p>
+
+<p>変更点が多いので<a href="http://www.capistranorb.com/documentation/upgrading/">アップグレードガイド</a>が公式サイトより提供されています。基本的にはここを見ながら進めていくのですが、やることといえば</p>
+
+<ul>
+<li>Gemfile に <code>gem 'capistrano', '~&gt; 3.0'</code> を追加</li>
+<li><code>bundle install</code></li>
+<li><code>bundle exec cap install</code></li>
+</ul>
+
+<p>をやって <code>Capfile</code> や <code>config/deploy.rb</code> を変更点に合わせてひたすら修正していくだけになります。ただ、バージョンアップ中にハマったポイントはあったので v2 と v3 の変更点も見ながら紹介していきます。</p>
+
+<h1 id="v2-と-v3-の変更点">v2 と v3 の変更点</h1>
+
+<h2 id="必要な-gem-が変わった">必要な gem が変わった</h2>
+
+<p>v3 からは、何をデプロイするかによって必要な gem が異なり、細かく分かれています。たとえば rbenv を使う Rails プロジェクトをデプロイする場合は</p>
+
+<pre><code class="language-ruby">gem 'capistrano'
+gem 'capistrano-rails'
+gem 'capistrano-bundler'
+gem 'capistrano-rbenv'
+</code></pre>
+
+<p>と、それぞれ必要な gem を指定してあげる必要があります。一見必要な gem が増えて面倒くさそうですが、これは capistrano が Rails だけのものではなくなったということです(まぁ v2 の頃から Rails 以外でもデプロイできてたわけですが。v3 では明示的に必要なものがモジュール化されています)。</p>
+
+<p>※2013-12-12 現在の話ですが rubygems にある capistrano はどうもうまく動かないようで、調査に時間がかかってハマってしまいました。github 上にある最新版のソースコードでは問題が修正されているので Intobox では以下のように指定しています。</p>
+
+<pre><code class="language-ruby">gem 'capistrano', git: 'https://github.com/capistrano/capistrano.git'
+</code></pre>
+
+<h2 id="capify-がなくなった">capify がなくなった</h2>
+
+<p>capistrano をインストールして最初にすることは</p>
+
+<pre><code class="language-console">$ bundle exec capify .
+</code></pre>
+
+<p>でしたが v3 からはこのコマンドが無くなって</p>
+
+<pre><code class="language-console">$ bundle exec cap install
+</code></pre>
+
+<p>に変わっています。このコマンドを実行することで以下の設定ファイルが生成されます。</p>
+
+<ul>
+<li><code>Capfile</code></li>
+<li><code>config/deploy.rb</code></li>
+<li><code>config/deploy/production.rb</code></li>
+<li><code>config/deploy/staging.rb</code></li>
+</ul>
+
+<p>生成されるファイルを見てもわかると思いますが v3 ではデフォルトでマルチステージ機能が有効になっています。</p>
+
+<p>ちなみに v2 の頃の設定ファイルがあると、上書きされてしまうのでアップグレードガイドでは最初にバックアップを取ることを勧めています。</p>
+
+<pre><code class="language-console">$ mkdir old_cap
+$ mv Capfile old_cap
+$ mv config/deploy.rb old_cap
+$ mv config/deploy/ old_cap # v2 の頃にマルチステージを使っていた場合のみ
+</code></pre>
+
+<h2 id="capfile-の中身が変わった">Capfile の中身が変わった</h2>
+
+<p><code>Capfile</code> は v2 からもありましたが、最初に <code>capify</code> した時からまったく触らない空気のような存在でした。</p>
+
+<pre><code class="language-ruby">load 'deploy'
+load 'deploy/assets'
+load 'config/deploy'
+</code></pre>
+
+<p>こんな感じ。Rails デプロイでよくある <code>Capfile</code> です。変わって v3 の場合は <code>cap install</code> して生成された <code>Capfile</code> を見てもわかるように、デプロイに必要なモジュールを require するものになっています。</p>
+
+<pre><code class="language-ruby"># Load DSL and Setup Up Stages
+require 'capistrano/setup'
+
+# Includes default deployment tasks
+require 'capistrano/deploy'
+
+# Includes tasks from other gems included in your Gemfile
+#
+# For documentation on these, see for example:
+#
+#   https://github.com/capistrano/rvm
+#   https://github.com/capistrano/rbenv
+#   https://github.com/capistrano/chruby
+#   https://github.com/capistrano/bundler
+#   https://github.com/capistrano/rails/tree/master/assets
+#   https://github.com/capistrano/rails/tree/master/migrations
+#
+# require 'capistrano/rvm'
+# require 'capistrano/rbenv'
+# require 'capistrano/chruby'
+# require 'capistrano/bundler'
+# require 'capistrano/rails/assets'
+# require 'capistrano/rails/migrations'
+
+# Loads custom tasks from `lib/capistrano/tasks' if you have any defined.
+Dir.glob('lib/capistrano/tasks/*.cap').each { |r| import r }
+</code></pre>
+
+<p>生成された <code>Capfile</code> はデフォルトではこのようになっています。最初に gem が分割されたことを挙げましたが require する時も必要なものを読み込む感じになっています。</p>
+
+<h2 id="タスクの定義の仕方が変わった">タスクの定義の仕方が変わった</h2>
+
+<p>v2 の頃のタスクの定義は</p>
+
+<pre><code class="language-ruby">task :unicorn_restart, roles: :app do
+  ...
+end
+</code></pre>
+
+<p>このように記述していましたが v3 からは</p>
+
+<pre><code class="language-ruby">task :unicorn_restart do
+  on roles(:app) do
+    ...
+  end
+end
+</code></pre>
+
+<p>のように <code>on</code> でロールを指定するようになりました。</p>
+
+<h2 id="パラメータが変わった">パラメータが変わった</h2>
+
+<h3 id="リポジトリ">リポジトリ</h3>
+
+<p>リポジトリのURLの設定方法が変わっています。v2 の頃は</p>
+
+<pre><code class="language-ruby">set :repository, 'git@github.com:tkengo/repo.git'
+</code></pre>
+
+<p>だったのが v3 からは</p>
+
+<pre><code class="language-ruby">set :repo_url, 'git@github.com:tkengo/repo.git'
+</code></pre>
+
+<p>と、キーの名前が変わりました。</p>
+
+<h3 id="デプロイ方法">デプロイ方法</h3>
+
+<p>また v2 の頃は <code>deploy_via</code> という設定項目もありましたが v3 からは無くなりました。デプロイ先のサーバーに ssh でログインして git clone する形になります。</p>
+
+<h3 id="パラメータの取得">パラメータの取得</h3>
+
+<pre><code class="language-ruby">set :application, 'Intobox'
+</code></pre>
+
+<p>などと設定したパラメータは v2 では <code>deploy.rb</code> の中で <code>application</code> という変数名でアクセス出来ましたが v3 では</p>
+
+<pre><code class="language-ruby">fetch(:application)
+</code></pre>
+
+<p>という風に値を取得する必要があります。</p>
+
+<h2 id="git-のみになった">git のみになった</h2>
+
+<p>Mecurial / Subversion / CVS のサポートはなくなって git のみになったようです。</p>
+
+<h2 id="デフォルトのタスクが変わった">デフォルトのタスクが変わった</h2>
+
+<h3 id="deploy-setup">deploy:setup</h3>
+
+<p><code>deploy:setup</code> がなくなりました。いきなり</p>
+
+<pre><code class="language-console">$ bundle exec cap production deploy
+</code></pre>
+
+<p>とすれば、ディレクトリの生成やらも全部やってくれます。</p>
+
+<h3 id="deploy-cold">deploy:cold</h3>
+
+<p><code>deploy:cold</code> もなくなっています。<code>deploy:cold</code> は対象のアプリサーバーが起動していない一番最初にデプロイする時に使うタスクだったのですが、これも <code>deploy</code> の方に統一されてそうです。</p>
+
+<p>Intobox ではアプリサーバーとして unicorn を使っているため、サーバー起動のタスクとして</p>
+
+<ul>
+<li>pid ファイルがあるかどうかを確認する</li>
+<li>pid ファイルがあればその pid の unicorn に対して USR2 シグナルを送って再起動させる</li>
+<li>pid ファイルがなければ <code>bundle exec unicorn</code> で新しく unicorn を起動する</li>
+</ul>
+
+<p>という処理を定義しています。</p>
+
+<h2 id="dsl-が変わった">DSL が変わった</h2>
+
+<p>デプロイ対象のサーバーに ssh でログインしてコマンドを実行する <code>run</code> というメソッドがありましたが、新しい記法がいくつか追加されており、そっちを使ったほうが良いと公式に書いてあります。むしろ v3 でのタスク定義のやり方で <code>on</code> のブロックの中で <code>run</code> を使おうとするとエラーが起きてしまいました。</p>
+
+<pre><code class="language-ruby">run &lt;&lt;-CMD.compact
+  cd -- #{latest_release} &amp;&amp;
+  RAILS_ENV=#{rails_env.to_s.shellescape} #{asset_env} #{rake} assets:precompile
+CMD
+</code></pre>
+
+<p>v2 でありそうな Rails の assets precompile のタスクですが v3 では</p>
+
+<pre><code class="language-ruby">within fetch(:latest_release_directory)
+  with rails_env: fetch(:rails_env) do
+    execute :rake, 'assets:precompile'
+  end
+end
+</code></pre>
+
+<p>こんな風に書くようです。<code>run</code> を <code>execute</code> に置き換えるだけでも問題ありませんでした。</p>
+
+<pre><code class="language-ruby">execute &lt;&lt;-CMD.compact
+  cd -- #{latest_release} &amp;&amp;
+  RAILS_ENV=#{rails_env.to_s.shellescape} #{asset_env} #{rake} assets:precompile
+CMD
+</code></pre>
+
+<h2 id="デプロイフローが変わった">デプロイフローが変わった</h2>
+
+<p>公式サイトからの引用ですが v3 で <code>deploy</code> タスクを実行した時、以下のタスクが連続で実行されるようになっています。</p>
+
+<pre><code>deploy:starting   - デプロイ準備。必要なディレクトリを作ったりなど
+deploy:started    - デプロイ準備後のフック
+deploy:updating   - デプロイ先サーバーのアプリを更新する
+deploy:updated    - アプリ更新後のフック
+deploy:publishing - 更新したアプリをパブリッシュする
+deploy:published  - パブリッシュ後のフック
+deploy:finishing  - デプロイ後処理。不要なディレクトリを削除したりなど
+deploy:finished   - デプロイ後処理後のフック
+</code></pre>
+
+<p>フックと書いているところは <code>after</code> や <code>before</code> などを使って独自のタスクを入れ込む用のタスクです。</p>
+
+<p>Rails をデプロイする場合、詳しくは以下のような流れになっているようです。</p>
+
+<pre><code>deploy
+  deploy:starting
+    [before]
+      deploy:ensure_stage
+      deploy:set_shared_assets
+    deploy:check
+  deploy:started
+  deploy:updating
+    git:create_release
+    deploy:symlink:shared
+  deploy:updated
+    [before]
+      deploy:bundle
+    [after]
+      deploy:migrate
+      deploy:compile_assets
+      deploy:cleanup_assets
+      deploy:normalise_assets
+  deploy:publishing
+    deploy:symlink:release
+    deploy:restart
+  deploy:published
+  deploy:finishing
+    deploy:cleanup
+  deploy:finished
+    deploy:log_revision
+</code></pre>
+
+<h1 id="最後に">最後に</h1>
+
+<p>さてこれだけあればたぶん <code>Capfile</code> <code>config/deploy.rb</code> の編集もできそうです。</p>
+
+<p>最後に Intobox で利用している設定ファイルを貼り付けておきます。参考になれば幸いです。</p>
+
+<h2 id="capfile">Capfile</h2>
+
+<pre><code class="language-ruby">require 'capistrano/setup'
+require 'capistrano/deploy'
+
+set :rbenv_type, :system
+set :rbenv_ruby, '2.0.0-pxxx' # 詳しいバージョンは伏せます
+
+require 'capistrano/rbenv'
+require 'capistrano/bundler'
+require 'capistrano/rails/assets'
+require 'capistrano/rails/migrations'
+
+Dir.glob('lib/capistrano/tasks/*.cap').each { |r| import r }
+</code></pre>
+
+<h2 id="config-deploy-rb">config/deploy.rb</h2>
+
+<pre><code class="language-ruby">set :application, 'Intobox'
+set :stages, %w(production staging)
+set :repo_url, 'git@bitbucket.org:xxx/xxx.git' # リポジトリ名は伏せます
+set :user, 'xxx' # ユーザー名も伏せます
+
+role :app, %w{xxx@intobox.in}
+role :web, %w{xxx@intobox.in}
+role :db,  %w{xxx@intobox.in}
+
+set :keep_releases, 5
+
+before 'deploy:published', 'deploy:unicorn_start'
+before 'deploy:finished', 'whenever:update_crontab'
+
+namespace :deploy do
+  desc 'restart a unicorn or start a unicorn if it is not launch'
+  task :unicorn_start do
+    on roles(:all) do
+      execute &quot;mkdir -p #{shared_path}/pids&quot;
+      pid_file = &quot;#{shared_path}/pids/unicorn.pid&quot;
+      if test &quot;[ -e #{pid_file} ]&quot;
+        execute &quot;kill -USR2 `cat #{pid_file}`&quot;
+      else
+        execute &quot;cd #{current_path} &amp;&amp; UNICORN_PID=#{pid_file} bundle exec unicorn -p #{fetch(:unicorn_port)} -E production -c #{current_path}/config/unicorn.rb -D&quot;
+      end
+    end
+  end
+
+  desc 'stop a unicorn'
+  task :stop do
+    on roles(:all) do
+      execute &quot;kill -QUIT `cat #{shared_path}/pids/unicorn.pid`&quot;
+    end
+  end
+
+  desc 'restart a unicorn'
+  task :restart do
+    on roles(:all) do
+      execute &quot;kill -USR2 `cat #{shared_path}/pids/unicorn.pid`&quot;
+    end
+  end
+end
+
+namespace :whenever do
+  desc &quot;update crontab using whenever's schedule&quot;
+  task :update_crontab do
+    on roles(:all) do
+      execute &quot;cd #{current_path} &amp;&amp; RAILS_ENV=#{fetch(:rails_env)} bundle exec whenever -w&quot;
+    end
+  end
+end
+</code></pre>
+
+<h2 id="config-deploy-production-rb">config/deploy/production.rb</h2>
+
+<pre><code class="language-ruby">set :stage, :production
+set :branch, :master
+set :deploy_to, '/xxx/xxx/xxx' # デプロイ先のパス
+set :rails_env, 'production'
+set :unicorn_port, 'xxxx' # unicorn のポート
+</code></pre>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/intobox">Intobox</a>
+      
+        <a class="tag-link" href="tags/capistrano">capistrano</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2013/12/12/version-up-capistrano-v3/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2013/12/12/version-up-capistrano-v3/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2013/12/12/version-up-capistrano-v3/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

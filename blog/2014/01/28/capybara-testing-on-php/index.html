@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>レガシープロジェクトで ruby の capybara を使って仕様化テストをやってみる &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-01-28</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/">レガシープロジェクトで ruby の capybara を使って仕様化テストをやってみる</a></h1>
+    </header>
+    <article>
+      
+
+<p>レガシーでテストのないプロジェクトのメンテナンスはつらいものです。テストを書こうにもそもそもテストできるような設計になっておらず、ビューとロジックが分離されていない古い PHP なんかは、なかなかテストを書き始め辛いところもあります。そこで実際にブラウザを起動して自動テストを進めることが出来る <a href="https://github.com/jnicklas/capybara">capybara</a> を使って仕様化テストをやってみようという試みです。実際に会社では PHP で出来たレガシーなシステムに対して capybara でテストを作ってまわしています。</p>
+
+<p><a href="https://github.com/jnicklas/capybara">capybara</a> というと ruby で開発されている有名なウェブアプリケーションテストフレームワークですが ruby でできているからといって ruby のプロジェクトにしか使えないわけではありません。capybara にはテストを実行する際に利用するドライバを指定できて、それには <a href="http://docs.seleniumhq.org/">selenium</a> や <a href="https://github.com/jonleighton/poltergeist">poltergeist</a> も対応しています。これらのドライバを使ってブラウザを起動して (polgergeist の場合はヘッドレスなので実際にブラウザは起動せずにオンメモリで) 本当にウェブアプリケーションにアクセスしてテストを実行することができます。</p>
+
+<p>この記事では Rails 以外のたとえば PHP や JSP などで出来てるウェブアプリケーションに対して selenium ドライバを使って capybara をやってみたいと思います。</p>
+
+<h3 id="仕様化テストとは">※仕様化テストとは</h3>
+
+<p>現在の仕様を元にテストが通るようにテストを書いていきます。これを書いておくことによって、ある箇所のソースコードの変更によって全然別の箇所で影響があって意図しない動作をして不具合になってしまった、なんてことを未然に防ぐことができます。レガシーなプロジェクトのメンテナンスでも心に余裕がもてます。</p>
+
+<h1 id="ruby-をインストールする">ruby をインストールする</h1>
+
+<p>普段から ruby を使ってる人は既に ruby はインストールされていると思うので、その場合はこのステップは飛ばしましょう。</p>
+
+<p>ruby 以外のプロジェクトで使うにしても capybara 自身が ruby がないと動かないので何はともあれ ruby のインストールから始めます。ruby のインストールは <a href="https://github.com/sstephenson/rbenv">rbenv</a> を使うと楽でね。元々 ruby のバージョン切り替えのためのツールなのですが、別に ruby を複数バージョンいれないとしてもこのツール自体シンプルで使いやすいし、今後 ruby のバージョンが上がってもバージョンアップが簡単なのでとりあえず入れておくといいと思います。</p>
+
+<p>この辺を見れば簡単に ruby のインストールまでできます。</p>
+
+<ul>
+<li><a href="https://github.com/sstephenson/rbenv">rbenvリポジトリのREADME(英語)</a></li>
+<li><a href="http://alfa.hatenablog.jp/entry/2013/08/19/224737">rbenvを使って3分でRubyをインストールする方法まとめ</a></li>
+</ul>
+
+<p>ruby がインストールできたら、あとで使うので bundler という gem をインストールしておきます。</p>
+
+<pre><code class="language-console">$ gem install bundler
+</code></pre>
+
+<h1 id="firefox-をインストールする">Firefox をインストールする</h1>
+
+<p>今回使うドライバ selenium では、デフォルトで起動できるブラウザが Firefox なのであらかじめインストールしておきます。既にインストールされている場合はこのステップは飛ばします。</p>
+
+<h1 id="gemfile-を準備する">Gemfile を準備する</h1>
+
+<p><code>capybara</code> だけじゃなくて <code>rspec</code> もあった方がいいので一緒にインストールします。また capybara ではドライバとして selenium を使うので <code>selenium-webdriver</code> も一緒にいれておきます。</p>
+
+<p><code>mysql2</code> は DB に繋いで状態を確認するために使う分なので DB が PostgreSQL の場合は <code>pg</code> だし SQLite の場合は <code>sqlite3</code> を入れます。<code>activerecord</code> やら <code>activesupport</code> やらはテストする時にあった方がなにかと便利なので一緒にいれておきます。</p>
+
+<p>あと <code>awesome_print</code> と <code>pry</code> は完全にデバッグ用途なのであってもなくてもいいと思います。</p>
+
+<pre><code class="language-ruby">source 'https://rubygems.org'
+
+gem 'capybara'
+gem 'rspec'
+gem 'selenium-webdriver'
+
+gem 'mysql2'
+gem 'activerecord'
+gem 'activesupport'
+
+gem 'awesome_print'
+gem 'pry'
+</code></pre>
+
+<p>これをプロジェクトのルートディレクトリなどに保存します。</p>
+
+<p><img src="/assets/img/2014-01-28-capybara-testing-on-php/after.png" alt="" /></p>
+
+<p>保存したらターミナルで、そのディレクトリまで移動してから gem をインストールしておきます。</p>
+
+<pre><code class="language-console">$ cd /path/to/directory
+$ bundle install
+</code></pre>
+
+<h1 id="データベースへの接続設定を準備する">データベースへの接続設定を準備する</h1>
+
+<p>次に既存システムが利用するデータベースへの接続設定を準備します。gem に <code>activerecord</code> を入れたので DB にはそれを使って接続しますので database.yml 形式で設定ファイルを準備しておきます。</p>
+
+<pre><code class="language-yaml">development:
+  adapter: mysql2
+  database: your_database_name
+  host: localhost
+  username: your_username
+  password: your_password
+  pool: 5
+  timeout: 5000
+</code></pre>
+
+<p>本番環境に対してはテストしないと思うので、開発環境への接続のみ定義していれば十分です。これもどこかに保存しておきます。</p>
+
+<p><img src="/assets/img/2014-01-28-capybara-testing-on-php/database.png" alt="" /></p>
+
+<h1 id="spec-helper-の準備">spec_helper の準備</h1>
+
+<p>最後に以下のようなファイルを準備します。</p>
+
+<pre><code class="language-ruby"># 必要ファイルの読み込み
+require 'rubygems'
+require 'awesome_print'
+require 'capybara/rspec'
+require 'selenium-webdriver'
+require 'active_record'
+require 'active_support/core_ext'
+
+# DBへの接続
+dbconfig = YAML::load(File.open('database.yml'))
+ActiveRecord::Base.establish_connection(dbconfig['development'])
+
+# ajaxの通信などで待ちが発生する場合の最大待ち時間
+Capybara.default_wait_time = 30
+
+# seleniumを使う
+Capybara.default_driver = :selenium
+
+RSpec.configure do |config|
+  config.include Capybara::DSL
+end
+</code></pre>
+
+<p>これは rspec 用のヘルパーで rspec 関係のファイルは <code>spec/</code> 以下に配置するのが慣例となってるので <code>spec/spec_helper.rb</code> あたりに保存します。</p>
+
+<p><img src="/assets/img/2014-01-28-capybara-testing-on-php/spec.png" alt="" /></p>
+
+<h1 id="仕様に沿ってテストを書く">仕様に沿ってテストを書く</h1>
+
+<p>あとはシステムの既存仕様に沿ってテストを書いていくだけです。rspec を使った capybara の書き方についてはいろんなサイトで解説がされていると思うので、ここではあえて深く説明しませんが、たとえばこんな風に書きます。(※このテストシナリオは完全なフィクションです)</p>
+
+<p><code>spec/order_spec.rb</code> などに保存してみます。</p>
+
+<pre><code class="language-ruby">require 'spec_helper'
+
+describe '申込フロー', type: :feature, js: true do
+  before do
+    # 開発環境の申込画面にアクセスする
+    visit 'http://localhost:8000/order/order.php'
+  end
+
+  describe 'サービスを申し込む' do
+    let(:user_id)   { 'tkengo' }
+    let(:nick_name) { 'tkengo-chop' }
+
+    before do
+      fill_in 'user_id', user_id
+      fill_in 'nick_name', nick_name
+      select plan, from: 'plan_id'
+
+      click_on '申し込む'
+
+      @order = Order.where(user_id: user_id)
+    end
+
+    it '申込みデータができていること' do
+      expect(@order.nick_name).to eq nick_name
+    end
+
+    it '申込完了画面が表示されている' do
+      expect(page).to have_title 'お申し込み完了'
+      expect(page).to have_text &quot;#{plan_id}のお申し込みが完了しました！&quot;
+    end
+
+    context '無料プランの場合' do
+      let(:plan_id) { '無料プラン' }
+
+      it '無料なので料金は0円であること' do
+        expect(@order.charge).to eq 0
+      end
+    end
+
+    context 'プランAの場合' do
+      let(:plan_id) { 'プランA' }
+
+      it '料金は1000円であること' do
+        expect(@order.charge).to eq 1000
+      end
+    end
+
+    context 'プランBの場合' do
+      let(:plan_id) { 'プランB' }
+
+      it '料金は2000円であること' do
+        expect(@order.charge).to eq 2000
+      end
+
+      it 'オプションプランのデータができていること' do
+        expect(@order.option).not_to be_nil
+      end
+    end
+  end
+end
+</code></pre>
+
+<h1 id="テストを実行する">テストを実行する</h1>
+
+<p>テストを書いたらあとはそれを実行するだけです。</p>
+
+<pre><code class="language-console">$ bundle exec rspec spec/order_spec.rb
+</code></pre>
+
+<p>勝手に Firefox が立ち上がってうにうに動いてテストしてくれるはずです。</p>
+
+<p>自分の手元で回すだけではなく、最終的には CI に登録して定期的にテストを実行してくれるような環境を整えることができればなお良いですね。CI については Jenkins でのやり方を過去に書いたことがあるので、そちらを参考にやってみるのも良いかもしれません。</p>
+
+<p><a href="http://tkengo.github.io/blog/2012/10/04/rails-jenkins-ci/">Rails プロジェクトで Jenkins を使って CI してみる</a></p>
+
+<p>タイトルに Rails とついてますが中身は rspec を使ってテストするための Jenkins のインストールや設定方法の解説が主なので、今回のような場合でも使えると思います。</p>
+
+<h1 id="おわり">おわり</h1>
+
+<p>こういうものを準備してテストを回すことを意識していれば、例えばビューとロジックが混じっているかもしれないカオス気味な <code>order.php</code> の挙動を少し変更しようとして、意図せず if 文の条件に使われているグローバル変数が書き換わって本来無料プランなのに料金が発生したりすると、仕様通りに書いたこのテストが落ちるはずなのでその時に気付けます。</p>
+
+<p>最初のテストを書くことに時間はかかると思いますが1度書いておけば、しばらくは使い続けることができます。もちろん仕様自体が途中で変わったらこのテストも修正しないといけないですが、一度出来て公開されているレガシーシステムの仕様が途中で変わることはそうそう無いと思います。</p>
+
+<p>1週間に1個とかのスローペースでもいいのでまずは作り始めてみると意外と楽しいもんです。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/php">PHP</a>
+      
+        <a class="tag-link" href="tags/ruby">ruby</a>
+      
+        <a class="tag-link" href="tags/capybara">capybara</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

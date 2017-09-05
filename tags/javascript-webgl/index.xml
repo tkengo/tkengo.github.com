@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Javascript Webgl on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/javascript-webgl/</link>
+    <description>Recent content in Javascript Webgl on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Wed, 15 Jul 2015 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/javascript-webgl/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>WebGLでなんか綺麗なキラキラなパーティクルの演出を作ってみた</title>
+      <link>http://tkengo.github.io/blog/2015/07/15/webgl-particle-effect-we-are-xseeds/</link>
+      <pubDate>Wed, 15 Jul 2015 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2015/07/15/webgl-particle-effect-we-are-xseeds/</guid>
+      <description>元々 OpenGL を使っていたことがあって 3D の基礎についてはある程度わかっていたので WebGL には本当にすんなり入ることができた。WebGL は OpenGL ES の仕様を元にしているので当然といえば当然なのですが、他の OpenGL のプラットフォームと比べて WebGL はテキストエディタとブラウザさえあれば開発環境が整うという手軽さ、さらに WebGL 界隈ではとても有名な three.js というライブラリがあるおかげで、さらに敷居が下がってる。ということで、前々から WebGL で作ってみたかった綺麗でしなやかなパーティクルの演出を作ってみました。
+The XSEEDS
+※ちなみに XSEEDS というのは、有志で集まったエンジニアがお酒飲みながらワイワイ開発やってる集団です。
+作ってみたので、せっかくなので WebGL ってこんなことができるよ、こうやって作れるんだよ、という少し実装よりの話を紹介してみようと思います。three.js を使うの前提です。ちなみに OpenGL については以前ブログを書いたことがあって、興味のある方はそちらも読んでみてください。
+独学で 1 ヶ月間 OpenGL を学んで得た基礎知識のまとめ
+※シリーズ物になっていて全6回です。
+はじめに こんな人が読むと面白いかも。ただの目安です。
+ WebGL に興味がある 3D なとなくわかるんだけど実際にモノを作ったことがない なんでもいいから WebGL を使って簡単なものを作ってみたい  それから three.js を使うことを前提としてます。また、three.js の基礎知識の解説はしません。他に良い解説サイトがあると思います。基本的な シーン、カメラ、レンダラ、ジオメトリ、マテリアル、オブジェクト といった概念に対する知識はある前提として話が進みます。
+パーティクルで文字を作る まずはこういうのを作ります。
+テクスチャの生成 まず文字を構成するパーティクルオブジェクトに貼り付けるテクスチャを作ってしまいます。具体的にはこういうの。
+さて、こういう画像を準備してそれをテクスチャとして読み込んでもいいのですが、同じテクスチャが張られたオブジェクトばっかり並んでいると単調でつまらないものになってしまいます(というか最初そのようにしてて「これじゃなんかつまらないな」と思っていました)。なので少しゆらぎを持たせるために canvas を使って複数個ランダムに丸い画像を描きます。
+function createParticleTexture() { // 128pxのサイズのcanvasを作ります。サイズは別に128pxじゃなくても // いいですが、テクスチャとして利用するため2のべき乗のサイズにして // おいた方が良いです。(32pxとか64pxとか256pxとか) var canvas = document.</description>
+    </item>
+    
+  </channel>
+</rss>

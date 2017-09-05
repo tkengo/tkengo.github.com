@@ -1,0 +1,570 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2017/09/06/ml-math/</loc>
+    <lastmod>2017-09-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/08/22/maximum-likelyhood-estimation-by-machine-learning/</loc>
+    <lastmod>2016-08-22T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/06/16/yaruo-machine-learning6/</loc>
+    <lastmod>2016-06-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/06/06/yaruo-machine-learning0/</loc>
+    <lastmod>2016-06-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/06/04/yaruo-machine-learning5/</loc>
+    <lastmod>2016-06-04T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/06/03/yaruo-machine-learning4/</loc>
+    <lastmod>2016-06-03T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/06/02/yaruo-machine-learning3/</loc>
+    <lastmod>2016-06-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/05/09/understand-how-to-learn-word2vec/</loc>
+    <lastmod>2016-05-09T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/03/14/text-classification-by-cnn/</loc>
+    <lastmod>2016-03-14T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/03/11/understanding-convolutional-neural-networks-for-nlp/</loc>
+    <lastmod>2016-03-11T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/01/04/yaruo-machine-learning2/</loc>
+    <lastmod>2016-01-04T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2016/01/03/yaruo-machine-learning1/</loc>
+    <lastmod>2016-01-03T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/12/14/math-advent-calendar-2015-14th/</loc>
+    <lastmod>2015-12-14T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/12/11/architecture-of-highway/</loc>
+    <lastmod>2015-12-11T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/12/01/https-details/</loc>
+    <lastmod>2015-12-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/10/19/release-highway/</loc>
+    <lastmod>2015-10-19T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/09/07/mathematics-for-programmer-first/</loc>
+    <lastmod>2015-09-07T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/08/21/visual-perceptron/</loc>
+    <lastmod>2015-08-21T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/08/15/mathematics-for-programmer/</loc>
+    <lastmod>2015-08-15T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/07/15/webgl-particle-effect-we-are-xseeds/</loc>
+    <lastmod>2015-07-15T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/06/30/operator-overload-in-javascript/</loc>
+    <lastmod>2015-06-30T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/06/29/php-conference-in-fukuoka/</loc>
+    <lastmod>2015-06-29T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/02/01/opengl-es-2-2d-knowledge-6/</loc>
+    <lastmod>2015-02-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/01/27/opengl-es-2-2d-knowledge-5/</loc>
+    <lastmod>2015-01-27T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/01/17/opengl-es-2-2d-knowledge-4/</loc>
+    <lastmod>2015-01-17T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/01/10/opengl-es-2-2d-knowledge-3/</loc>
+    <lastmod>2015-01-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2015/01/03/opengl-es-2-2d-knowledge-2/</loc>
+    <lastmod>2015-01-03T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/12/27/opengl-es-2-2d-knowledge-1/</loc>
+    <lastmod>2014-12-27T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/12/20/opengl-es-2-2d-knowledge-0/</loc>
+    <lastmod>2014-12-20T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/11/05/serializable-class-on-proguard/</loc>
+    <lastmod>2014-11-05T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/10/18/android-dp/</loc>
+    <lastmod>2014-10-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/08/28/iteigo-at-fukuoka-for-the-first-time/</loc>
+    <lastmod>2014-08-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/07/22/ci-for-chrome-extensions2/</loc>
+    <lastmod>2014-07-22T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/06/22/ci-for-chrome-extensions1/</loc>
+    <lastmod>2014-06-22T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/04/15/introduction-weechat-url-hinter/</loc>
+    <lastmod>2014-04-15T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/03/10/reject-git-push-to-remote/</loc>
+    <lastmod>2014-03-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/03/03/introduce-hometype/</loc>
+    <lastmod>2014-03-03T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/02/17/switch-poltergeist-or-selenium-on-capybara/</loc>
+    <lastmod>2014-02-17T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/02/10/how-to-track-git-history/</loc>
+    <lastmod>2014-02-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/01/28/capybara-testing-on-php/</loc>
+    <lastmod>2014-01-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2014/01/24/rails-spring-and-direnv/</loc>
+    <lastmod>2014-01-24T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/12/12/version-up-capistrano-v3/</loc>
+    <lastmod>2013-12-12T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/11/28/collaboration-with-programmer-and-designer/</loc>
+    <lastmod>2013-11-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/11/20/launch-the-intobox/</loc>
+    <lastmod>2013-11-20T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/10/23/send-chat-message-to-facebook/</loc>
+    <lastmod>2013-10-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/09/22/now-we-are-able-to-draw-totoro-to-canvas/</loc>
+    <lastmod>2013-09-22T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/09/14/dropbox-api-on-ruby-on-rails/</loc>
+    <lastmod>2013-09-14T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/09/06/database-cleaner-bugfix/</loc>
+    <lastmod>2013-09-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/06/29/jquery-ajaxzip2-extend/</loc>
+    <lastmod>2013-06-29T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/06/23/jquery-ajaxzip2/</loc>
+    <lastmod>2013-06-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/06/08/git-rebase-reference2/</loc>
+    <lastmod>2013-06-08T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/06/02/zend-framework-http-stub/</loc>
+    <lastmod>2013-06-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/05/30/fukuoka-php-anniversary/</loc>
+    <lastmod>2013-05-30T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/05/16/git-rebase-reference/</loc>
+    <lastmod>2013-05-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/05/12/zsh-vcs-info/</loc>
+    <lastmod>2013-05-12T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/04/09/vagrant-and-librarian-chef/</loc>
+    <lastmod>2013-04-09T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2013/03/08/what-i-have-learned-about-in-pepabo/</loc>
+    <lastmod>2013-03-08T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2012/11/30/cap-and-webi/</loc>
+    <lastmod>2012-11-30T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2012/11/11/php_matsuri/</loc>
+    <lastmod>2012-11-11T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2012/10/30/lets-pair-programing/</loc>
+    <lastmod>2012-10-30T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2012/10/04/rails-jenkins-ci/</loc>
+    <lastmod>2012-10-04T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2012/09/08/rails-asset-pipeline/</loc>
+    <lastmod>2012-09-08T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2012/08/30/jquery-mobile-js-execute/</loc>
+    <lastmod>2012-08-30T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/blog/2011/12/12/cakephp-advent-calender/</loc>
+    <lastmod>2011-12-12T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/android/</loc>
+    <lastmod>2014-11-05T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/cakephp/</loc>
+    <lastmod>2011-12-12T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/capistrano/</loc>
+    <lastmod>2013-12-12T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/capybara/</loc>
+    <lastmod>2014-01-28T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/categories/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/chrome/</loc>
+    <lastmod>2014-03-03T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/ci/</loc>
+    <lastmod>2014-07-22T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/git/</loc>
+    <lastmod>2014-03-10T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/highway/</loc>
+    <lastmod>2015-12-11T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/html5-javascript-canvas/</loc>
+    <lastmod>2013-09-22T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/https/</loc>
+    <lastmod>2015-12-01T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/intobox/</loc>
+    <lastmod>2013-12-12T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/iteigo/</loc>
+    <lastmod>2014-08-28T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/javascript/</loc>
+    <lastmod>2015-06-30T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/javascript-webgl/</loc>
+    <lastmod>2015-07-15T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/jenkins/</loc>
+    <lastmod>2012-10-04T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/jquery/</loc>
+    <lastmod>2013-06-29T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/jquery-mobile/</loc>
+    <lastmod>2012-08-30T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/opengl/</loc>
+    <lastmod>2015-02-01T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/opengl-2d%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA/</loc>
+    <lastmod>2014-12-20T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/php/</loc>
+    <lastmod>2014-01-28T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/post/</loc>
+    <lastmod>2017-09-06T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/rails/</loc>
+    <lastmod>2014-02-17T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/ruby/</loc>
+    <lastmod>2014-01-28T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/ruby-dropbox/</loc>
+    <lastmod>2013-09-14T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/ruby-gem-database_cleaner/</loc>
+    <lastmod>2013-09-06T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/ssl/</loc>
+    <lastmod>2015-12-01T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/</loc>
+    <lastmod>2014-11-05T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/tech/</loc>
+    <lastmod>2015-06-29T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/test/</loc>
+    <lastmod>2013-06-02T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/tls/</loc>
+    <lastmod>2015-12-01T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/weechat/</loc>
+    <lastmod>2014-04-15T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/zendframework/</loc>
+    <lastmod>2013-06-02T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/zsh/</loc>
+    <lastmod>2013-05-30T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/</loc>
+    <lastmod>2017-09-06T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/%E3%82%84%E3%82%8B%E5%A4%AB%E3%81%A7%E5%AD%A6%E3%81%B6/</loc>
+    <lastmod>2016-06-16T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/%E3%83%8B%E3%83%A5%E3%83%BC%E3%83%A9%E3%83%AB%E3%83%8D%E3%83%83%E3%83%88%E3%83%AF%E3%83%BC%E3%82%AF/</loc>
+    <lastmod>2016-05-09T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E6%8E%A8%E5%AE%9A/</loc>
+    <lastmod>2016-08-22T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%9E%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E6%95%B0%E5%AD%A6%E5%8B%89%E5%BC%B7%E4%BC%9A/</loc>
+    <lastmod>2015-12-14T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92/</loc>
+    <lastmod>2017-09-06T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://tkengo.github.io/tags/%E8%87%AA%E7%84%B6%E8%A8%80%E8%AA%9E%E5%87%A6%E7%90%86/</loc>
+    <lastmod>2016-05-09T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+</urlset>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>私達はトトロでさえキャンバスに描画できる &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2013-09-22</p>
+      <h1><a href="http://tkengo.github.io/blog/2013/09/22/now-we-are-able-to-draw-totoro-to-canvas/">私達はトトロでさえキャンバスに描画できる</a></h1>
+    </header>
+    <article>
+      
+
+<p>先日 <a href="https://twitter.com/monochromegane" target="_blank">@monochromegane</a> と一緒に昼ごはんに行ってペペロンチーノを食べてた時「家でもペペロンチーノを作る」という話をしていたら『Vim でペペロンチーノ作るプラグインまだ？』みたいな誰得プラグインの話をしていた僕です。こんにちは。</p>
+
+<p>そんな誰得プラグインに負けないくらい誰得なものが出来上がってしまったのですが、せっかくなので公開しておきます。</p>
+
+<hr />
+
+<p>HTML5 に canvas というブラウザ上に図を書くための機能があります。結構いろいろなことが出来て、パーティクルを飛び交わせたり、かっこいいアニメーションを作ったり、Flash ばりの表現力があります。前々からこの canvas の勉強をしてみたいと思っていたので、一つなにか作ってみようと思って出来たのがこれです。</p>
+
+<p><a href="http://bit.ly/16pH7pY" target="_blank" style="font-size:large;text-shadow:1px 1px 1px #ccc;">canvas にレインボートトロを描画する</a><br/>
+※<strong>Google Chromeでの閲覧推奨です。1分程度のアニメーションですが、アニメーション中は結構CPUを使います。</strong></p>
+
+<p>ソースはブラウザから <strong>ソースの表示</strong> とかでも見れますし、もしくは <a href="https://github.com/tkengo/totoro-on-canvas" target="_blank">github</a> にも公開しています。</p>
+
+<h1 id="html5-の-canvas-を使う">HTML5 の canvas を使う</h1>
+
+<p>canvas の使い方に関しては <a href="http://www.html5.jp/canvas/ref.html" target="_blank">HTML5.jp の Canvas リファレンス</a> が詳しいですが、一応ソースの解説のために簡単な説明だけ書いていきます。</p>
+
+<p>canvas を使うためには、まず以下のような HTML を作ります。</p>
+
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+    &lt;canvas id=&quot;stage&quot;&gt;&lt;/canvas&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>これだけです。HTML に <code>canvas</code> タグさえあれば、あとはこれを JavaScript で操作するだけです。JavaScript では</p>
+
+<pre><code class="language-javascript">canvas = document.getElementById('stage');
+context = canvas.getContext('2d');
+</code></pre>
+
+<p>という風にキャンバスのコンテキストを取得して、それを使って描画していきます。<code>getContext</code> の引数に <strong>2d</strong> と渡す辺り、3Dの表現も扱えそうですが、まだまだそこまで到達できてません。</p>
+
+<p>サンプルのトトロは、半径 3px の円を繋げてトトロの形を作っています。円を書くためにはコンテキストの <code>arc</code> というメソッドを使って</p>
+
+<pre><code class="language-javascript">context.beginPath();
+context.fillStyle = 'rgb(255, 255, 255)';
+context.arc(x, y, 3, 0, Math.PI * 2);
+context.fill();
+</code></pre>
+
+<p>このように書くと、中心座標を (x, y) として半径 3px の白色で塗りつぶした円が描画されます。つまり、この x と y をトトロの形にそって連続で円を描画しています。</p>
+
+<h1 id="トトログラフ">トトログラフ</h1>
+
+<p>トトロの形に沿って (x, y) の座標を定義した配列を作ってその配列分だけ繰り返して円(というか点？)をプロットしていってもいいのですが、今回は平面曲線の関数を使ってみました。</p>
+
+<p><a href="http://www.wolframalpha.com/" target="_blank">Wolfram Alpha</a> というサイトをご存知でしょうか。</p>
+
+<pre>
+Wolfram Alpha（WolframAlphaともWolfram|Alphaとも表記される）はウルフラム・リサーチが開発した質問応答システム。
+事実についての質問に対して、構造化されたデータを使って計算し、直接答えを返すオンラインサービスである。
+他の検索エンジンのように、答えを含んでいる可能性のあるドキュメントやウェブページのリストを返すわけではない。
+</pre>
+
+<div style="text-align:right;">by Wikipedia</div>
+
+<p>まあよくわかりませんが、たとえばこのサイトで <code>totoro curve</code> と検索してみてください。すると x, y の座標軸上にトトロの絵が書いてある検索結果が表示されると思います。そしてその下には恐ろしく長い方程式がありますが、キャプチャを見ると式の先頭に <code>x(t) = ...</code> と表記されていることがわかります。キャプチャには写っていませんが、下の方には <code>y(t) = ...</code> という表記もあります。つまり、この式で計算した (x, y) を画面上にプロットしていけばキャプチャにあるようなトトロの絵が出来上がります。</p>
+
+<p><img src="/assets/img/2013-09-22-now-we-are-able-to-draw-totoro-to-canvas/wolfram_alpha_search_result.png" alt="" /></p>
+
+<h1 id="座標の計算-そして描画">座標の計算、そして描画</h1>
+
+<p>座標の計算をするのが <a href="https://github.com/tkengo/totoro-on-canvas/blob/master/f.js" target="_blank">f.js</a> の <code>f(t)</code> という関数です。トトログラフ(仮名)の式をそのまま JavaScript で書いて計算しているだけです。引数の <code>t</code> には <code>0 〜 100π</code> までの範囲の値を渡すことになります。サンプルのトトログラフでは、10000個の点を繰り返しプロットしていますので <code>0 〜 100π</code> を 10000 分割して、その値を毎回 <code>f</code> の引数として渡し、式を計算して得られた (x, y) 座標に対してキャンバスの <code>arc</code> 関数を使って点を描画しています。</p>
+
+<p>先に紹介した Wolfram Alpha のサイトは検索すれば他のキャラクターのグラフもいくつか存在します。たとえば <a href="http://www.wolframalpha.com/input/?i=hatune+miku+curve" target="_blank">初音ミク</a> だったり <a href="http://www.wolframalpha.com/input/?i=goku+curve" target="_blank">孫悟空</a> だったり。あと、キャラクターとはちょっと違いますが <a href="http://www.wolframalpha.com/input/?i=heart+curve" target="_blank">ハートマーク</a> なんかもあります。</p>
+
+<p>こういったものを参考に、平面曲線の関数 <code>f(t)</code> を置き換えれば自分の好きな絵を書くことができます。</p>
+
+<h1 id="おわりに">おわりに</h1>
+
+<p>github のソースを見てもわかるように、100行もいかないくらいの簡単なソースでここまで出来る canvas はやっぱりすごい。もっとちゃんと勉強すればなんでも出来るようになる気がします。</p>
+
+<p>ただ、やっぱり CPU 使用率は激しいです。トトログラフのプロットを開発してる最中はもちろん何度も再生して確認するわけですが、その度に僕の Mac が ﾌｧｱｱｱｧｱｱｧｧﾝ と悲鳴をあげていました。その点はまだまだ Flash に負けていますが、表現力としては申し分ないですね。これからもっと軽くスマートになっていくんでしょうか。技術の進歩はとても早いので期待しておきます。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/html5-javascript-canvas">html5 javascript canvas</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2013/09/22/now-we-are-able-to-draw-totoro-to-canvas/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2013/09/22/now-we-are-able-to-draw-totoro-to-canvas/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2013/09/22/now-we-are-able-to-draw-totoro-to-canvas/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

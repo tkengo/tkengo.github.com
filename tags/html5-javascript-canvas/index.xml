@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Html5 Javascript Canvas on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/html5-javascript-canvas/</link>
+    <description>Recent content in Html5 Javascript Canvas on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Sun, 22 Sep 2013 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/html5-javascript-canvas/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>私達はトトロでさえキャンバスに描画できる</title>
+      <link>http://tkengo.github.io/blog/2013/09/22/now-we-are-able-to-draw-totoro-to-canvas/</link>
+      <pubDate>Sun, 22 Sep 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/09/22/now-we-are-able-to-draw-totoro-to-canvas/</guid>
+      <description>先日 @monochromegane と一緒に昼ごはんに行ってペペロンチーノを食べてた時「家でもペペロンチーノを作る」という話をしていたら『Vim でペペロンチーノ作るプラグインまだ？』みたいな誰得プラグインの話をしていた僕です。こんにちは。
+そんな誰得プラグインに負けないくらい誰得なものが出来上がってしまったのですが、せっかくなので公開しておきます。
+HTML5 に canvas というブラウザ上に図を書くための機能があります。結構いろいろなことが出来て、パーティクルを飛び交わせたり、かっこいいアニメーションを作ったり、Flash ばりの表現力があります。前々からこの canvas の勉強をしてみたいと思っていたので、一つなにか作ってみようと思って出来たのがこれです。
+canvas にレインボートトロを描画する ※Google Chromeでの閲覧推奨です。1分程度のアニメーションですが、アニメーション中は結構CPUを使います。
+ソースはブラウザから ソースの表示 とかでも見れますし、もしくは github にも公開しています。
+HTML5 の canvas を使う canvas の使い方に関しては HTML5.jp の Canvas リファレンス が詳しいですが、一応ソースの解説のために簡単な説明だけ書いていきます。
+canvas を使うためには、まず以下のような HTML を作ります。
+&amp;lt;!DOCTYPE html&amp;gt; &amp;lt;html&amp;gt; &amp;lt;body&amp;gt; &amp;lt;canvas id=&amp;quot;stage&amp;quot;&amp;gt;&amp;lt;/canvas&amp;gt; &amp;lt;/body&amp;gt; &amp;lt;/html&amp;gt;  これだけです。HTML に canvas タグさえあれば、あとはこれを JavaScript で操作するだけです。JavaScript では
+canvas = document.getElementById(&#39;stage&#39;); context = canvas.getContext(&#39;2d&#39;);  という風にキャンバスのコンテキストを取得して、それを使って描画していきます。getContext の引数に 2d と渡す辺り、3Dの表現も扱えそうですが、まだまだそこまで到達できてません。
+サンプルのトトロは、半径 3px の円を繋げてトトロの形を作っています。円を書くためにはコンテキストの arc というメソッドを使って
+context.beginPath(); context.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>RailsプロジェクトでJenkinsを使ってCIしてみる &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2012-10-04</p>
+      <h1><a href="http://tkengo.github.io/blog/2012/10/04/rails-jenkins-ci/">RailsプロジェクトでJenkinsを使ってCIしてみる</a></h1>
+    </header>
+    <article>
+      
+
+<p>会社のプロジェクトでRuby on Railsを使っていて、Jenkinsを使ってCI環境を整えたくって
+ずっと試行錯誤していたのですが、最近ようやく出来上がったのでその全貌を明らかにします！</p>
+
+<p>ちなみに全部Linuxでの話なので、Windowsの人は残念ながら役に立ちません&hellip;</p>
+
+<h1 id="目標">目標</h1>
+
+<p>今回Jenkinsを使って以下のようなことがやりたかった。</p>
+
+<ol>
+<li>githubにあるリポジトリのRSpecのテストを自動的に実行したい</li>
+<li>Capybaraを使ったテストもやってるので、ブラウザが起動する環境で自動テストを実行したい。
+これは別途デスクトップ環境(今回の場合はUbuntuデスクトップ)を準備してそこでテストさせたい。</li>
+<li>コードカバレッジを出力してるのでJenkinsから見れるようにしたい</li>
+<li>テストケース一覧もJenkinsから見れるようにしたい</li>
+</ol>
+
+<p>この目標に向かっていろいろと設定をしていきます。</p>
+
+<h1 id="javaのインストール">Javaのインストール</h1>
+
+<p>Jenkinsを動作させるにはJavaが必要ですのでJDKをインストールします。
+この記事執筆時点では<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html" target="_blank">こちら</a>から
+最新のJDKがダウンロードできます。JDKのダウンロードボタンをクリックして <strong>Accept License Agreement</strong> の
+ラジオボタンにチェックを入れてからLinux用のJDKをダウンロードしてインストールします。</p>
+
+<pre><code class="language-bash">$ cd /usr/local/src
+$ wget http://download.oracle.com/otn-pub/java/jdk/7u7-b10/jdk-7u7-linux-x64.rpm
+$ rpm -ivh jdk-7u7-linux-x64.rpm
+</code></pre>
+
+<p>これでインストール完了。</p>
+
+<pre><code class="language-bash">$ java -version
+</code></pre>
+
+<p>と打って、Javaのバージョン番号が表示されれば成功。</p>
+
+<h1 id="jenkinsのインストール">Jenkinsのインストール</h1>
+
+<p>yumで簡単にインストールできます。以下rootユーザーで作業します。</p>
+
+<pre><code class="language-bash">$ wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat/jenkins.repo
+$ rpm --import http://pkg.jenkins-ci.org/redhat/jenkins-ci.org.key
+$ yum install jenkins
+</code></pre>
+
+<p>これだけです。そして以下のコマンドで起動できます。</p>
+
+<pre><code class="language-bash">$ /etc/init.d/jenkins start
+</code></pre>
+
+<p>この状態で<code>http://hostname:8080/</code>にアクセスするとJenkinsの画面が開きます。</p>
+
+<p><img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_dashboard.png" alt="JenkinsDashBoard" /></p>
+
+<h1 id="プラグインのインストール">プラグインのインストール</h1>
+
+<p>Jenkinsには豊富なプラグインが存在します。
+今回の目標としていることも、プラグインなしには実現出来ないので、まず最初にプラグインをインストールします。
+<strong>Jenkinsの管理</strong> ＞ <strong>プラグインの管理</strong> とたどっていき、 <strong>利用可能</strong> のタブをクリックします。
+今回使うプラグインは以下の3つです。</p>
+
+<ul>
+<li><strong>Jenkins GIT plugin</strong> Jenkinsからgitを扱えるようになります。</li>
+<li><strong>Jenkins Rake plugin</strong> JenkinsからRakeタスクを実行できるようになります。</li>
+<li><strong>Jenkins ruby metrics plugin</strong> Rcov形式のテストカバレッジのレポートをJenkins上で表示できるようになります。</li>
+</ul>
+
+<p><img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_plugin_filter.png" alt="JenkinsDashBoard" /></p>
+
+<p>プラグインは大量にあって見つけるのが大変なので、フィルターにプラグイン名の一部などを入力して検索します。
+プラグインが見つかったらチェックボックスをつけて画面下側にあるボタンをクリックしてインストールします。
+<strong>再起動せずにインストール</strong> の方が再起動しないので、時間もかからず簡単そうです。</p>
+
+<p><img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_plugin_install_button.png" alt="JenkinsDashBoard" /></p>
+
+<h1 id="スレーブサーバーの用意">スレーブサーバーの用意</h1>
+
+<p>Capybaraのテストをブラウザを使って実行するためのUbuntuデスクトップ環境を別途準備します。
+(別にUbuntuデスクトップをマスターにしてもいいんですが、今回スレーブを試してみたかったので&hellip;)</p>
+
+<h2 id="各種インストール">各種インストール</h2>
+
+<p>スレーブサーバーにはマスターと同じようにJavaやJenkinsをインストールします。
+Jenkinsはインストールするだけで起動はしなくても良いです。
+また、ここでテストを実行することになるのでgitやrubyもインストールしておきます。</p>
+
+<h2 id="鍵の登録">鍵の登録</h2>
+
+<p>このサーバーでgithubからcloneすることになるので、githubにJenkins実行ユーザーの鍵を登録しておきます。
+yumでJenkinsをインストールした時に自動的に<code>jenkins</code>というユーザーができていて、そいつがJenkinsの実行ユーザーなっています。
+ただ、<code>jenkins</code>というユーザーにはログインシェルがなくてログインすらできずに、鍵を作れなかったのでとりあえずログインシェルを登録して鍵を生成。</p>
+
+<pre><code class="language-bash">$ usermod -s /bin/bash jenkins # rootユーザーで。とりあえずbashを設定
+$ su - jenkins
+$ ssh-keygen -t rsa # パスフレーズは空で。Enterキー連打で鍵生成
+$ cat ~/.ssh/id_rsa.pub
+</code></pre>
+
+<p><code>id_rsa.pub</code>の内容をgithubに登録します。鍵の登録はgithubにアクセスして、 <strong>(画面右上の)Account Settings</strong> &gt; <strong>SSH Keys</strong> &gt; <strong>Add SSH key</strong>
+からできます。念のため登録がうまくいってるかどうか確認。</p>
+
+<pre><code class="language-bash">$ ssh git@github.com
+$ Hi tkengo! Youve successfully authenticated, but Github does not provide shell access.
+</code></pre>
+
+<h1 id="jenkins-マスター側-の設定">Jenkins(マスター側)の設定</h1>
+
+<p>さて、ここからJenkinsの設定をしていきます。
+最初はどこに何を指定していいのかが全然わからないんですよね、これ&hellip;</p>
+
+<h2 id="プロジェクトの新規作成">プロジェクトの新規作成</h2>
+
+<p><strong>新規ジョブ作成</strong> から <strong>フリースタイル・プロジェクトのビルド</strong> を選択。
+<strong>ジョブ名</strong> は適当に自分がわかる名前をいれればよいです。
+<img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_create_new_job.png" alt="CreateNewJob" /></p>
+
+<h2 id="スレーブの登録">スレーブの登録</h2>
+
+<p>先に作ったUbuntuのデスクトップを、マスターのJenkinsにスレーブとして登録します。
+<strong>Jenkinsの管理</strong> &gt; <strong>ノードの登録</strong> &gt; <strong>新規ノード作成</strong> とたどっていきます。</p>
+
+<p><img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_register_slave.png" alt="RegisterSlave" /></p>
+
+<p>こんな感じに設定します。 <strong>ホスト</strong> のところは自分の環境のホスト名に置き換えてください。</p>
+
+<h2 id="鍵の登録-1">鍵の登録</h2>
+
+<p>スレーブを設定した時、起動方法に <strong>SSH経由でUnixマシンのスレーブエージェントを起動</strong> を選択しているので、
+スレーブの<code>jenkins</code>ユーザーにマスターの<code>jenkins</code>ユーザーの鍵を登録します。
+スレーブサーバーで鍵を作ったのと同じ要領でコマンドを実行します。
+鍵ができたら、それをスレーブサーバーに転送して登録します。
+コマンドラインでやるとするとこんな感じ。</p>
+
+<pre><code class="language-bash">$ # マスターサーバーのjenkinsユーザーにログインしてやる
+$ # スレーブサーバー名は適宜自分の環境の名前に置き換えて下さい
+$ scp ~/.ssh/id_rsa.pub jenkins@jenkins.ubuntu.local:/home/jenkins
+$ ssh jenkins@jenkins.ubuntu.local
+$ # ここからスレーブサーバーのjenkinsユーザーでの操作
+$ cat ~/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys
+$ chmod 600 ~/.ssh/authorized_keys
+</code></pre>
+
+<p>念のためパスワードなしでログイン出来るかどうか確認。</p>
+
+<pre><code class="language-bash">$ # マスターサーバーのjenkinsユーザーで
+$ ssh jenkins@jenkins.ubuntu.local
+</code></pre>
+
+<h2 id="scm">SCM</h2>
+
+<p>githubを使うので当然gitを選択します。
+リポジトリ名とブランチ名を入力するエリアが出てくるのでそれぞれ入力します。</p>
+
+<p><img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_setting_scm.png" alt="SettingSCM" /></p>
+
+<p>リポジトリを入力すると認証に失敗した旨のエラーメッセージが出ますが、認証のための鍵は、
+実際にテストを実行するスレーブサーバー(Ubuntuデスクトップ)側で登録しているので無視します。</p>
+
+<h2 id="ビルド-トリガ">ビルド・トリガ</h2>
+
+<p>テストを走らせるためのトリガを定義します。githubにpushされたら自動的にテスト実行というのが理想的なのですが、
+Jenkinsが社内ローカル環境にあるため、githubからのpush通知を受け取れません。</p>
+
+<p>なので、githubを5分毎に見に行って(ポーリング)更新があればテストを走らせるようにトリガを設定しました。</p>
+
+<p><img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_setting_build_trigger.png" alt="SettingBuildTrigger" /></p>
+
+<h2 id="ビルド">ビルド</h2>
+
+<p>いよいよここでテスト実行の設定をします。といっても、単にテストの時に手動で打ってるコマンドを実行するだけなんですが。
+<strong>シェルの実行</strong> を選んで、今回の場合はこんな感じ。</p>
+
+<p><img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_setting_execute_shell.png" alt="SettingExecuteShell" /></p>
+
+<p><em>export DISPLAY=:0.0</em> の部分はUbuntuデスクトップでコマンドラインからGUIのブラウザを起動させるために必要な設定です。
+GUIのプログラムを起動するためのディスプレイの番号を指定しないといけないようです。
+これを指定していないとFirefoxが起動せずに、1日くらいはまりました。</p>
+
+<h2 id="ビルド後の処理">ビルド後の処理</h2>
+
+<p>ビルドが終わった後の処理を定義していきます。
+まず、今回のRailsプロジェクトでは<a href="https://github.com/nicksieger/ci_reporter" target="_blank">ci_reporter</a>というgemを使って、
+テスト結果をJUnit互換のxml形式に吐き出しています。
+それをJenkinsに食べさせてJenkinsから参照できるようにします。</p>
+
+<p><img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_setting_after_build1.png" alt="SettingAfterBuild1" /></p>
+
+<p>それと、<a href="https://github.com/colszowka/simplecov" target="_blank">simplecov</a>と<a href="https://github.com/fguillen/simplecov-rcov" target="_blank">simplecov-rcov</a>というgemを使ってコードカバレッジも出力しています。
+これも同様にJenkinsに食べさせることで、Jenkinsから参照できるようにします。</p>
+
+<p><img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_setting_after_build2.png" alt="SettingAfterBuild2" /></p>
+
+<h1 id="ビルド実行">ビルド実行</h1>
+
+<p>さて、ようやくここまででJenkinsの設定が終わりました。どきどきしながら <strong>ビルド実行</strong> をクリックします。</p>
+
+<p><img src="/assets/img/2012-10-04-rails-jenkins-ci/jenkins_execute_build.png" alt="SettingExecuteBuild" /></p>
+
+<p>VNCでUbuntuデスクトップを覗いてみると&hellip;おおおおFirefoxが起動してテストしてくれてる！
+試行錯誤を繰り返した末にきちんと動いてくれたのは感動的でした。</p>
+
+<p>あとはJenkinsが取り込んでくれたテスト結果やコードカバレッジのグラフなんかをみてニヤニヤします。</p>
+
+<h1 id="終わりに">終わりに</h1>
+
+<p>どうでしたか。導入がなかなか大変だとは思いますが、環境を作ってしまえばとても楽しいです。
+ここに紹介した他に、今うちのチームではビルド後の処理として、テストが終わる度にIRCチャンネルに通知するという処理をやっています。
+それでこんな運用をしています。</p>
+
+<ul>
+<li>プログラマがソースコードを修正してgithubにpush</li>
+<li>Jenkinsが5分に一回拾ってくれて自動的にテストを走らせる</li>
+<li>ディレクターやリーダーなどがIRCでその通知を確認</li>
+<li>Jenkinsからgitのログを参照して、変更点を確認する</li>
+</ul>
+
+<p>まだまだ始めたばかりで試験的ではありますが、なによりちゃんとCIされてる感じで楽しいです。</p>
+
+<p>CIライフはじめてみませんか。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/jenkins">Jenkins</a>
+      
+        <a class="tag-link" href="tags/rails">Rails</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2012/10/04/rails-jenkins-ci/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2012/10/04/rails-jenkins-ci/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2012/10/04/rails-jenkins-ci/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

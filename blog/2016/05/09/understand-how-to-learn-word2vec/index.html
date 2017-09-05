@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>Word2Vec のニューラルネットワーク学習過程を理解する &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2016-05-09</p>
+      <h1><a href="http://tkengo.github.io/blog/2016/05/09/understand-how-to-learn-word2vec/">Word2Vec のニューラルネットワーク学習過程を理解する</a></h1>
+    </header>
+    <article>
+      
+
+<p>Word2Vec というと、文字通り単語をベクトルとして表現することで単語の意味をとらえることができる手法として有名なものですが、最近だと <a href="http://arxiv.org/abs/1603.04259">Word2Vec を協調フィルタリングに応用する研究 (Item2Vec と呼ばれる)</a> などもあるようで、この Word2Vec というツールは自然言語処理の分野の壁を超えて活躍しています。</p>
+
+<p>実は Item2Vec を実装してみたくて Word2Vec の仕組みを理解しようとしていたのですが、Word2Vec の内部の詳細に踏み込んで解説した日本語記事を見かけることがなかったので、今更感はありますが自分の知識の整理のためにもブログに残しておきます。なお、この記事は Word2Vec のソースコードといくつかのペーパーを読んで自力で理解した内容になります。間違いが含まれている可能性もありますのでご了承ください。もし間違いを見つけた場合は指摘してもらえると修正します。</p>
+
+<p><em>※この記事を読むにあたっては、ニューラルネットワーク及び確率的勾配降下法に関する基礎知識程度は必要です。</em></p>
+
+<h1 id="word2vec">Word2Vec</h1>
+
+<p>Word2Vec の正体は、隠れ層と出力層の 2 層からなる単純なニューラルネットワークです。このニューラルネットワークに次々に単語を読み込ませて重みを学習させていくのですが、Word2Vec で獲得できる単語のベクトル表現というのは実はネットワークの重みそのものです。入力データに対する &ldquo;良い表現&rdquo; を獲得するという意味では自己符号化器 (オートエンコーダ) に近いものがあると思います。</p>
+
+<p>Word2Vec のネットワークのアーキテクチャとしては CBoW 及び Skip-gram と呼ばれる 2 種類があり、また学習を高速化するテクニックとして Hierarchical Softmax 及び Negative Sampling の 2 種類が提案されています。Word2Vec 論文の著者が公開しているオリジナルの C のソースコードでは両方のアーキテクチャ及び高速化テクニックが実装されていますが、この記事では Skip-gram と Negative Sampling について書いていきます。CBoW 及び Hierarchical Softmax については機会があれば別途記事を書きます。</p>
+
+<h1 id="skip-gram-でモデル化する">Skip-gram でモデル化する</h1>
+
+<p>Skip-gram とは、ある単語が与えられた時、その周辺の単語を予測するためのモデルです。たとえば以下のような単語の集合があったとしましょう。このようなものはボキャブラリと呼ばれます。</p>
+
+<pre><code>{ I, am, a, programmer, like, dog, cat }
+</code></pre>
+
+<p>これらの単語を使って文章を作ってください、と言われたら <code>I am a programmer</code> や <code>I like a dog</code> などの文章がすぐに思い浮かぶでしょう。ここで作った文章中の <code>I</code> という単語に注目すると、その次には <code>am</code> や <code>like</code> が現れて、さらにその次には <code>a</code> があって、それに続いて <code>programmer</code> や <code>dog</code> があります。しかし、<code>I</code> の次にいきなり <code>programmer</code> や <code>dog</code> といった単語はあまり現れないでしょう。つまり <code>I</code> という単語の周辺にはどういった単語が出現しやすいか、という確率を考えることができます。</p>
+
+<p>さて、このような確率を、以下のような条件付き確率として softmax 関数を使ってモデル化します。</p>
+
+<p>$$
+p(w_O|w_I) = \frac{\exp(\boldsymbol{v&rsquo;}_{w_O}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I})}{\sum_{w_v \in V} \exp(\boldsymbol{v&rsquo;}_{w_v}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I})}
+$$</p>
+
+<p style="text-align:center;font-size:13px;color:#828282;">
+※$\exp(x) = \mathrm{e}^x$ です。また $\boldsymbol{v}^{\mathrm{T}}$ は $\boldsymbol{v}$ の転置、$\boldsymbol{v}^{\mathrm{T}} \cdot \boldsymbol{v}$ はベクトルの内積です。
+</p>
+
+<p>$w_I$ は注目する単語 (添字の $I$ は Input の $I$)、$w_O$ は $w_I$ の周辺の単語 (添字の $O$ は Output の $O$)、$V$ はボキャブラリ、$\boldsymbol{v}_{w_I}$ と $\boldsymbol{v&rsquo;}_{w_O}$ は単語を表すベクトルです。$\boldsymbol{v}$ と $\boldsymbol{v&rsquo;}$ は別物で、$\boldsymbol{v}$ は入力ベクトル、$\boldsymbol{v&rsquo;}$ は出力ベクトルと呼ばれます。さて、この式を計算することで $w_I$ と $w_O$ が共起する確率を計算できます。</p>
+
+<p>たとえば $w_I$ が <code>I</code> であるとした時、いくつかの $w_O$ ついて例を挙げてみると</p>
+
+<ul>
+<li>$w_O$ が <code>am</code> ならば $p(am|I)$ は高くなって欲しい。<code>I am ...</code> は自然な文章だから。</li>
+<li>$w_O$ が <code>like</code> ならば $p(like|I)$ は高くなって欲しい。<code>I like ...</code> も自然な文章だから。</li>
+<li>$w_O$ が <code>dog</code> ならば $p(dog|I)$ は低くなって欲しい。<code>I dog ...</code> はなんかおかしいから。</li>
+</ul>
+
+<p>ここにコンテキスト $C$ というものを導入して、以下のような同時確率を考えます。</p>
+
+<p>$$
+p(w_{O,1},w_{O,2},\cdots,w_{O,C}|w_I) = \prod_{c=1}^C \frac{\exp(\boldsymbol{v&rsquo;}_{w_{O,c}}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I})}{\sum_{w_v \in V} \exp(\boldsymbol{v&rsquo;}_{w_v}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I})}
+$$</p>
+
+<p>ここでのコンテキスト $C$ は注目する単語の前後にある単語です。たとえば <code>I am a programmer</code> という文章で、前後 1 単語ずつを考える場合は以下のようになります。(このような前後の単語数をコンテキストサイズと言います。つまり以下の例ではコンテキストサイズは 1 となります)</p>
+
+<ul>
+<li>$w_I$ が <code>I</code> の時、$C$ は <code>{ am }</code></li>
+<li>$w_I$ が <code>am</code> の時、$C$ は <code>{ I, a }</code></li>
+<li>$w_I$ が <code>a</code> の時、$C$ は <code>{ am, programmer }</code></li>
+<li>$w_I$ が <code>programmer</code> の時、$C$ は <code>{ a }</code></li>
+</ul>
+
+<p>このように前後のコンテキストまで含めた確率 $p(w_{O,1},w_{O,2},\cdots,w_{O,C}|w_I)$ を考えた時、その確率が最大となるようなベクトル $\boldsymbol{v}$ が、単語の &ldquo;良い表現&rdquo; になるであろうという仮定を置きます。それこそが Word2Vec が出力する単語ベクトルとなります。</p>
+
+<p>$$
+\mathop{\mathrm{argmax}}\limits_{\boldsymbol{W},\boldsymbol{W&rsquo;}} p(w_{O,1},w_{O,2},\cdots,w_{O,C}|w_I)
+$$</p>
+
+<p style="text-align:center;font-size:13px;color:#828282;">
+※ボキャブラリの全単語に対する $\boldsymbol{v}$、$\boldsymbol{v'}$ を並べたものをそれぞれ $\boldsymbol{W}$、$\boldsymbol{W'}$ としています。
+</p>
+
+<h1 id="ニューラルネットワークを構築する">ニューラルネットワークを構築する</h1>
+
+<p>それでは、先ほど考えた Skip-gram のモデルに対して、以下のようなニューラルネットワークを考えます。全て全結合層になっています。$V$ はボキャブラリの単語数、$N$ は単語ベクトルの次元、$C$ はコンテキストサイズです。</p>
+
+<div style="text-align:center;">
+<img src="/assets/img/understand-how-to-learn-word2vec/neural-network.png" style="border-width:0;">
+</div>
+
+<p>ひとつ注意ですが、これからネットワークを考えるにあたって $w_I$ や $w_O$ は実際の単語そのものではなく、ボキャブラリ内でのインデックスとして考えます。今後も最初に例として挙げた以下のようなボキャブラリを使って記事を書き進めていきますが、$w_I = 1$ だと <code>I</code>、$w_I = 2$ だと <code>am</code>、$w_I = 3$ だと <code>a</code>、がそれぞれ入力されたという意味になります。</p>
+
+<pre><code>{ I, am, a, programmer, like, dog, cat }
+</code></pre>
+
+<h2 id="入力層">入力層</h2>
+
+<p>入力層のベクトル $\boldsymbol{x}$ は $V$ 次元です。ボキャブラリは一般的には $10^5$ 〜 $10^7$ 程度の語彙数になるので、$\boldsymbol{x}$ の次元もそれくらい大きなものになります。$\boldsymbol{x}$ は $w_I$ の単語に対応する要素 $x_{w_I}$ が 1 で、他はすべて 0 という、いわゆる one-hot-vector です。</p>
+
+<p>たとえば $w_I = 1$ の場合、入力層のベクトル $\boldsymbol{x}$ はこのようになります。</p>
+
+<p>$$
+\boldsymbol{x} = \left[
+  \begin{array}{l}
+    x_1 \<br />
+    x_2 \<br />
+    x_3 \<br />
+    x_4 \<br />
+    x_5 \<br />
+    x_6 \<br />
+    x_7
+  \end{array}
+\right] = \left[
+  \begin{array}{l}
+  \color{red}1 \cdots I \<br />
+  0 \cdots am \<br />
+  0 \cdots a \<br />
+  0 \cdots programmer \<br />
+  0 \cdots like \<br />
+  0 \cdots dog \<br />
+  0 \cdots cat
+  \end{array}
+\right]
+$$</p>
+
+<p>それでは $w_I = 2$ の場合はどうでしょうか？その場合、入力層のベクトル $\boldsymbol{x}$ がこうなるのはすぐにわかるでしょう。</p>
+
+<p>$$
+\boldsymbol{x} = \left[
+  \begin{array}{l}
+    x_1 \<br />
+    x_2 \<br />
+    x_3 \<br />
+    x_4 \<br />
+    x_5 \<br />
+    x_6 \<br />
+    x_7
+  \end{array}
+\right] = \left[
+  \begin{array}{l}
+  0 \cdots I \<br />
+  \color{red}1 \cdots am \<br />
+  0 \cdots a \<br />
+  0 \cdots programmer \<br />
+  0 \cdots like \<br />
+  0 \cdots dog \<br />
+  0 \cdots cat
+  \end{array}
+\right]
+$$</p>
+
+<h2 id="隠れ層">隠れ層</h2>
+
+<p>入力層から隠れ層への重み $\boldsymbol{W}$ は単語ベクトル $\boldsymbol{v}$ を並べたものです。具体的には、ボキャブラリの全単語の単語ベクトルを横に並べた行列です。$N$ 次元の単語ベクトルが $V$ 個並んだものなので行列のサイズは $N \times V$ です。ベクトルについている添字がボキャブラリの単語のインデックスに対応しています。$\boldsymbol{v}_1$ は <code>I</code> に対するベクトルですし、$\boldsymbol{v}_2$ は <code>am</code> に対するベクトルになります。</p>
+
+<p>$$
+\begin{eqnarray}
+\boldsymbol{W} &amp; = &amp; \left[
+  \begin{array}{lllllll}
+    \boldsymbol{v}_1 &amp;
+    \boldsymbol{v}_2 &amp;
+    \boldsymbol{v}_3 &amp;
+    \boldsymbol{v}_4 &amp;
+    \boldsymbol{v}_5 &amp;
+    \boldsymbol{v}_6 &amp;
+    \boldsymbol{v}_7
+  \end{array}
+\right] \\ &amp; = &amp; \left[
+  \begin{array}{cccc}
+    v_{11} &amp; v_{21} &amp; v_{31} &amp; v_{41} &amp; v_{51} &amp; v_{61} &amp; v_{71} \<br />
+    v_{12} &amp; v_{22} &amp; v_{32} &amp; v_{42} &amp; v_{52} &amp; v_{62} &amp; v_{72} \<br />
+    v_{13} &amp; v_{23} &amp; v_{33} &amp; v_{43} &amp; v_{53} &amp; v_{63} &amp; v_{73} \<br />
+    \vdots  &amp; \vdots  &amp; \vdots  &amp; \vdots  &amp; \vdots  &amp; \vdots  &amp; \vdots  \<br />
+    v_{1N} &amp; v_{2N} &amp; v_{3N} &amp; v_{4N} &amp; v_{5N} &amp; v_{6N} &amp; v_{7N}
+  \end{array}
+\right]
+\end{eqnarray}
+$$</p>
+
+<p>これが入力層から隠れ層への重み $\boldsymbol{W}$ です。隠れ層は全結合層なので、重み $\boldsymbol{W}$ と入力データ $\boldsymbol{x}$ を掛けたものが隠れ層のユニット $\boldsymbol{h}$ になります。</p>
+
+<p>$$
+\boldsymbol{h} = \boldsymbol{Wx}
+$$</p>
+
+<p>さて $\boldsymbol{x}$ は one-hot-vector だったことを思い出してください。たとえば $w_I = 2$ の場合を考えてみると、以下のように結局は 2 番目の単語ベクトルがそのまま出力されることがわかります。</p>
+
+<p>$$
+\boldsymbol{Wx} = \left[
+  \begin{array}{lllllll}
+    \boldsymbol{v}_1 &amp;
+    \boldsymbol{v}_2 &amp;
+    \boldsymbol{v}_3 &amp;
+    \boldsymbol{v}_4 &amp;
+    \boldsymbol{v}_5 &amp;
+    \boldsymbol{v}_6 &amp;
+    \boldsymbol{v}_7
+  \end{array}
+\right]\left[
+  \begin{array}{l}
+  0 \<br />
+  \color{red}1 \<br />
+  0 \<br />
+  0 \<br />
+  0 \<br />
+  0 \<br />
+  0
+  \end{array}
+\right] = \boldsymbol{v}_2
+$$</p>
+
+<p>つまり、隠れ層のユニットは重み行列の $w_I$ 列目の単語ベクトルそのものとなることがわかります。このネットワークでは隠れ層に活性化関数は使いませんので、隠れ層の出力はそのまま $\boldsymbol{v}_{w_I}$ となります。</p>
+
+<p>$$
+\boldsymbol{h} = \boldsymbol{Wx}_{w_I} = \boldsymbol{v}_{w_I}
+$$</p>
+
+<h2 id="出力層">出力層</h2>
+
+<p>隠れ層から出力層への重み $\boldsymbol{W&rsquo;}$ も同じように単語ベクトル $\boldsymbol{v&rsquo;}$ を並べたものです。$\boldsymbol{W}$ と同じように、ボキャブラリの全単語の単語ベクトルを並べます。ただし今度は各単語ベクトルを転置したものを縦に並べた行列です。こちらは $V \times N$ のサイズになります。</p>
+
+<p>$$
+\boldsymbol{W&rsquo;} = \left[
+  \begin{array}{l}
+    \boldsymbol{v&rsquo;}_1^{\mathrm{T}} \<br />
+    \boldsymbol{v&rsquo;}_2^{\mathrm{T}} \<br />
+    \boldsymbol{v&rsquo;}_3^{\mathrm{T}} \<br />
+    \boldsymbol{v&rsquo;}_4^{\mathrm{T}} \<br />
+    \boldsymbol{v&rsquo;}_5^{\mathrm{T}} \<br />
+    \boldsymbol{v&rsquo;}_6^{\mathrm{T}} \<br />
+    \boldsymbol{v&rsquo;}_7^{\mathrm{T}}
+  \end{array}
+\right] = \left[
+  \begin{array}{ccccc}
+    v&rsquo;_{11} &amp; v&rsquo;_{12} &amp; v&rsquo;_{13} &amp; \cdots &amp; v&rsquo;_{1N} \<br />
+    v&rsquo;_{21} &amp; v&rsquo;_{22} &amp; v&rsquo;_{23} &amp; \cdots &amp; v&rsquo;_{2N} \<br />
+    v&rsquo;_{31} &amp; v&rsquo;_{32} &amp; v&rsquo;_{33} &amp; \cdots &amp; v&rsquo;_{3N} \<br />
+    v&rsquo;_{41} &amp; v&rsquo;_{42} &amp; v&rsquo;_{43} &amp; \cdots &amp; v&rsquo;_{4N} \<br />
+    v&rsquo;_{51} &amp; v&rsquo;_{52} &amp; v&rsquo;_{53} &amp; \cdots &amp; v&rsquo;_{5N} \<br />
+    v&rsquo;_{61} &amp; v&rsquo;_{62} &amp; v&rsquo;_{63} &amp; \cdots &amp; v&rsquo;_{6N} \<br />
+    v&rsquo;_{71} &amp; v&rsquo;_{72} &amp; v&rsquo;_{73} &amp; \cdots &amp; v&rsquo;_{7N}
+  \end{array}
+\right]
+$$</p>
+
+<p>出力層にはコンテキストサイズ $C$ の分だけユニットがあり、各コンテキストでは重み $\boldsymbol{W&rsquo;}$ を共有します。出力層も各コンテキスト毎に全結合されているので、重み $\boldsymbol{W&rsquo;}$ と隠れ層の出力値 $\boldsymbol{v}_{w_I}$ を掛けたものが、出力層の各コンテキストのユニット $\boldsymbol{u}_c$ になります。</p>
+
+<p>$$
+\boldsymbol{u}_c = \boldsymbol{W&rsquo;v}_{w_I}
+$$</p>
+
+<p>出力層での活性化関数は softmax 関数を使いますので、最終的な出力値 $y_{c,i}$ は以下のようになります。この $y_{c,i}$ は、最初に Skip-gram でモデル化した時の確率になることは既にお分かりでしょう。</p>
+
+<p>$$
+y_{c,i} = \frac{\exp(u_{c,i})}{\sum_{v=1}^V \exp(u_{c,v})}
+         = \frac{\exp(\boldsymbol{v&rsquo;}_i \cdot \boldsymbol{v}_{w_I})}{\sum_{v=1}^V \exp(\boldsymbol{v&rsquo;}_v \cdot \boldsymbol{v}_{w_I})}
+         = p(w_{i}|w_I)
+$$</p>
+
+<h1 id="最適なパラメータを見つける">最適なパラメータを見つける</h1>
+
+<p>ネットワークの全貌が把握できたところで、重みを最適化する作業に入っていきましょう。ニューラルネットワークの最適化で最も良く使われるのは確率的勾配降下法 (SGD) ですので、ここでも SGD を使って最適化していきます。目標としているのは $w_I$ の周辺コンテキストにおいて各単語の出現確率を考えた同時確率 $p(w_1,w_2,\cdots,w_C|w_I)$ を最大化するような単語のベクトル表現を見つけることです。</p>
+
+<p>SGD の目的関数として、以下のものを使います。</p>
+
+<p><a name="e1"></a>
+$$
+E = - \log p(w_1,w_2,\cdots,w_C|w_I) \tag{1}
+$$</p>
+
+<p style="text-align:center;font-size:13px;color:#828282;">
+※ここでの対数は自然対数です。つまり底は $\mathrm{e}$ です。
+</p>
+
+<p>先頭にマイナスをつけたのは、最大化問題を最小化問題に置き換えるためです。$f(x)$ を最大化する問題と、$-f(x)$ を最小化する問題は同じだということですね。</p>
+
+<p>また、対数をとったのはアンダーフローを防ぎつつ計算を楽にするためです。今回、最適化の対象となる関数は前述の通り同時確率であり、同時確率の計算は 1 以下の数字を何度もかけることになりますので、値がどんどん小さくなっていきます。対数をとると、掛け算を足し算に変換できますので値が小さくなることを防げると共により簡単な足し算として計算できるようになります。</p>
+
+<p>では、今考えているネットワークに対応させるために <a href="#e1">(1)</a> を、ネットワークの出力 $y$ を使って表します。$p(w_1,w_2,\cdots,w_C|w_I)$ は、最初の方にも出てきましたが softmax の掛け算なので $y$ を使って以下のように表すことができます。</p>
+
+<p><a name="e2"></a>
+$$
+p(w_1,w_2,\cdots,w_C|w_I) = \prod_{c=1}^C y_{c,w_c} \tag{2}
+$$</p>
+
+<p>この <a href="#e2">(2)</a> を <a href="#e1">(1)</a> に代入して変形を繰り返していくと、最終的には目的関数は以下のような形になります。</p>
+
+<p><a name="e3"></a>
+$$
+E = - \sum_{c=1}^C \left( u_{c,w_c} - \log \sum_{v=1}^V \exp(u_{c,v}) \right) \tag{3}
+$$</p>
+
+<p>最小化すべき目的関数 $E$ がわかったところで、$E$ を出力層と隠れ層の重み $\boldsymbol{W&rsquo;}, \boldsymbol{W}$ の各要素で偏微分し、以下のような重みの更新式を得ることができます。</p>
+
+<p>$$
+\begin{eqnarray}
+v&rsquo;_{ij}   &amp; := &amp; v&rsquo;_{ij} - \eta \sum_{c=1}^C (y_{c,i} - t_{c,i}) v_{w_Ij} \<br />
+v_{w_Ii} &amp; := &amp; v_{w_Ii} - \eta \sum_{c=1}^C \sum_{v=1}^V (y_{c,v} - t_{c,v}) v&rsquo;_{vi}
+\end{eqnarray}
+$$</p>
+
+<p style="text-align:center;font-size:13px;color:#828282;">
+※目的関数の変形及び偏微分の計算は省略しているので、興味のある人は補填を参照。<br/>
+<a href="#c1">目的関数の導出</a>, <a href="#c2">$v'_{ij}$ での偏微分</a>, <a href="#c3">$v_{w_I}$ での偏微分</a>
+</p>
+
+<h1 id="negative-sampling">Negative Sampling</h1>
+
+<p>ニューラルネットワークを構築し、重みの更新式も手に入れたのであとは実装するのみになりました。さて、実装できたので学習するぞー、と意気込んで学習を始めてみたところ 1 つの問題にぶち当たります。それは計算量が爆発しすぎて学習がなかなか終わらない問題です。ネットワークの出力値である $y_{c,i}$ について思い出してみてください。</p>
+
+<p>$$
+y_{c,i} = \frac{\exp(\boldsymbol{v&rsquo;}_i \cdot \boldsymbol{v}_{w_I})}{\sum_{v=1}^V \exp(\boldsymbol{v&rsquo;}_v \cdot \boldsymbol{v}_{w_I})}
+$$</p>
+
+<p>この式の分母に $V$ 回の繰り返しがあります。これまで使用してきたサンプルボキャブラリでは 7 個しか単語がなかったため問題ありませんが、先にも書いたように一般的に $V$ の語彙数は $10^5$ 〜 $10^7$ オーダーであるため、この部分の計算コストが高くつきます。しかもこれは、学習のイテレーション毎に計算しなおさなければなりませんので、なかなか学習が終わりません。そこで使われる高速化のテクニックが Negative Sampling です。</p>
+
+<p>ある単語のペア $(w_I, w_O)$ が学習データから生成されたかどうかの確率を考え、それを $p(D=1|w_I,w_O)$ として、また逆に学習データから生成されて &ldquo;いない&rdquo; 確率を $p(D=0|w_I,w_O)$ とします。$D=1$ の方はシグモイド関数とし、$D=0$ の方は確率の定義から以下のようになります。</p>
+
+<p><a name="neg"></a>
+$$
+\begin{eqnarray}
+p(D=1|w_I,w_O) &amp; = &amp; \sigma(\boldsymbol{v&rsquo;}_{w_O}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I}) \<br />
+p(D=0|w_I,w_O) &amp; = &amp; 1 - p(D=1|w_I,w_O)
+\end{eqnarray}
+$$</p>
+
+<p>上の 2 式から以下のような新しい目的関数を考えます。</p>
+
+<p><a name="e4"></a>
+$$
+E = - \log p(D=1|w_I,w_O) \prod_{v \in V_{Neg}} p(D=0|w_I,v) \tag{4}
+$$</p>
+
+<p>新しく $V_{Neg}$ という集合が出てきましたが、これは元々のボキャブラリの集合から適当に $k$ 個だけサンプリングしてきたものです。この $k$ 個のサンプルはランダムに選ばれるわけではなく、とある $P_n(w)$ という確率分布から生成されるサンプルを集めます。この $P_n(w)$ をノイズ分布と言い、Word2Vec では以下の様な確率分布をノイズ分布 $P_n(w)$ として使っています。式中の $U(w)$ は学習データ中に単語 $w$ が出現する回数です。</p>
+
+<p>$$
+P_n(w) = \frac{U(w)^{\frac{3}{4}}}{\sum_{v=1}^V U(w_v)^{\frac{3}{4}}}
+$$</p>
+
+<p>このように学習に $k$ 個程度のサンプルを不正解データとして混ぜ込むことから Negative Sampling という名前がついています。この $k$ という値は、論文によると通常 5 〜 20 程度で十分であり、またデータセットが十分に大きければ 2 〜 5 個程度でも良い性能を発揮してくれるとのことです。</p>
+
+<p><a href="#e4">(4)</a> の目的関数を最小化することで、正解単語には高い確率が割り当てられ、不正解単語 (ノイズ) には低い確率が割り当てられるような動きになり、それを元に単語ベクトルが学習されていきますが、この目的関数の意味するところは本質的には softmax 関数の近似です。元々は softmax の式を求めるためには $V$ 回の繰り返し計算が不可欠でしたが、これはたかだか $k+1$ 回の計算で softmax を近似できているため計算量的にかなり楽になっています。Noise Contrastive Estimation (NCE) と呼ばれる手法で別途論文が書かれており、それを参考にしているようです。</p>
+
+<p>さて、<a href="#e4">(4)</a> の目的関数を変形していくと最終的に以下のような式が得られます。</p>
+
+<p>$$
+E = - \log \sigma(\boldsymbol{v&rsquo;}_{w_O}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I}) - \sum_{v \in V_{Neg}} \log \sigma(-\boldsymbol{v&rsquo;}_{v}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I})
+$$</p>
+
+<p>Skip-gram でやったのと同じように重みの更新式を導出するために $E$ を偏微分すると、最終的には以下のような重みの更新式が得られます。</p>
+
+<p>$$
+\begin{eqnarray}
+v&rsquo;_{ij}   &amp; := &amp; v&rsquo;_{ij} - \eta (\sigma(\boldsymbol{v&rsquo;}_i^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I}) - t_i) v_{w_Ij} \<br />
+v_{w_Ii} &amp; := &amp; v_{w_Ii} - \eta \sum_{v \in \{w_O\} \cup V_{Neg}} (\sigma(\boldsymbol{v&rsquo;}_{v}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I}) - t_{v}) v&rsquo;_{vi}
+\end{eqnarray}
+$$</p>
+
+<p style="text-align:center;font-size:13px;color:#828282;">
+※目的関数の変形及び偏微分の計算は省略しているので、興味のある人は補填を参照。<br/>
+<a href="#c4">目的関数の導出</a>, <a href="#c5">$v'_{ij}$ での偏微分</a>, <a href="#c6">$v_{w_I}$ での偏微分</a>
+</p>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>Word2Vec の内部構造について書いてみました。中身がわからないうちはどうやって動いているんだろうと不思議でしたが、ちゃんと調べてみると自分でも理解できるような単純なニューラルネットワークだったので意外でした。結局やっているのは単純な 2 層ネットワークの重みの最適化ですしね。Negative Sampling の紹介もしましたが、こちらは高速化テクニックになるので不要であれば必ず実装する必要はありません。実際 Negative Sampling は Skip-gram が発表されてからしばらく後に提案されたもののようですし、時間がかかりながらも頑張って <a href="#e3">(3)</a> の目的関数を最適化すればうまくいくのでしょう (やったことないけど)。</p>
+
+<p>もしこれを読んでおおまかな流れがわかったのであれば、Word2Vec のソースコードを読む、または自分で実装してみるのも面白いと思います。私が読んだことがあるのはオリジナルの C での実装だけですが、世の中には他にも Python (gensim) や Java (Deepleaning4j) での実装があり、また Chainer や TensorFlow などのフレームワークを使った実装もあるようなので、学習環境には事欠かないのではないでしょうか。</p>
+
+<p>最後に面白かったのが、とある論文の最後に「なぜこれが良い単語表現を見つけてくれるのか」という章があり、その内容が「良い質問だ。我々もまったく知らない」だったことです。ニューラルネットワーク界隈は経験則的にそれが良い結果を生み出すことはわかっていても、理論的になぜそうなるのかはわかっていないような問題が多く、Word2Vec もその典型なのでしょう。</p>
+
+<h1 id="参考リンク">参考リンク</h1>
+
+<p>論文集</p>
+
+<ul>
+<li><a href="http://arxiv.org/abs/1301.3781">Tomas Mikolov, Kai Chen, Greg Corrado, Jeffrey Dean. Efficient Estimation of Word Representations in Vector Space. 2013</a></li>
+<li><a href="https://arxiv.org/abs/1310.4546">Tomas Mikolov, Ilya Sutskever, Kai Chen, Greg Corrado, Jeffrey Dean. Distributed Representations of Words and Phrases and their Compositionality. 2013</a></li>
+<li><a href="http://arxiv.org/abs/1402.3722">Yoav Goldberg, Omer Levy. word2vec Explained: deriving Mikolov et al.&rsquo;s negative-sampling word-embedding method. 2014</a></li>
+<li><a href="http://arxiv.org/abs/1411.2738">Xin Rong. word2vec Parameter Learning Explained. 2014</a></li>
+</ul>
+
+<p>実装</p>
+
+<ul>
+<li><a href="https://code.google.com/archive/p/word2vec/">C</a></li>
+<li><a href="http://deeplearning4j.org/word2vec">DeepLearning4J (Java)</a></li>
+<li><a href="https://radimrehurek.com/gensim/models/word2vec.html">gensim (Python)</a></li>
+<li><a href="https://github.com/tensorflow/tensorflow/tree/master/tensorflow/examples/tutorials/word2vec">TensorFlow</a></li>
+<li><a href="https://github.com/pfnet/chainer/tree/master/examples/word2vec">Chainer</a></li>
+</ul>
+
+<h1 id="補填">補填</h1>
+
+<p>本記事中で式の導出について省略した部分を、途中の式を示しながら導出していきます。</p>
+
+<h2 id="a-name-c1-a-skip-gram-の目的関数"><a name="c1"></a>Skip-gram の目的関数</h2>
+
+<p><a href="#e2">(2)</a> を <a href="#e1">(1)</a> に代入すると Skip-gram の目的関数は以下の形をしています。</p>
+
+<p>$$
+\begin{eqnarray}
+E &amp; = &amp; - \log \prod_{c=1}^C y_{c,w_c} \<br />
+  &amp; = &amp; - \log \prod_{c=1}^C \frac{\exp(u_{c,w_c})}{\sum_{v=1}^V \exp(u_{c,v})}
+\end{eqnarray}
+$$</p>
+
+<p>$\log$ の中身を掛け算から足し算に変換できる $\log(a \cdot b) = \log a + \log b$ という性質を利用すると、掛け算 $\prod$ は全部足し算 $\sum$ に変換できます。</p>
+
+<p>$$
+E = - \sum_{c=1}^C \log \frac{\exp(u_{c,w_c})}{\sum_{v=1}^V \exp(u_{c,v})}
+$$</p>
+
+<p>今度は $\log$ の中身を割り算から引き算に変換できる $\log \frac{a}{b} = \log a - \log b$ という性質を利用すると、softmax 関数の部分を以下のように変換できます。</p>
+
+<p>$$
+E = - \sum_{c=1}^C \left( \log \exp(u_{c,w_c}) - \log \sum_{v=1}^V \exp(u_{c,v}) \right)
+$$</p>
+
+<p>$\log \exp(x) = x$ なので、第一項の $\log \exp$ の部分がなくなります。</p>
+
+<p>$$
+E = - \sum_{c=1}^C \left( u_{c,w_c} - \log \sum_{v=1}^V \exp(u_{c,v}) \right)
+$$</p>
+
+<p>これで <a href="#e3">(3)</a> が導出できました。</p>
+
+<h2 id="a-name-c2-a-skip-gram-の重み更新-出力層"><a name="c2"></a>Skip-gram の重み更新 (出力層)</h2>
+
+<p>出力層の重み $\boldsymbol{W&rsquo;}$ の各要素で $E$ を偏微分するので以下を求めることになります。</p>
+
+<p>$$
+\frac{\partial E}{\partial v&rsquo;_{ij}}
+$$</p>
+
+<p>このままだと少しイメージし難いのでまず 1 つ具体的に、たとえば $v&rsquo;_{11}$ で偏微分することを考えてみます。$v&rsquo;_{11}$ は $\boldsymbol{W&rsquo;}$ の 1 行目 1 列目の要素です。これが目的関数 $E$ の中のどこに出てくるかというと、出力層の各コンテキストのユニット $\boldsymbol{u}_c$ の 1 つ目の要素に含まれることになります。$\boldsymbol{u}_c$ の定義は以下のようなベクトルでした。</p>
+
+<p><a name="e5"></a>
+$$
+\boldsymbol{u}_c= \boldsymbol{W&rsquo;v}_{w_I} = \left[
+  \begin{array}{c}
+    u_{c,1} \<br />
+    u_{c,2} \<br />
+    \vdots \<br />
+    u_{c,7}
+  \end{array}
+\right] = \left[
+  \begin{array}{c}
+    \color{red}v&rsquo;_{11}v_{w_I1}\color{black} + v&rsquo;_{12}v_{w_I2} + \cdots + v&rsquo;_{1N}v_{w_IN} \<br />
+    v&rsquo;_{21}v_{w_I1} + v&rsquo;_{22}v_{w_I2} + \cdots + v&rsquo;_{2N}v_{w_IN} \<br />
+    \vdots \<br />
+    v&rsquo;_{71}v_{w_I1} + v&rsquo;_{72}v_{w_I2} + \cdots + v&rsquo;_{7N}v_{w_IN} \<br />
+  \end{array}
+\right] \tag{5}
+$$</p>
+
+<p>これを一般化すると $v&rsquo;_{ij}$ は $\boldsymbol{u}_c$ の $i$ 番目の要素 $u_{c,i}$ に含まれていると言えます。コンテキストは $C$ 個あるので偏微分は連鎖率を使って次のように分割できます。</p>
+
+<p><a name="e6"></a>
+$$
+\frac{\partial E}{\partial v&rsquo;_{ij}} = \sum_{c=1}^C \frac{\partial E}{\partial u_{c,i}} \frac{\partial u_{c,i}}{\partial v&rsquo;_{ij}} \tag{6}
+$$</p>
+
+<p>これをさらに計算していきます。項が 2 つあるので、まず最初に第一項、つまり $E$ を $u_{c,i}$ で偏微分するところから計算していきます。<a href="#e3">(3)</a> の $E$ の $\sum$ を展開して以下のようにします。</p>
+
+<p>$$
+\begin{eqnarray}
+E &amp; = &amp; - \sum_{c&rsquo;=1}^C \left( u_{c&rsquo;,w_{c&rsquo;}} - \log \sum_{v=1}^V \exp(u_{c&rsquo;,v}) \right) \<br />
+  &amp; = &amp; - \sum_{c&rsquo;=1}^C u_{c&rsquo;,w_{c&rsquo;}} + \sum_{c&rsquo;=1}^C \log \sum_{v=1}^V \exp(u_{c&rsquo;,v})
+\end{eqnarray}
+$$</p>
+
+<p style="text-align:center;font-size:13px;color:#828282;">
+※$C$ に対する $\sum$ の変数が $c'$ になっているのは、既に <a href="#e6">(6)</a> で $c$ を使っており、それとは区別したいためです。
+</p>
+
+<p>これを $u_{c,i}$ で微分することを考えるのですが、さらにまた 第一項と第二項で分けて考えます。はじめに第一項についてですが、わかりやすくするために $\sum$ をはずしてみます。</p>
+
+<p>$$
+\sum_{c&rsquo;=1}^C u_{c&rsquo;,w_{c&rsquo;}} = u_{1,w_1} + u_{2,w_2} + \cdots + u_{C,w_C}
+$$</p>
+
+<p>たとえば偏微分する変数が $u_{1,i}$ だとすると $i = w_1$ であれば $u_{1,w_1}$ が微分されて 1 になるのがわかります。$u_{2,i}$ の場合も同じですね、$i = w_2$ であれば $u_{2,w_2}$ が微分されて結果は 1 になります。一般的に述べると偏微分する変数が $u_{c,i}$ の場合、$i = w_c$ であれば 1、それ以外であれば 0 ということになります。場合分けが入ると面倒なのでこれを $t_{c,i}$ という文字で表します。</p>
+
+<p>$$
+t_{c,i} = \begin{cases}
+  1 &amp; (i = w_c) \<br />
+  0 &amp; (otherwise)
+\end{cases}
+$$</p>
+
+<p>さらに第二項については、以下のように置き換えて連鎖率を使って微分します。</p>
+
+<p>$$
+\begin{eqnarray}
+g &amp; = &amp; \sum_{v=1}^V \exp(u_{c,v}) \<br />
+f &amp; = &amp; \log g \<br />
+\<br />
+\frac{df}{dg} \frac{dg}{du_{c,i}} &amp; = &amp; \frac{1}{g} \exp(u_{c,i}) = \frac{\exp(u_{c,i})}{\sum_{v=1}^V \exp(u_{c,v})} = y_{c,i}
+\end{eqnarray}
+$$</p>
+
+<p>これでようやく <a href="#e6">(6)</a> の第一項が求まったことになり、最終的には以下のような形になります。</p>
+
+<p><a name="e7"></a>
+$$
+\frac{\partial E}{\partial u_{c,i}} = y_{c,i} - t_{c,i} \tag{7}
+$$</p>
+
+<p>また、<a href="#e6">(6)</a> の第二項は</p>
+
+<p>$$
+u_{c,i} = v&rsquo;_{i1} v_{w_I1} + v&rsquo;_{i2} v_{w_I2} + \cdots + \color{red} v&rsquo;_{ij} v_{w_Ij} \color{black} + \cdots + v&rsquo;_{iN} v_{w_IN}
+$$</p>
+
+<p>となるので、以下のように簡単に求められます。</p>
+
+<p><a name="e8"></a>
+$$
+\frac{\partial u_{c,i}}{\partial v&rsquo;_{ij}} = v_{w_Ij} \tag{8}
+$$</p>
+
+<p><a href="#e6">(6)</a> <a href="#e7">(7)</a> <a href="#e8">(8)</a> を合わせると最終的に出力層の重みでの偏微分の結果が得られます。</p>
+
+<p>$$
+\frac{\partial E}{\partial v&rsquo;_{ij}} = \sum_{c=1}^C (y_{c,i} - t_{c,i}) v_{w_Ij}
+$$</p>
+
+<h2 id="a-name-c3-a-skip-gram-の重み更新-隠れ層"><a name="c3"></a>Skip-gram の重み更新 (隠れ層)</h2>
+
+<p>同じようにして今度は隠れ層の重み $\boldsymbol{W}$ の更新を考えていきます。ただし $\boldsymbol{W}$ は $\boldsymbol{W&rsquo;}$ と違って、1 回の更新ですべての要素 $v_{ij}$ を更新することができません。どういうことかというと、今考えているニューラルネットワークでは $\boldsymbol{v}_{w_I}$ の重みしか伝搬していかないからです。</p>
+
+<p>たとえば $w_I = 1$ の時を考えてみます。入力層のベクトル $\boldsymbol{x}$ は one-hot-vector だったために、隠れ層のユニットは $\boldsymbol{v}_1$ になるということを思い出してください。すると、その後の $\boldsymbol{u}_c$ や $\boldsymbol{y}_c$ には $\boldsymbol{v}_1$ の重みしか含まれておらず、他の $\boldsymbol{v}_2, \boldsymbol{v}_3, \cdots, \boldsymbol{v}_7$ は出てきません。このような状態で $\boldsymbol{v}_1$ 以外で偏微分したとしても全て 0 になってしまうので重みの更新ができません。</p>
+
+<p>結局、ネットワークの入力となる $w_I$ に対応する重み $\boldsymbol{v}_{w_I}$ のみが更新できて、他は計算するだけ無駄になるため、ここでは $\boldsymbol{v}_{w_I}$ で偏微分することだけを考えます。出力層の重みを求めた時と同じように目的関数 $E$ のどこに $v_{w_Ii}$ が出てくるのかを探してみます。<a href="#e5">(5)</a> を見てみると $v_{w_Ii}$ は $\boldsymbol{u}_c$ のどの要素にも含まれているのがわかります。$\boldsymbol{u}_c$ の要素数は $V$ 個、そしてコンテキストは $C$ 個あって、その全てに $v_{w_Ii}$ が含まれているので、偏微分は以下のようになります。</p>
+
+<p><a name="e9"></a>
+$$
+\frac{\partial E}{\partial v_{w_Ii}} = \sum_{c=1}^C \sum_{v=1}^V \frac{\partial E}{\partial u_{c,v}} \frac{\partial u_{c,v}}{\partial v_{w_Ii}} \tag{9}
+$$</p>
+
+<p>項が 2 つあるのでこちらもそれぞれで計算していくのですが、第一項は既に <a href="#e7">(7)</a> で求めているので計算の必要はありません。また、第二項の方は <a href="#e5">(5)</a> を見れば</p>
+
+<p>$$
+u_{c,v} = v&rsquo;_{v1} v_{w_I1} + v&rsquo;_{v2} v_{w_I2} + \cdots + \color{red} v&rsquo;_{vi} v_{w_Ii} \color{black} + \cdots + v&rsquo;_{vN} v_{w_IN}
+$$</p>
+
+<p>となるので、以下のように簡単に求められます。</p>
+
+<p><a name="e10"></a>
+$$
+\frac{\partial u_{c,v}}{\partial v_{w_Ii}} = v&rsquo;_{vi} \tag{10}
+$$</p>
+
+<p><a href="#e9">(9)</a> <a href="#e7">(7)</a> <a href="#e10">(10)</a> を合わせると最終的に隠れ層の重みでの偏微分の結果が得られます。</p>
+
+<p>$$
+\frac{\partial E}{\partial v_{w_Ii}} = \sum_{c=1}^C \sum_{v=1}^V (y_{c,v} - t_{c,v}) v&rsquo;_{vi}
+$$</p>
+
+<h2 id="a-name-c4-a-negative-sampling-の目的関数"><a name="c4"></a>Negative Sampling の目的関数</h2>
+
+<p>以下の Negative Sampling の目的関数の最終的な形を導出していきます。</p>
+
+<p>$$
+E = - \log p(D=1|w_I,w_O) \prod_{v \in V_{Neg}} p(D=0|w_I,v)
+$$</p>
+
+<p>まず $D=1$ の場合と $D=0$ の場合を、それぞれシグモイド関数 $\sigma$ を使って表せるので、それを求めてみます。$D=1$ の場合は <a href="#neg">定義</a> より $\sigma$ そのものなのでこれはよいでしょう。$D=0$ の場合は以下のように計算して求めることができます。表記の簡単のために $u = \boldsymbol{v&rsquo;}_{w_O}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I}$ と置いて計算を進めてみます。</p>
+
+<p>$$
+\begin{eqnarray}
+p(D=0|w_I,w_O) &amp; = &amp; 1 - p(D=1|w_I,w_O) \<br />
+                 &amp; = &amp; 1 - \sigma(u) \<br />
+                 &amp; = &amp; 1 - \frac{1}{1 + \exp(-u)} \<br />
+                 &amp; = &amp; \frac{\exp(-u)}{1 + \exp(-u)} \<br />
+                 &amp; = &amp; \frac{1}{(1 + \exp(-u))\exp(u)} \<br />
+                 &amp; = &amp; \frac{1}{1 + \exp(u)} \<br />
+                 &amp; = &amp; \sigma(-u)
+\end{eqnarray}
+$$</p>
+
+<p>3, 4 行目は通分しており、4,5 行目は $\exp(-u) = \frac{1}{\exp(u)}$ を使いました。つまり目的関数 $E$ は $\sigma$ を使って以下のように書き直せます。</p>
+
+<p>$$
+E = - \log \sigma(\boldsymbol{v&rsquo;}_{w_O}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I}) \prod_{v \in V_{Neg}} \sigma(-\boldsymbol{v&rsquo;}_{v}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I})
+$$</p>
+
+<p>あとは Skip-gram の時と同じように $\log$ の中身を掛け算から足し算に変換できる $\log(a \cdot b) = \log a + \log b$ という性質を利用して、最終的な形に持っていくことができます。</p>
+
+<p>$$
+E = - \log \sigma(\boldsymbol{v&rsquo;}_{w_O}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I}) - \sum_{v \in V_{Neg}} \log \sigma(-\boldsymbol{v&rsquo;}_{v}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I})
+$$</p>
+
+<h2 id="a-name-c5-a-negative-sampling-の重み更新-出力層"><a name="c5"></a>Negative Sampling の重み更新 (出力層)</h2>
+
+<p>出力層の重み $\boldsymbol{W′}$ の各要素で $E$ を偏微分するので以下を求めることになります。</p>
+
+<p>$$
+\frac{\partial E}{\partial v&rsquo;_{ij}}
+$$</p>
+
+<p>前提として、Skip-gram と違って 1 回の更新で $\boldsymbol{W&rsquo;}$ の全ての要素 $v_{ij}$ を更新することはできません。なぜなら目的関数 $E$ には $w_O$ 及び $v \in V_{Neg}$ の単語に対応する単語ベクトル $\boldsymbol{v&rsquo;}$ しか含まれていないため、その他の要素での偏微分は全て 0 になり、そのような要素については重みの更新はできないからです。という注意書きをしておいて、それでは計算に進みます。</p>
+
+<p>さて、目的関数 $E$ を以下のように置き換えて、連鎖率を使って微分するようにしてみます。</p>
+
+<p><a name="e11"></a>
+$$
+\begin{eqnarray}
+u_k &amp; = &amp; \boldsymbol{v&rsquo;}_k^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I} \<br />
+E    &amp; = &amp; - \log \sigma(u_{w_O}) - \sum_{v \in V_{Neg}} \log \sigma(-u_{v}) \<br />
+\frac{\partial E}{\partial v&rsquo;_{ij}} &amp; = &amp; \frac{\partial E}{\partial u_i} \frac{\partial u_i}{\partial v&rsquo;_{ij}} \tag{11}
+\end{eqnarray}
+$$</p>
+
+<p>まずは <a href="#e11">(11)</a> の第一項から、つまり $E$ を $u_i$ で偏微分するところから考えてみます。これは $u_i$ の $i$ が $w_O$ なのか、それ以外なのかで微分結果が変わってくるため場合分けをします。まず $i = w_O$ の場合、$u_i$ は $E$ の第一項にだけ含まれているので、その部分を以下のように連鎖率を使って微分します。</p>
+
+<p><a name="e12"></a>
+$$
+\begin{eqnarray}
+f &amp; = &amp; \sigma(u_i) \<br />
+E &amp; = &amp; - \log f - \sum_{v \in V_{Neg}} \log \sigma(-u_{v}) \<br />
+\frac{\partial E}{\partial f} \frac{\partial f}{\partial u_i} &amp; = &amp; - \frac{1}{f} \sigma&rsquo;(u_i) \<br />
+&amp; = &amp; - \frac{(1 - \sigma(u_i))\sigma(u_i)}{\sigma(u_i)} \<br />
+&amp; = &amp; \sigma(u_i) - 1 \tag{12}
+\end{eqnarray}
+$$</p>
+
+<p style="text-align:center;font-size:13px;color:#828282;">
+※$\sigma'(x) = (1 - \sigma(x))\sigma(x)$ という式を利用しています。
+</p>
+
+<p>次に $i \in V_{Neg}$ の場合について、こちらもまた連鎖率を使って以下のように微分していきます。</p>
+
+<p><a name="e13"></a>
+$$
+\begin{eqnarray}
+f_i &amp; = &amp; \sigma(-u_i) \<br />
+E &amp; = &amp; - \log \sigma(u_{w_O}) - \sum_{v \in V_{Neg}} \log f_{v} \<br />
+\frac{\partial E}{\partial f_i} \frac{\partial f_i}{\partial u_i} &amp; = &amp; - \frac{1}{f_i} \sigma&rsquo;(-u_i) \<br />
+&amp; = &amp; \frac{(1 - \sigma(-u_i))\sigma(-u_i)}{\sigma(-u_i)} \<br />
+&amp; = &amp; 1 - (1 - \sigma(u_i)) \<br />
+&amp; = &amp; \sigma(u_i) \tag{13}
+\end{eqnarray}
+$$</p>
+
+<p style="text-align:center;font-size:13px;color:#828282;">
+※$\sigma'(-x) = -(1 - \sigma(-x))\sigma(-x)$ と $\sigma(-x) = 1 - \sigma(x)$ という式を利用しています。
+</p>
+
+<p><a href="#e12">(12)</a> と <a href="#e13">(13)</a> を見比べると -1 がついているかいないかの違いしかないので、場合分けについて $t_i$ という変数を用意して隠すと、結局 $E$ を $u_i$ で偏微分した結果は以下のようになります。</p>
+
+<p>$$
+t_i = \begin{cases}
+  1 &amp; (i = w_O) \<br />
+  0 &amp; (otherwise)
+\end{cases}
+$$</p>
+
+<p><a name="e14"></a>
+$$
+\frac{\partial E}{\partial u_i} = \sigma(u_i) - t_i \tag{14}
+$$</p>
+
+<p>ここまで来るとあとは <a href="#e11">(11)</a> の第二項を求めれば良いだけですが、これは</p>
+
+<p>$$
+u_i = v&rsquo;_{i1} v_{w_I1} + v&rsquo;_{i2} v_{w_I2} + \cdots + \color{red} v&rsquo;_{ij} v_{w_Ij} \color{black} + \cdots + v&rsquo;_{w_iN} v_{w_IN}
+$$</p>
+
+<p>なので、以下のように簡単に求められます。</p>
+
+<p>$$
+\frac{\partial u_i}{\partial v&rsquo;_{ij}} = v_{w_Ij}
+$$</p>
+
+<p>ということで、出力層の重み $\boldsymbol{W&rsquo;}$ の各要素での偏微分結果については以下のような式が得られます。</p>
+
+<p>$$
+\frac{\partial E}{\partial v&rsquo;_{ij}} = (\sigma(\boldsymbol{v&rsquo;}_i^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I}) - t_i) v_{w_Ij}
+$$</p>
+
+<h2 id="a-name-c6-a-negative-sampling-の重み更新-隠れ層"><a name="c6"></a>Negative Sampling の重み更新 (隠れ層)</h2>
+
+<p>隠れ層の重み $\boldsymbol{W}$ の各要素での偏微分を見ていきます。Skip-gram の時と同じように $\boldsymbol{W}$ については $\boldsymbol{v}_{w_I}$ の重みしか伝搬しないため $v_{w_Ii}$ の偏微分のみ計算すれば十分です。まず始めに $\boldsymbol{v}_{w_I}$ が $E$ の中のどこに含まれているかを探してみます。</p>
+
+<p>$$
+E = - \log \sigma(\boldsymbol{v&rsquo;}_{w_O}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I}) - \sum_{v \in V_{Neg}} \log \sigma(-\boldsymbol{v&rsquo;}_{v}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I})
+$$</p>
+
+<p>これを見て分かる通り $\boldsymbol{v}_{w_I}$ は全ての項に含まれていることがわかるので、連鎖率を使うと以下のように表すことができます。</p>
+
+<p>$$
+\begin{eqnarray}
+u_k &amp; = &amp; \boldsymbol{v&rsquo;}_k^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I} \<br />
+E    &amp; = &amp; - \log \sigma(u_{w_O}) - \sum_{v \in V_{Neg}} \log \sigma(-u_{v}) \<br />
+\frac{\partial E}{\partial v_{w_Ii}} &amp; = &amp; \sum_{v \in \{w_O\} \cup V_{Neg}} \frac{\partial E}{\partial u_{v}} \frac{\partial u_{v}}{\partial v_{w_Ij}}
+\end{eqnarray}
+$$</p>
+
+<p>これの第一項については既に <a href="#e14">(14)</a> で求めているため計算する必要はありません。そして第二項については</p>
+
+<p>$$
+u_{v} = v&rsquo;_{v1} v_{w_I1} + v&rsquo;_{v2} v_{w_I2} + \cdots + \color{red} v&rsquo;_{vi} v_{w_Ii} \color{black} + \cdots + v&rsquo;_{vN} v_{w_IN}
+$$</p>
+
+<p>なので、以下のように簡単に求められます。</p>
+
+<p>$$
+\frac{\partial u_{v}}{\partial v_{w_Ii}} = v&rsquo;_{vi}
+$$</p>
+
+<p>よって偏微分は以下のようになります。</p>
+
+<p>$$
+\frac{\partial E}{\partial v_{w_Ii}} = \sum_{v \in \{w_O\} \cup V_{Neg}} (\sigma(\boldsymbol{v&rsquo;}_{v}^{\mathrm{T}} \cdot \boldsymbol{v}_{w_I}) - t_{v}) v&rsquo;_{vi}
+$$</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/%E3%83%8B%E3%83%A5%E3%83%BC%E3%83%A9%E3%83%AB%E3%83%8D%E3%83%83%E3%83%88%E3%83%AF%E3%83%BC%E3%82%AF">ニューラルネットワーク</a>
+      
+        <a class="tag-link" href="tags/%E8%87%AA%E7%84%B6%E8%A8%80%E8%AA%9E%E5%87%A6%E7%90%86">自然言語処理</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2016/05/09/understand-how-to-learn-word2vec/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2016/05/09/understand-how-to-learn-word2vec/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2016/05/09/understand-how-to-learn-word2vec/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

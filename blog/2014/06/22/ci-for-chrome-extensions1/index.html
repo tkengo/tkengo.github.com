@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="author" content="@tkengo">
+  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  
+    <title>Chrome Extension の CI が出来るようになるまで(導入編) &middot; けんごのお屋敷</title>
+  
+  <link rel="stylesheet" href="http://tkengo.github.io/css/common.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="shortcut icon" href="http://tkengo.github.io/images/favicon.ico">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/atelier-cave.light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+  <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    @font-face {
+      font-family: mplus-1p-regular;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-regular.ttf') format("truetype");
+      font-family: mplus-1p-bold;
+      src: url('http://mplus-fonts.sourceforge.jp/webfonts/mplus-1p-bold.ttf') format("truetype");
+    }
+  </style>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+      TeX: { extensions: ["color.js"] }
+    });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+
+  <body>
+    <div class="container-bg">
+      <div class="header">
+  <header>
+    <h1 class="logo"><a href="http://tkengo.github.io/">けんごのお屋敷</a></h1>
+    <ul class="menu">
+      <li><a href="/post">Archives</a></li>
+    </ul>
+  </header>
+</div>
+
+      <div class="container">
+  <main>
+    <header>
+      <p class="day">2014-06-22</p>
+      <h1><a href="http://tkengo.github.io/blog/2014/06/22/ci-for-chrome-extensions1/">Chrome Extension の CI が出来るようになるまで(導入編)</a></h1>
+    </header>
+    <article>
+      
+
+<p>個人的に趣味で Chrome Extension の開発をしていますが、最近いろいろとノウハウも溜まってきたので Chrome Extension の CI について少しまとめてみようと思います。</p>
+
+<h1 id="目次">目次</h1>
+
+<ol>
+<li><a href="#synopsis">はじめに</a></li>
+<li><a href="#write-a-test-for-chrome-extensions">Chrome Extension のテストを書く</a>
+
+<ul>
+<li><a href="#what-should-be-testing">何をテストするのか</a></li>
+<li><a href="#testing-framework">テストフレームワーク</a></li>
+<li><a href="#install-jasmine">Jasmine のインストール</a></li>
+<li><a href="#write-a-test-with-jasmine">Jasmine でテストを書いてみる</a></li>
+<li><a href="#api-mocking">JavaScript APIs をモックする</a></li>
+<li><a href="#load-fixtures">HTML Fixture を読み込む</a></li>
+</ul></li>
+<li><a href="/blog/2014/07/22/ci-for-chrome-extensions2#execute-tests">Chrome Extension のテストを実行する</a>
+
+<ul>
+<li><a href="/blog/2014/07/22/ci-for-chrome-extensions2#rest-runner-karma">テストランナー Karma</a></li>
+<li><a href="/blog/2014/07/22/ci-for-chrome-extensions2#install-karma">Karma のインストール</a></li>
+<li><a href="/blog/2014/07/22/ci-for-chrome-extensions2#execute-tests-with-karma">Karma でテストを実行する</a></li>
+<li><a href="/blog/2014/07/22/ci-for-chrome-extensions2#watching-file-modification">ファイルの変更を監視する</a></li>
+<li><a href="/blog/2014/07/22/ci-for-chrome-extensions2#output-code-coverage">コードカバレッジを出力する</a></li>
+<li><a href="/blog/2014/07/22/ci-for-chrome-extensions2#load-fixtures">HTML Fixture を読み込む</a></li>
+</ul></li>
+<li>Chrome Extension を CI する
+
+<ul>
+<li>CI サービス Wercker</li>
+<li>Wercker にリポジトリを登録する</li>
+<li>wercker.yml</li>
+<li>Step の作り方</li>
+<li>バッヂ</li>
+</ul></li>
+</ol>
+
+<h1 id="a-name-synopsis-a-はじめに"><a name="synopsis"></a>はじめに</h1>
+
+<p>Google Chrome を vim のようにキーボードで操作できるようにする <a href="http://tkengo.github.io/hometype">Hometype</a> という Chrome Extension を作っていますが、この記事は Hometype でやってきたことベースに話を展開していきます。</p>
+
+<p>テストのやり方や、使用するライブラリ、サービスについては、どれが正しくてどれが間違っているのか、ということは気にしすぎると先に進めません。そういうものはケースによってどれが最適なのか変わってくると思いますし、ここで紹介すること全てが正しいとも限らなくて、あくまで一例に過ぎないと思うので、ネットに転がっていることを過信せずに、まずは手を動かして実際にやってみるのがオススメです。やっていくうちに自分の中でノウハウが溜まり、ベストプラクティスに昇華されていきます。</p>
+
+<p>現在 Hometype は <a href="http://jasmine.github.io/2.0/introduction.html">Jasmine</a> + <a href="http://karma-runner.github.io/0.12/index.html">Karma</a> + <a href="http://phantomjs.org/">Phantomjs</a> + <a href="http://wercker.com/">Wercker</a> という構成で CI をしており、これらの紹介や使い方が主な記事の内容になっていきますので、この辺りに興味がある人に楽しんで読んでもらえることを目標に書いていきます。</p>
+
+<h1 id="a-name-write-a-test-for-chrome-extensions-a-chrome-extension-のテストを書く"><a name="write-a-test-for-chrome-extensions"></a>Chrome Extension のテストを書く</h1>
+
+<p>Chrome Extension もある程度規模が大きくなってくるとテストを書きたくなってくると思います。通常の JavaScript のテストと同様 Chrome Extension のテストもテストフレームワークを使ってテストを書くことができますので、まず最初に少しその話をしていきたいと思います。</p>
+
+<h2 id="a-name-what-should-be-testing-a-何をテストするのか"><a name="what-should-be-testing"></a>何をテストするのか</h2>
+
+<p>Chrome Extension のテストを書くといっても、何も考えずに開発を進めていくとテストの書きにくいプロダクトになってしまいます。Chrome Extension に限った話ではありませんが、テストを書きやすくするためには、適切に機能をモジュールに分割して、なるべく副作用のないメソッドを書くことを心がけないといけません。</p>
+
+<p>Chrome Extension では、タブ中に表示されているページのコンテキストで JavaScript を実行できる Content Scripts の中で、要素を取得したり、要素を書き換えたり、イベントハンドラを仕込んだり、様々な操作を DOM に対してやっていくのですが、そうすると DOM と密接なプログラミングになってしまいがちです。普段 jQuery などを使って Web ページを開発しているとわかると思いますが、DOM と密結合したソースコードだとユニットテストが少々やりにくいため(そういうのはユニットテストではなくて Selenium や Capybara などを組み合わせてエンドツーエンドテストをやったりしますよね)、なるべく DOM 操作部分と実際のロジック部分は分けて書いていきます。</p>
+
+<p>Hometype でも Content Scripts を通して DOM 操作を行う処理が多くありますが、それら DOM 操作とは別に、ロジックを実行する処理はなるべくモジュールに切り出して、そのモジュールに対してユニットテストを書くようにしています。</p>
+
+<h2 id="a-name-testing-framework-a-テストフレームワーク"><a name="testing-framework"></a>テストフレームワーク</h2>
+
+<p>テストを書く時は多くの場合、その言語用にテストフレームワークが準備されています。JavaScript も例にもれずいくつかのテストフレームワークがありますので、その中から適したものを選んでいきましょう。JavaScript のテストフレームワークは Jasmine や JsUnit、QUnit などがあり、その中で Hometype では Jasmine を採用しています。</p>
+
+<p>Jasmine は JavaScript の BDD テストフレームワークで RSpec と似たような記法でテストを書けます。現在はバージョン 1.3 と 2.0 がありますが、新しく使いはじめるのであれば 2.0 一択でいいと思います。</p>
+
+<p><a href="http://jasmine.github.io/2.0/introduction.html">Jasmine 2.0 Introduction</a></p>
+
+<p>Hometype で Jasmine を使っている理由としては</p>
+
+<ul>
+<li>JsUnit は開発が停止している(Jasmine へ移行した模様)</li>
+<li>QUnit は非常にシンプルで導入しやすいが、ある程度の規模のテストを書くとなると役不足に感じた(個人的感覚)</li>
+<li><code>describe</code> <code>it</code> <code>expect</code> <code>beforeEach</code> といった DSL や、豊富なマッチャを使って読みやすいテストを書くことができる</li>
+<li><code>spyOn</code> でオブジェクトをスタブ化できる</li>
+<li>Hometype 以外のプロダクトでも使ったことがあり、経験があった(ここが結構でかいかも)</li>
+</ul>
+
+<p>といったことが挙げられます。JsUnit や QUnit でできる事はだいたい Jasmine でも出来ますし、先の 2 つよりは Jasmine の方に流れが来ているような感じはします。ただ、こういうのはケース・バイ・ケースだと思っているので、簡単なテストでよければ QUnit を選択するのもありだと思いますし、テスト書かなくて良いようなものもあると思います。</p>
+
+<h2 id="a-name-install-jasmine-a-jasmine-のインストール"><a name="install-jasmine"></a>Jasmine のインストール</h2>
+
+<p>それでは Jasmine をインストールしてみましょう。Jasmine には Standalone 版と RubyGem 版という 2 つがあって、それぞれ使い方が違います。RubyGem 版は Ruby on Rails や Ruby を使った開発の際に使うと便利なものですので Chrome Extension でテストする場合は Standalone 版を使います。</p>
+
+<p>Jasmine の Standalone 版は github からダウンロードできます。</p>
+
+<p><a href="https://github.com/pivotal/jasmine/raw/master/dist/jasmine-standalone-2.0.0.zip">Jasmine 2.0 をダウンロード</a></p>
+
+<p>※ちなみに Jasmine のリポジトリの中には各バージョン毎の圧縮ファイルが置いてあるディレクトリがあるので 2.0 以外もそこからダウンロードすることが出来ます。<a href="https://github.com/pivotal/jasmine/tree/master/dist">https://github.com/pivotal/jasmine/tree/master/dist</a></p>
+
+<p>ダウンロードした zip ファイルを解凍すると以下のような構成になっているのが確認できます。</p>
+
+<ul>
+<li><code>MIT.LICENSE</code> ライセンス説明書</li>
+<li><code>SpecRunner.html</code> テスト実行用ファイル</li>
+<li><code>lib/</code> Jasmine 本体</li>
+<li><code>spec/</code> Jasmine を使って書かれたテストのサンプル</li>
+<li><code>src/</code> テスト対象のファイル</li>
+</ul>
+
+<p>ここで <code>spec/</code> と <code>src/</code> は Jasmine のサンプルになってますので、中身をのぞいてみると Jasmine でどんなテストが書けるのか雰囲気をつかめると思います。Chrome Extension のテストを書くにあたって必要なものは <code>SpecRunner.html</code> と <code>lib/</code> だけです。</p>
+
+<p>解凍したディレクトリの中から <code>SpecRunner.html</code> と <code>lib/</code> だけ取り出して Chrome Extension のディレクトリにコピーしておきましょう。Hometype では <a href="https://github.com/tkengo/hometype/tree/master/spec"><code>spec/</code></a> 以下にそれらのファイルを配置しています。</p>
+
+<h2 id="a-name-write-a-test-with-jasmin-a-jasmine-でテストを書いてみる"><a name="write-a-test-with-jasmin"></a>Jasmine でテストを書いてみる</h2>
+
+<p>テストを書いていきましょう。Hometype を例に取ってみると、たとえば</p>
+
+<ul>
+<li><a href="http://github.com/tkengo/hometype/tree/master/js/executer.js"><code>js/executer.js</code></a> コマンド実行のためのオブジェクト</li>
+<li><a href="http://github.com/tkengo/hometype/tree/master/spec/js/executer_spec.js"><code>spec/js/executer_spec.js</code></a> 上記オブジェクトのテストファイル</li>
+</ul>
+
+<p>という風に、テスト用のファイルにはテスト対象ファイル名に <code>_spec</code> がつくようにルール決めをしています。Jasmine は、必ずこうしなければテストが実行できない、といったことはないのですが RSpec の文化を真似してる感じです。</p>
+
+<p>テストの中身はたとえばこのように RSpec 風に書くことができます。どういう書き方が出来るのかは公式サイトに詳しく書いてありますので、参考にするとよいです。</p>
+
+<p><a href="http://jasmine.github.io/2.0/introduction.html">Jasmine Introduction</a></p>
+
+<pre><code class="language-javascript">describe('Executer', function() {
+  var executer;
+
+  beforeEach(function() {
+    executer = new Executer(ModeList.NORMAL_MODE, 'a');
+  });
+
+  it('should be fixed a candidate', function() {
+    expect(executer.fixedCandidate()).toBe(true);
+    expect(executer.noCandidate()).toBe(false);
+  });
+});
+</code></pre>
+
+<p>テストを書き終わったら次は <code>SpecRunner.html</code> を準備します。</p>
+
+<p><code>SpecRunner.html</code> は body の中身は空っぽで、重要なのは head タグの中の JavaScript の読み込みです。テストの実行に必要なファイルをここで全部読み込みます。head タグのスクリプト読み込み部分だけ抜粋すると、以下の様な構成になります。</p>
+
+<pre><code class="language-html">&lt;!-- Jasmine 本体を読み込みます --&gt;
+&lt;!-- パスは SpecRunner.html からの相対パスで --&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/jasmine-2.0.0/jasmine.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/jasmine-2.0.0/jasmine-html.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/jasmine-2.0.0/boot.js&quot;&gt;&lt;/script&gt;
+
+&lt;!-- テスト対象のソースファイルを読み込みます --&gt;
+&lt;!-- パスは SpecRunner.html からの相対パスで --&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;../js/executer.js&quot;&gt;&lt;/script&gt;
+
+&lt;!-- テストを読み込みます --&gt;
+&lt;!-- パスは SpecRunner.html からの相対パスで --&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;../spec/js/executer_spec.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+
+<p>ここまで準備して <code>SpecRunner.html</code> をブラウザで開いてみると以下のように結果が表示されます。</p>
+
+<p><img src="/assets/img/2014-06-22-ci-for-chrome-extensions-introduction1/jasmine-spec-runner.png" alt="" /></p>
+
+<p>Chrome Extension でテストを書き始める準備が整いました。</p>
+
+<h2 id="a-name-api-mocking-a-javascript-apis-をモックする"><a name="api-mocking"></a>JavaScript APIs をモックする</h2>
+
+<p>Chrome Extension は様々な機能を API として提供してくれます。たとえば Content Scripts と Background Page とでやりとりをするための <a href="https://developer.chrome.com/extensions/runtime">chrome.runtime</a> やローカルストレージ機能の <a href="https://developer.chrome.com/extensions/storage">chrome.storage</a> などがあります。これらの API は Chrome から提供されるものなので、もちろん Chrome Extension 以外では動作しません。Jasmine でテストを実行する際も例外ではありません。</p>
+
+<p>そこでテストを実行する際、これらの API は全てモック化してあげる必要があります。中身は特に実装する必要はありません。テストの実行に支障がないようにすることだけを考えて適当にオブジェクトを作っていきます。</p>
+
+<p>たとえばこんなソースコードがあったとすると、そのまま Jasmine の SpecRunner.html でテストを実行しようとすると <strong>TypeError: &lsquo;undefined&rsquo; is not an object</strong> といったエラーが出てしまいます。Jasmine からの実行では <code>chrome</code> というオブジェクトが定義されておらず undefined になっており、その undefined に対して <code>runtime</code> というプロパティを参照しようとしてエラーになります。</p>
+
+<pre><code class="language-javascript">// Background Page と通信
+chrome.runtime.sendMessage({ command: 'commandName' }, function() {
+  // ストレージに保存
+  chrome.storage.sync.set({ 'options': params });
+
+  // 他の何かの処理
+  // ...
+});
+</code></pre>
+
+<p>ですので <code>spec/lib/mocking.js</code> のようなファイルを作って、そこに以下のようなコードを書き込みます。</p>
+
+<pre><code class="language-javascript">chrome = {
+  storage: {
+    sync: {
+      set: function() {
+      }
+    }
+  },
+  runtime: {
+    sendMessage: function(params, callback) {
+      callback();
+    }
+  }
+};
+</code></pre>
+
+<p>ただ単純にオブジェクトとそのプロパティを API に合うように作っていくだけです。これを SpecRunner.html の最初のほうで読み込むようにします。</p>
+
+<pre><code class="language-html">&lt;!-- Jasmine 本体を読み込みます --&gt;
+&lt;!-- パスは SpecRunner.html からの相対パスで --&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/jasmine-2.0.0/jasmine.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/jasmine-2.0.0/jasmine-html.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/jasmine-2.0.0/boot.js&quot;&gt;&lt;/script&gt;
+
+&lt;!-- これを追加で読み込む --&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/mocking.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+
+<p>こうすることで Jasmine からの実行でも API をモックして処理を止めること無くテストを実行することが出来ます。</p>
+
+<h2 id="a-name-load-fixtures-a-html-fixture-を読み込む"><a name="load-fixtures"></a>HTML Fixture を読み込む</h2>
+
+<p>なるべく DOM に依存しないコードを書くと言っても、どうしても 100% そうはできないのが現実です。HTML のある要素がある前提で書かれたコードなどをテストしたい場合も出てきます。そのような場合 Jasmine では DOM Fixture をロードしてからテストを実行させることができます。</p>
+
+<p>たとえば、以下のような要素に対して、次のようなコードがあったとします。</p>
+
+<pre><code class="language-html">&lt;div id=&quot;hoge&quot;&gt;&lt;/div&gt;
+</code></pre>
+
+<pre><code class="language-javascript">function fuga(message) {
+  document.getElementById('hoge').innerText = message;
+}
+</code></pre>
+
+<p>この場合、引数の <code>message</code> が ID <code>hoge</code> 要素に対してきちんとテキストとしてセットされているかどうかをテストしたいはずです。こういう時は <a href="https://github.com/velesin/jasmine-jquery">jasmine-jquery</a> を使います。これは jQuery 用のマッチャを追加してくれるライブラリですが、その他に HTML Fixture をロードする機能ももっています。今回はその Fixture をロードする機能を使っていきます。</p>
+
+<p><a href="https://raw.githubusercontent.com/velesin/jasmine-jquery/master/lib/jasmine-jquery.js">jasmin-jquery をダウンロード</a></p>
+
+<p>ダウンロードした <code>jasmine-jquery.js</code> は適宜 <code>spec/lib/</code> 以下などに配置して SpecRunner.html から読み込みます。また、このライブラリは jQuery に依存しているので jQuery も読み込んでおきます。</p>
+
+<pre><code class="language-html">&lt;!-- Jasmine 本体を読み込みます --&gt;
+&lt;!-- パスは SpecRunner.html からの相対パスで --&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/jasmine-2.0.0/jasmine.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/jasmine-2.0.0/jasmine-html.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/jasmine-2.0.0/boot.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/mocking.js&quot;&gt;&lt;/script&gt;
+
+&lt;!-- これを追加で読み込む --&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;../lib/jquery-2.0.1.min.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;lib/jasmine-jquery.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+
+<p>そして下記の HTML を <code>spec/fixtures/hoge_fixture.html</code> のようなファイルに保存しておきます。</p>
+
+<pre><code class="language-html">&lt;div id=&quot;hoge&quot;&gt;&lt;/div&gt;
+</code></pre>
+
+<p>そしてテストを書きます。</p>
+
+<pre><code class="language-javascript">describe('dom fixture', function() {
+  var element;
+
+  beforeEach(function() {
+    // フィクスチャが配置されているディレクトリを指定
+    jasmine.getFixtures().fixturesPath = 'fixtures';
+    // フィクスチャを読み込む
+    loadFixture('hoge_fixture.html');
+
+    // テスト対象のメソッドを呼び出す
+    fuga('dom fixture test');
+    element = document.getElementById('hoge');
+  });
+
+  it('should have a text', function() {
+    expect(element.innerText).toBe('dom fixture test');
+  });
+});
+</code></pre>
+
+<p>ここまで準備ができたら <code>SpecRunner.html</code> を開いてテストを実行します。ちなみに <code>loadFixtures</code> は Ajax を使ってフィクスチャのファイルを読み込もうとしますが、Chrome を使っている場合、デフォルトではローカルファイル (<code>SpecRunner.html</code>) からローカルファイル (<code>fixtures/hoge_fixtures.html</code>) を Ajax で読むことができません。これを可能にするためには <code>--allow-file-access-from-files</code> オプションをつけて Chrome を起動する必要があります。</p>
+
+<ol>
+<li>立ち上げている Chrome があれば一度終了させる</li>
+<li><code>--allow-file-access-from-files</code> オプションをつけて Google Chrome を起動する
+
+<ol>
+<li>Windows 7 の場合
+
+<ul>
+<li><code>C:\Users\[UserName]\AppData\Local\Google\Chrome[ SxS]\Application\chrome.exe --allow-file-access-from-files</code></li>
+</ul></li>
+<li>MacOSX の場合
+
+<ul>
+<li><code>open /Applications/Google\ Chrome.app --args --allow-file-access-from-files</code></li>
+</ul></li>
+</ol></li>
+</ol>
+
+<p>これで起動した Google Chrome で <code>SpecRunner.html</code> を開くとテストを実行できます。</p>
+
+<hr />
+
+<p>長くなってきたので続きは<a href="/blog/2014/07/22/ci-for-chrome-extensions2">こちら</a>。</p>
+
+    </article>
+    <footer class="tag">
+      <i class="fa fa-tag"></i>
+      
+        <a class="tag-link" href="tags/ci">CI</a>
+      
+    </footer>
+    <ul class="snsb">
+      <li>
+        <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://tkengo.github.io/blog/2014/06/22/ci-for-chrome-extensions1/" data-lang="ja">ツイート</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li>
+        <div class="fb-like" data-href="http://tkengo.github.io/blog/2014/06/22/ci-for-chrome-extensions1/" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+      </li>
+      <li>
+        <a href="http://b.hatena.ne.jp/entry/http://tkengo.github.io/blog/2014/06/22/ci-for-chrome-extensions1/" class="hatena-bookmark-button" data-hatena-bookmark-layout="standard-balloon" data-hatena-bookmark-lang="ja" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+      </li>
+    </ul>
+  </main>
+</div>
+
+      <footer class="footer">
+  <p class="copyright">copyright&nbsp;&copy;&nbsp;2015&nbsp;<a href="https://twitter.com/tkengo" target="_blank">&copy;tkengo</a>&nbsp;-&nbsp;Powered by <a href="http://gohugo.io" target="_blank">Hugo</a>, Designed by <a href="https://twitter.com/keita_kawamoto" target="_blank">&copy;keita_kawamoto</a></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/tkengo" target="_blank"><i class="fa fa-twitter"></i></a></li>
+    <li><a href="https://github.com/tkengo" target="_blank"><i class="fa fa-github"></i></a></li>
+  </ul>
+</footer>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.4&appId=327080140754787";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-35368510-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/go.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+  </div>
+  </body>
+</html>

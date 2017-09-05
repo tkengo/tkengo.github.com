@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Weechat on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/weechat/</link>
+    <description>Recent content in Weechat on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Tue, 15 Apr 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/weechat/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Weechat内でマウスを操作せずにURLを開けるプラグイン欲しくありませんか？</title>
+      <link>http://tkengo.github.io/blog/2014/04/15/introduction-weechat-url-hinter/</link>
+      <pubDate>Tue, 15 Apr 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/04/15/introduction-weechat-url-hinter/</guid>
+      <description>CUI で動作する IRC クライアントの 1 つに weechat があります。ペパボでは業務に IRC を利用しており、会話中によく URL が貼られたり BOT の通知で URL が貼られたりして、それなりの頻度でチャンネルの中に URL が出現します。Mac であれば Command を押しながら URL をダブルクリックするとブラウザで開けるのですが、その際に一度キーボードから手を離す必要があって面倒臭かったので Hometype(紹介記事) のヒントモードをヒントに weechat のプラグインを作ってみました。
+前提  Mac OS X でのみ有効なプラグインです。 ruby で書かれているので ruby を有効にしてコンパイルされている必要があります。brew でインストールするのであれば --with-ruby オプション付きでコンパイルされている必要があります。  インストール weechat の公式スクリプトとしての登録はされてないので、リポジトリから直接ファイルをダウンロードしてきてください。
+$ curl -o ~/.weechat/ruby/autoload/url_hinter.rb https://raw.githubusercontent.com/tkengo/weechat-url-hinter/master/weechat-url-hinter.rb  ダウンロードが終わったら weechat を再起動してください。
+使い方 URL が表示されているバッファ上で
+/url_hinter  とコマンドを打ってみてください。通常はこのようなバッファーですが
+コマンドを実行すると
+のように URL だけハイライトされて、先頭に 1 文字のキーが表示されていることがわかります。(1 文字で収まらない数の URL が画面上にある場合は 2 文字になります)</description>
+    </item>
+    
+  </channel>
+</rss>

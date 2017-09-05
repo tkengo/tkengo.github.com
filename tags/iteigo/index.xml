@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Iteigo on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/iteigo/</link>
+    <description>Recent content in Iteigo on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Thu, 28 Aug 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/iteigo/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>超えられない英語の壁を超えるための方法の1つ ITEigo@Fukuoka</title>
+      <link>http://tkengo.github.io/blog/2014/08/28/iteigo-at-fukuoka-for-the-first-time/</link>
+      <pubDate>Thu, 28 Aug 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/08/28/iteigo-at-fukuoka-for-the-first-time/</guid>
+      <description>ITEigo@Fukuoka という、参加者全員が何かしら IT に関しての話を英語でプレゼンして英語で質疑応答するというイベントを福岡で開催しました。
+元々は @cakephper さんが東京で開催していたイベントで、自分も参加したいと思いつつ九州に住んでいるのでわざわざ東京までいくのも大変でしたので当時は見守ってだけいました。んで、そのことを思い出して何気なく Twitter でつぶやいてたら、主催者がその声を拾ってくれて福岡での開催となりました。
+福岡開催は今回が初めてです。基本的には本家のルールに則って、こんな感じのルールでやりました。
+ 参加者全員が IT に関する発表をする(話題は何でもいいです) 自分のサービスを紹介したり 自己紹介したり 海外のニュースを紹介したり 最近興味あることを話したり とにかく英語でプレゼンするならなんでもOK 発表時間は5分(英語で発表) 質疑応答は3分(英語で質疑応答)  様子です LINE Fukuoka のオフィスで開催されました。 プレゼンの様子です。全部英語でしゃべってます。 質疑応答も英語です。そして終わったら雑談を少々。 ※写真を見てわかるかもしれませんが、みんなビール飲みながらやっています。飲んだほうがしゃべりやすいです(笑)
+資料 ITEigo@Fukuoka で使った資料は SpeakerDeck にあげました。
+  今後について 思った以上に盛り上がったし、周りの反応も上々なのでとりあえず第二回も開催してみようかなーと思っています。
+気になる方は Twitter のハッシュタグ #ITEigo あたりを眺めてみてください。</description>
+    </item>
+    
+  </channel>
+</rss>

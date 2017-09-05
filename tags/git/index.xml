@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Git on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/git/</link>
+    <description>Recent content in Git on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Mon, 10 Mar 2014 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/git/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>リモートリポジトリの master は破壊するべからず。git push できないようにしてみよう</title>
+      <link>http://tkengo.github.io/blog/2014/03/10/reject-git-push-to-remote/</link>
+      <pubDate>Mon, 10 Mar 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/03/10/reject-git-push-to-remote/</guid>
+      <description>会社で github で管理しているリポジトリがあるのですが、なるべくなら master に直接 push するのは避けたいものです(最近のフローとしては pull request から master にマージされることが多いですよね)。
+最初は github 上に git のフックを仕掛けて master に push しようとする要求があればはじくようにしたいと思ってたのですが github ではそういったことは出来ないようなので、サーバー側ではなくローカル側にフックを仕掛けて master に push できないようにしてみました。
+デザイナなど黒い画面が苦手な人でも最低限のコマンドで実現出来るように、インストール用のスクリプトを書いて gist に公開 してみました。
+フックのインストール ターミナルから以下のコマンドを実行すればOKです。
+$ curl -s https://gist.githubusercontent.com/tkengo/9320008/raw/f19ce447307ce0f562d5b3ca834d09d22662b7f2/gistfile1.sh | sh OK, all set. All you need to do is that executing &amp;quot;git init&amp;quot; in your existing git project directory.  OK, all set と表示されれば正常に完了しています。これだけ。フックは ~/.git_template/hooks/pre-push にインストールされます。
+新しいリポジトリの場合は自動的にフックが使われるし、既存のリポジトリの場合はリポジトリのディレクトリに移動してそこで git init するだけです。Source Tree 使ってる人は</description>
+    </item>
+    
+    <item>
+      <title>git の歴史の辿り方</title>
+      <link>http://tkengo.github.io/blog/2014/02/10/how-to-track-git-history/</link>
+      <pubDate>Mon, 10 Feb 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2014/02/10/how-to-track-git-history/</guid>
+      <description>git にはリビジョンを引数として受け取るコマンドがいくつかあります。git show や git reset 、 git log 、 git diff などはその典型でしょうか。これらのコマンドを使う時はリビジョンを指定しますが、その指定の仕方には様々な方法があって、最近自分の知識整理のためにすこし調べてたので、せっかくなのでまとめてみました。
+SHA1ハッシュ git はコミット毎にそのコミットに対して SHA1 のハッシュを生成するので、その値をリビジョンの指定に使えます。
+$ git show ed9003bcbdb33a0d626911244e5f8e6e244351e9 commit ed9003bcbdb33a0d626911244e5f8e6e244351e9 Author: Kengo Tateishi &amp;lt;xxxx@xxx.com&amp;gt; Date: Sun Feb 9 08:11:25 2014 +0900 開発環境用の設定を追加 ...  コミットのハッシュ値は省略した状態で重複がなければ省略して書くことができます。こういう風に書いても上記と同じ意味になります。
+$ git show ed9003b  ブランチ名 / タグ名 git ではブランチやタグは、どこコミットへの参照を持っているかを git が管理しているのでリビジョンの指定に使えます。
+$ git show master commit d1e3309be41606db510d80df67b8826edf1b8f16 Author: Kengo Tateishi &amp;lt;xxxx@xxx.com&amp;gt; Date: Sun Feb 9 08:19:31 2014 +0900 テスト設定変更  ローカルのブランチだけではなく、リモートのブランチも指定できます。</description>
+    </item>
+    
+    <item>
+      <title>gitのコミットの歴史を改変する(git rebase) 2 / 2</title>
+      <link>http://tkengo.github.io/blog/2013/06/08/git-rebase-reference2/</link>
+      <pubDate>Sat, 08 Jun 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/06/08/git-rebase-reference2/</guid>
+      <description>git rebase パート1の続きです。
+fixed(コメントは変更せずにコミットをまとめる) fixed は squash と同じく1つ前のコミットとまとめる機能がありますが squash と違うのはコメントはそのままにするということです。
+squash と同じ説明になりますが 70b3379 の メソッド名のタイポ修正 を何事もなかったかのようにしたい時は cce19c9 とまとめてしまいます。いつものように
+[kengo@tkengo-mac] $ git rebase -i cce19c9~1  こうして
+pick cce19c9 通信用のクラスの実装とテストの追加 fixed 70b3379 メソッド名のタイポ修正 pick aebf22c テストが落ちてたので修正  とします。すると squash の場合はこの後にコメントを入力する画面が出て来ましたが fixed の場合はそれが出ません。まとめる先のコミットのコメントがそのまま使われますので rebase の作業はこれで終了です。 squash の時と同じように、タイポの歴史はなかったことになりました。
+exec exec はコミットに指定するものではありません。
+[kengo@tkengo-mac] $ git rebase -i cce19c9~1  とすると
+pick cce19c9 通信用のクラスの実装とテストの追加 pick 70b3379 メソッド名のタイポ修正 pick aebf22c テストが落ちてたので修正  と出ますが、例えば
+pick cce19c9 通信用のクラスの実装とテストの追加 exec make test pick 70b3379 メソッド名のタイポ修正 exec make test pick aebf22c テストが落ちてたので修正 exec make test  という風にコミットとは別の行に exec を入れこんで、その後にコマンド名を記述します。この例では各コミットの後に make test というコマンドを実行してくれます。</description>
+    </item>
+    
+    <item>
+      <title>gitのコミットの歴史を改変する(git rebase) 1 / 2</title>
+      <link>http://tkengo.github.io/blog/2013/05/16/git-rebase-reference/</link>
+      <pubDate>Thu, 16 May 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/05/16/git-rebase-reference/</guid>
+      <description>git には rebase というとても便利なコマンドがあります。その中でも特に便利なのが -i または --interactive オプションです。便利なのですがよく忘れるのでまとめもかねてこの記事で詳しく紹介します。
+前提 この記事では説明のために以下のようなコミット状態である前提で話を始めます。よくあるコミットの流れです。
+git rebase -i -i は --interactive とあるように、対話的に rebase が実行できるコマンドです。これでなにが出来るかというと
+ コミットメッセージを編集する コミットをまとめる コミットを分割する コミットの順番を移動させる コミットを削除する  など、いろんなことが出来ます。基本的な構文は
+[kengo@tkengo-mac] $ git rebase -i &amp;lt;commit&amp;gt;  これだけ。 &amp;lt;commit&amp;gt; には特定のコミットを指定します。たとえば
+[kengo@tkengo-mac] $ git rebase -i HEAD~3  とすると、最後から3つまでのコミットについて、上に書いた何かしらの操作(コミットメッセージ編集だったり順番を入れ替えたり)を出来ます。このコマンドを実行するとテキストエディタが開いてコミットの一覧が表示されて
+pick cce19c9 通信用のクラスの実装とテストの追加 pick 70b3379 メソッド名のタイポ修正 pick aebf22c テストが落ちてたので修正 # Rebase cce19c9..aebf22c onto b8e5722 # # Commands: # p, pick = use commit # r, reword = use commit, but edit the commit message # e, edit = use commit, but stop for amending # s, squash = use commit, but meld into previous commit # f, fixup = like &amp;quot;squash&amp;quot;, but discard this commit&#39;s log message # x, exec = run command (the rest of the line) using shell # # These lines can be re-ordered; they are executed from top to bottom.</description>
+    </item>
+    
+  </channel>
+</rss>

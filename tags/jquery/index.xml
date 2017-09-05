@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Jquery on けんごのお屋敷</title>
+    <link>http://tkengo.github.io/tags/jquery/</link>
+    <description>Recent content in Jquery on けんごのお屋敷</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Sat, 29 Jun 2013 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://tkengo.github.io/tags/jquery/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>郵便番号から住所を補完する jquery.ajaxzip2 を拡張したよ</title>
+      <link>http://tkengo.github.io/blog/2013/06/29/jquery-ajaxzip2-extend/</link>
+      <pubDate>Sat, 29 Jun 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/06/29/jquery-ajaxzip2-extend/</guid>
+      <description>先日、郵便番号から住所を補完する jQuery のプラグイン jquery.ajaxzip2 を紹介しました。
+これは AjaxZip 2.0 - Ajax郵便番号→住所自動入力フォーム（CGI不要版）を jQuery プラグインとして実装したもので、利用するためには自前で JSON 形式の住所データをサーバーに配置する必要がありました。そこで JSON 形式の住所データを準備しなくても良いように JSONP 形式の住所データも読み込めるように jquery.ajaxzip2 を少し拡張してみました。
+外部の API を利用して住所を補完する JSONP については、詳しくは検索すれば情報が沢山でてきますのでここでは割愛しますが、要するに JSONP を使えば外部のサービスが提供する郵便番号検索 API などから住所を補完できるようになります。
+郵便番号から住所データを引ける JSONP 形式対応の API を提供しているサービスはいくつかあります。例えば
+ グルーブテクノロジー株式会社の郵便番号検索API ricollab 郵便番号検索 郵便番号-住所検索API  などです。jquery.ajaxzip2 では住所データをこれらの API から取得して住所を補完することができます。使い方は github の方に詳細を記載していますが、ここでも紹介したいと思います。
+今回は グルーブテクノロジー株式会社の郵便番号検索API を利用してみます。
+※利用する際は各サービスの利用規約などを良く読んで自己責任でお願いします。
+パスを指定する API のパスを設定します。郵便番号の部分は %ZIP3% のプレースホルダを利用して、コールバック関数の名前も指定しておきます。データ種別も jsonp を選択しておきます。
+$.fn.zip2addr.defaultOptions.path = &#39;http://api.postalcode.jp/v1/zipsearch?zipcode=%ZIP3%&amp;amp;callback=zip2addr&#39;; $.fn.zip2addr.defaultOptions.type = &#39;jsonp&#39;;  住所データの形式を理解する API がどのような形式でデータを返してくるのかを確認します。このデータを元に 郵便番号をキー として 都道府県、市区町村、町域、番地の配列を値 とした、ハッシュを作ってそれを返すようにします。</description>
+    </item>
+    
+    <item>
+      <title>郵便番号から住所を補完するjQueryプラグインを作ってみた</title>
+      <link>http://tkengo.github.io/blog/2013/06/23/jquery-ajaxzip2/</link>
+      <pubDate>Sun, 23 Jun 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://tkengo.github.io/blog/2013/06/23/jquery-ajaxzip2/</guid>
+      <description>郵便番号から住所を自動的に補完してくれる JavaScript のライブラリに AjaxZip 2.0 - Ajax郵便番号→住所自動入力フォーム(CGI不要版) がありますが、それを jQuery のプラグインとして実装したものを作ってみました。
+jquery.ajaxzip2
+通常版と、スペースや改行などが圧縮された minify 版があります。使い方はリンク先の github に書いてあるので参考にしてください。
+また jquery.ajaxzip2 を実装するにあたって、さらに使いやすくするために従来の AjaxZip2 を少し拡張しました。
+拡張機能 次のような機能を新たに追加しています。
+住所補完後の動作をコールバック関数で指定可能 郵便番号から住所を補完する際に JSON 形式の住所データを非同期に取得しにいきますが、それが完了した後に呼び出されるコールバック関数を指定できるようにしました。
+たとえば以下のようにして、郵便番号に対する住所が見つかって補完が完了した場合に、メールアドレスにフォーカスを当てることができます。
+$(&#39;#zip&#39;).zip2addr({ success: function() { $(&#39;#mail&#39;).focus(); } });  コールバック関数の引数には、見つかった住所データが渡されます。
+住所が見つからなかった時の動作をコールバック関数で指定可能 郵便番号から住所が見つからなかった場合に呼び出されるコールバック関数を指定できるようにしました。
+たとえば以下のようにして、住所が見つからなかった時にエラーメッセージを表示することができます。
+$(&#39;#zip&#39;).zip2addr({ error: function() { $(&#39;#error&#39;).text(&#39;住所が見つかりませんでした&#39;); } });  フォーム要素以外への住所補完 div 要素や a 要素などでも ID が指定してあればそこへ補完できるようにしました。
+たとえば以下の様な HTML の場合でも
+郵便番号 &amp;lt;input type=&amp;quot;text&amp;quot; name=&amp;quot;zip&amp;quot; id=&amp;quot;zip&amp;quot; /&amp;gt; 都道府県 &amp;lt;div id=&amp;quot;pref&amp;quot;&amp;gt;&amp;lt;/div&amp;gt; 市区町村 &amp;lt;div id=&amp;quot;city&amp;quot;&amp;gt;&amp;lt;/div&amp;gt; 町域 &amp;lt;div id=&amp;quot;area&amp;quot;&amp;gt;&amp;lt;/div&amp;gt; 番地 &amp;lt;div id=&amp;quot;street&amp;quot;&amp;gt;&amp;lt;/div&amp;gt;  通常通りこのプラグインを呼び出すと</description>
+    </item>
+    
+  </channel>
+</rss>
